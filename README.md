@@ -8,12 +8,12 @@ Offline tracker for the five daily prayers, daily amal and qada (makeup prayers 
 ## Install
 
 **Android**
-1. Copy `PrayerTracker.apk` to the phone (USB cable, Google Drive or email it to yourself).
+1. On the phone, open https://github.com/arahkhan99/amal-tracker/releases/latest and download `PrayerTracker.apk`. You can also copy the file from this folder by USB, Google Drive or email.
 2. Open it on the phone. If asked, allow "Install unknown apps" for the app you opened it from.
 3. Open **Amal Tracker** and allow location and notifications when asked.
 
 **iPhone**
-1. Open the GitHub Pages link in **Safari** (it must be Safari).
+1. Open https://arahkhan99.github.io/amal-tracker/ in **Safari** (it must be Safari).
 2. Tap Share, then **Add to Home Screen**.
 3. Open it from the Home Screen icon. After the first load it works offline.
 
@@ -24,7 +24,8 @@ npm install
 npm run dev            # live preview at http://localhost:5173
 npm test               # unit tests (store, prayer times, stats, reminders)
 npm run build          # production web build in dist/
-npm run shots          # Playwright walk-through of every screen -> shots/
+npm run shots          # Playwright walk-through of every screen -> shots/ (BROWSER=webkit for Safari engine)
+npm run check:emulator # drive the installed APK on a running Android emulator
 npm run build:android  # build, sync to Android, produce PrayerTracker.apk
 ```
 

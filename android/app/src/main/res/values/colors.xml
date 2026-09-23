@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shows behind the status and gesture bars when the WebView is inset (older WebViews) -->
+    <color name="appBackground">#F8F4EA</color>
+</resources>

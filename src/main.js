@@ -8,7 +8,7 @@ import "./styles.css";
 
 import { S, UI, A, $, $$, go, render, tick, closeSheet } from "./app.js";
 import { reschedule } from "./notify.js";
-import { isNative, authenticate, onBackButton } from "./platform.js";
+import { isNative, authenticate, onBackButton, setStatusBar } from "./platform.js";
 import "./views/home.js";
 import "./views/tracker.js";
 import "./views/qada.js";
@@ -50,6 +50,8 @@ document.addEventListener("visibilitychange", () => {
 if (S.profile.onboarded) go("home"); else startOnboarding();
 lockIfNeeded();
 reschedule(S);
+// Capacitor injects the safe-area insets shortly after load; re-pick the status bar icon colour then
+setTimeout(() => setStatusBar(UI.view === "home" || UI.view === "onboard"), 1500);
 
 // Ask the browser not to evict our data under storage pressure
 navigator.storage?.persist?.().catch(() => {});

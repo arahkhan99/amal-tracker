@@ -8,7 +8,10 @@ export async function currentPosition() {
     const { Geolocation } = await import("@capacitor/geolocation");
     const perm = await Geolocation.requestPermissions().catch(() => null);
     if (perm && perm.location === "denied") throw new Error("denied");
-    const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 15000 });
+    // Network location is fastest; fall back to GPS when it isn't available (e.g. no Wi-Fi/cell location)
+    let p;
+    try { p = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 10000, maximumAge: 36e5 }); }
+    catch (e) { p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 25000, maximumAge: 36e5 }); }
     return { lat: p.coords.latitude, lng: p.coords.longitude };
   }
   if (!navigator.geolocation) throw new Error("unsupported");
@@ -23,7 +26,9 @@ export async function cityName(lat, lng) {
     const j = await r.json();
     const city = j.city || j.locality;
     // "Chicago, IL" in the US and Canada, "London, United Kingdom" elsewhere
-    const region = ["US", "CA"].includes(j.countryCode) ? j.principalSubdivisionCode?.split("-")[1] : j.countryName;
+    let country = j.countryName;
+    try { country = new Intl.DisplayNames(["en"], { type: "region" }).of(j.countryCode) || country; } catch (e) { /* keep API name */ }
+    const region = ["US", "CA"].includes(j.countryCode) ? j.principalSubdivisionCode?.split("-")[1] : country;
     if (city) return region ? `${city}, ${region}` : city;
   } catch (e) { /* offline */ }
   return "Your location";
@@ -63,9 +68,13 @@ export function pickFile(accept) {
 /** Light status-bar icons over the green header (Home, onboarding), dark icons elsewhere. */
 export async function setStatusBar(darkBackground) {
   if (!isNative()) return;
+  // Edge-to-edge (current WebViews): the page draws behind the status bar and Capacitor reports a
+  // non-zero inset, so the CSS backdrop decides the colour. Older WebViews are inset instead and
+  // the ivory window background shows behind the bar, which always needs dark icons.
+  const inset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--safe-area-inset-top")) || 0;
   try {
     const { StatusBar, Style } = await import("@capacitor/status-bar");
-    await StatusBar.setStyle({ style: darkBackground ? Style.Dark : Style.Light });
+    await StatusBar.setStyle({ style: darkBackground && inset > 0 ? Style.Dark : Style.Light });
   } catch (e) { /* not supported on this Android version */ }
 }
 
