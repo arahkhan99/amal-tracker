@@ -18,7 +18,7 @@ if (!java) throw new Error("JDK 21 not found. Run: winget install EclipseAdoptiu
 
 writeFileSync(join(android, "local.properties"), `sdk.dir=${sdk.replace(/\\/g, "\\\\")}\n`);
 const env = { ...process.env, JAVA_HOME: java, ANDROID_HOME: sdk };
-const gradlew = process.platform === "win32" ? "gradlew.bat" : "./gradlew";
+const gradlew = process.platform === "win32" ? `"${join(android, "gradlew.bat")}"` : "./gradlew";
 execSync(`${gradlew} assembleDebug --no-daemon`, { cwd: android, env, stdio: "inherit" });
 
 const apk = join(android, "app", "build", "outputs", "apk", "debug", "app-debug.apk");
