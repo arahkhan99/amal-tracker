@@ -39,7 +39,7 @@ export function planNotifications(S, now = new Date()) {
 let timer = null;
 /** Reschedule all local notifications (Android). Debounced; no-op on the web. */
 export function reschedule(S) {
-  if (!isNative()) return;
+  if (!isNative() || !S.profile.onboarded) return; // don't ask for notification permission mid-onboarding
   clearTimeout(timer);
   timer = setTimeout(() => doSchedule(S).catch(e => console.warn("notify", e)), 800);
 }

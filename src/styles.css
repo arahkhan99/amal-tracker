@@ -250,3 +250,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .results{margin-top:10px;display:grid;gap:6px}
 /* the prototype's week bars had no height, so they never showed; give each track the full row height */
 .weekline .bars i{height:100%}
+/* backdrop behind the phone's status bar so scrolled content never runs under the clock and icons */
+.phone::before{content:"";position:absolute;top:0;left:0;right:0;height:var(--safe-area-inset-top,env(safe-area-inset-top,0px));background:var(--ivory);z-index:15;pointer-events:none}
+.phone[data-view=home]::before,.phone[data-view=onboard]::before{background:var(--forest)}

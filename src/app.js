@@ -2,6 +2,7 @@
 import * as store from "./store.js";
 import { reschedule } from "./notify.js";
 import { dkey } from "./util.js";
+import { setStatusBar } from "./platform.js";
 
 export const S = store.load();
 export const UI = { view: "home", range: "day", selDay: 0, trkDay: 0 };
@@ -38,6 +39,8 @@ export function go(v) {
   $$(".view").forEach(e => e.classList.toggle("on", e.id === "v-" + v));
   $$("#nav button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
   $("#nav").hidden = v === "onboard";
+  $("#phone").dataset.view = v;
+  setStatusBar(v === "home" || v === "onboard");
   $("#screen").scrollTop = 0;
   render();
 }

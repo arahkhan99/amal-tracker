@@ -59,6 +59,23 @@ export function pickFile(accept) {
   });
 }
 
+/* ---------- system bars ---------- */
+/** Light status-bar icons over the green header (Home, onboarding), dark icons elsewhere. */
+export async function setStatusBar(darkBackground) {
+  if (!isNative()) return;
+  try {
+    const { StatusBar, Style } = await import("@capacitor/status-bar");
+    await StatusBar.setStyle({ style: darkBackground ? Style.Dark : Style.Light });
+  } catch (e) { /* not supported on this Android version */ }
+}
+
+/** Android back button: close a sheet, else go Home, else leave the app. */
+export async function onBackButton(handler) {
+  if (!isNative()) return;
+  const { App } = await import("@capacitor/app");
+  App.addListener("backButton", () => { if (!handler()) App.exitApp(); });
+}
+
 /* ---------- app lock ---------- */
 export async function biometryAvailable() {
   if (!isNative()) return false;

@@ -8,7 +8,7 @@ import "./styles.css";
 
 import { S, UI, A, $, $$, go, render, tick, closeSheet } from "./app.js";
 import { reschedule } from "./notify.js";
-import { isNative, authenticate } from "./platform.js";
+import { isNative, authenticate, onBackButton } from "./platform.js";
 import "./views/home.js";
 import "./views/tracker.js";
 import "./views/qada.js";
@@ -18,6 +18,12 @@ import { startOnboarding } from "./views/onboarding.js";
 
 $$("#nav button").forEach(b => (b.onclick = () => go(b.dataset.v)));
 $("#scrim").onclick = e => { if (e.target.id === "scrim") closeSheet(); };
+
+onBackButton(() => {
+  if ($("#scrim").classList.contains("on")) { closeSheet(); return true; }
+  if (UI.view !== "home" && UI.view !== "onboard") { go("home"); return true; }
+  return false;
+});
 
 // Keep the countdown live and roll over at midnight
 setInterval(() => {

@@ -1,7 +1,7 @@
 // Visual + smoke check: serves dist/, walks every screen and sheet at phone size,
 // fails on any console error, and writes PNGs to shots/. Also screenshots the
 // prototype (if PROTO env var points at it) for side-by-side comparison.
-import { chromium } from "playwright";
+import { chromium, webkit } from "playwright";
 import { createServer } from "node:http";
 import { readFileSync, existsSync, mkdirSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
@@ -16,15 +16,17 @@ const server = createServer((req, res) => {
   res.writeHead(200, { "content-type": types[extname(p)] || "application/octet-stream" });
   res.end(readFileSync(p));
 }).listen(4390);
-const URL0 = "http://localhost:4390/";
+const URL0 = process.env.BASE_URL || "http://localhost:4390/";
+const engine = process.env.BROWSER === "webkit" ? webkit : chromium;
+const tag = process.env.BROWSER === "webkit" ? "wk-" : "";
 
-const browser = await chromium.launch();
+const browser = await engine.launch();
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, geolocation: { latitude: 41.8781, longitude: -87.6298 }, permissions: ["geolocation"] });
 const page = await ctx.newPage();
 const errors = [];
 page.on("console", m => { if (m.type() === "error") errors.push(m.text()); });
 page.on("pageerror", e => errors.push(String(e)));
-const shot = async name => { await page.waitForTimeout(350); await page.screenshot({ path: join(out, name + ".png") }); };
+const shot = async name => { await page.waitForTimeout(350); await page.screenshot({ path: join(out, tag + name + ".png") }); };
 const click = sel => page.locator(sel).first().click();
 
 await page.goto(URL0);
@@ -124,11 +126,15 @@ await shot("54-after-location");
 // Offline: reload with network off; service worker should serve everything
 await click("[aria-label=Back]");
 await page.waitForTimeout(1500);
-await ctx.setOffline(true);
-await page.reload();
-await shot("60-offline-home");
-const offlineOk = await page.locator("#prayerList .row").count();
-await ctx.setOffline(false);
+// Playwright's Windows WebKit build has no service worker support, so the offline check runs on Chromium only
+let offlineOk = 5;
+if (engine === chromium) {
+  await ctx.setOffline(true);
+  await page.reload();
+  await shot("60-offline-home");
+  offlineOk = await page.locator("#prayerList .row").count();
+  await ctx.setOffline(false);
+}
 
 // Prototype for comparison
 if (process.env.PROTO) {
