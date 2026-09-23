@@ -1,0 +1,13 @@
+{
+  "appId": "com.amaltracker.app",
+  "appName": "Amal Tracker",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#F8F4EA"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "iconColor": "#0F3D2E"
+    }
+  }
+}

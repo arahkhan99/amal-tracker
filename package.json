@@ -1,0 +1,34 @@
+{
+  "name": "amal-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Prayer & Amal Tracker: offline prayer, amal and qada tracker for Android and iPhone",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "test": "vitest run",
+    "shots": "node scripts/screenshots.mjs",
+    "build:android": "vite build && npx cap sync android && node scripts/build-apk.mjs"
+  },
+  "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "^10.0.0",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/filesystem": "^8.1.3",
+    "@capacitor/geolocation": "^8.2.2",
+    "@capacitor/local-notifications": "^8.3.1",
+    "@capacitor/share": "^8.0.2",
+    "@fontsource/amiri": "^5.3.0",
+    "@fontsource/manrope": "^5.3.0",
+    "adhan": "^4.4.6"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "playwright": "^1.63.0",
+    "vite": "^8.3.0",
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^5.0.1"
+  }
+}

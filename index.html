@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0F3D2E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Amal Tracker">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<title>Prayer &amp; Amal Tracker</title>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><pattern id="st" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M30 2 L36 24 L58 30 L36 36 L30 58 L24 36 L2 30 L24 24 Z" fill="none" stroke="#E5C55C" stroke-width="1"/><path d="M13 13 L47 13 L47 47 L13 47 Z" fill="none" stroke="#E5C55C" stroke-width=".6" transform="rotate(45 30 30)"/></pattern></defs></svg>
+
+<div class="stage">
+<div class="phone" id="phone">
+  <div class="screen" id="screen">
+
+    <!-- ONBOARDING -->
+    <section class="view" id="v-onboard"></section>
+
+    <!-- HOME -->
+    <section class="view" id="v-home">
+      <div class="hero">
+        <svg class="pattern" viewBox="0 0 390 300" preserveAspectRatio="xMidYMid slice"><rect width="100%" height="100%" fill="url(#st)"/></svg>
+        <div class="topbar">
+          <div class="brand"><div class="logo">☾</div><div><div class="date" id="dateLabel"></div><div class="hijri" id="hijriLabel"></div></div></div>
+          <button class="icon-btn" aria-label="Settings" onclick="A.go('settings')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
+        <div class="hero-inner">
+          <div class="ring"><svg width="126" height="126" viewBox="0 0 126 126"><circle cx="63" cy="63" r="55" stroke="rgba(255,255,255,.14)" stroke-width="9" fill="none"/><circle id="ringArc" cx="63" cy="63" r="55" stroke="#E5C55C" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="345.6" stroke-dashoffset="345.6" style="transition:stroke-dashoffset .5s"/></svg>
+            <div class="num"><div><b id="dayPct">0%</b><span>today</span></div></div></div>
+          <div><div class="greet"><span id="greetName">Salam</span><small id="nextUp"></small></div></div>
+        </div>
+        <div class="window" id="windowLine"></div>
+        <div class="weekline"><span style="opacity:.8">This week</span><div class="bars" id="weekBars"></div><strong id="weekPct">0%</strong></div>
+      </div>
+
+      <div class="sec"><h2>Today's prayers <span id="prayerCount"></span></h2><div class="card" id="prayerList"></div>
+        <p style="font-size:11.5px;color:var(--ink2);margin:8px 4px 0" id="timesSource"></p></div>
+
+      <div class="sec"><h2>Daily amal <span id="amalCount"></span></h2><div class="card" id="amalList"></div>
+        <p style="font-size:11.5px;color:var(--ink2);margin:8px 4px 0">Tap to mark done. Anything left unchecked at day's end is recorded as not done.</p></div>
+
+      <div class="reflect" id="reflectCard"><span class="tag">Today's reflection</span>
+        <div class="ar" id="reflAr"></div>
+        <div class="en" id="reflEn"></div>
+        <div class="src" id="reflSrc"></div></div>
+      <div class="reflect" id="seerahCard" style="display:none"><span class="tag">This week's seerah moment</span>
+        <div class="en" id="seerahText"></div>
+        <div class="src">A new moment from the life of the Prophet ﷺ each Friday</div></div>
+      <div class="space"></div>
+    </section>
+
+    <!-- TRACKER -->
+    <section class="view" id="v-tracker">
+      <div class="topbar light"><div class="pagehead"><h1>Tracker</h1><p>The full record for any day, oldest to newest.</p></div></div>
+      <div class="datenav"><button class="arrow" id="prevDay" aria-label="Earlier days" onclick="A.trkStep(1)">‹</button><div class="strip" id="dayStrip"></div><button class="arrow" id="nextDay" aria-label="Later days" onclick="A.trkStep(-1)">›</button></div>
+      <div class="dayhead"><b id="trkTitle"></b><span id="trkPct"></span></div>
+      <div class="sec"><h2>Prayers</h2><div class="card" id="trkPrayers"></div></div>
+      <div class="sec"><h2>Amal</h2><div class="card" id="trkAmal"></div></div>
+      <button class="add" id="addAmalBtn" onclick="A.addAmal()">+ Add an amal to your daily list</button>
+      <div class="sec"><h2>Notes for the day</h2><div class="card" style="padding:4px"><textarea id="dayNote" placeholder="Anything worth remembering about this day" style="width:100%;border:0;background:transparent;padding:12px;font:inherit;font-size:14px;min-height:80px;resize:none"></textarea></div></div>
+      <div class="space"></div>
+    </section>
+
+    <!-- QADA -->
+    <section class="view" id="v-qada">
+      <div class="topbar light"><div class="pagehead"><h1>Qada</h1><p>One small target at a time.</p></div></div>
+      <div class="sec" style="padding-top:12px"><div class="card goal">
+        <div class="top"><b>This month's goal</b><span><span id="goalDone">0</span><small> / <span id="goalTarget">0</span> prayers</small></span></div>
+        <div class="bar"><i id="goalBar" style="width:0%"></i></div>
+        <div class="foot"><span id="goalNote"></span><button onclick="A.goalSheet()">Change goal</button></div>
+      </div></div>
+      <div class="totals"><div><b id="qadaPrayersLeft">0</b><small>prayers still owed <span class="delta" id="qadaDelta"></span></small></div><div><b id="qadaFastsLeft">0</b><small>fasts still owed</small></div></div>
+
+      <div class="sec"><h2>Makeup prayers <span>logging one counts toward the goal</span></h2><div class="card" id="qadaList"></div></div>
+      <div class="sec"><h2>Makeup fasts</h2><div class="card" id="qadaFasts"></div></div>
+      <div class="sec"><div class="card"><div class="insight good"><div class="mark">۩</div><div><b id="qadaEncourage"></b><small id="qadaEncourageSub"></small></div></div></div></div>
+      <button class="add" onclick="A.balanceSheet()">Adjust what you owe</button>
+      <div class="space"></div>
+    </section>
+
+    <!-- PROGRESS -->
+    <section class="view" id="v-progress">
+      <div class="topbar light"><div class="pagehead"><h1>Progress</h1><p>Where you're steady, and where to give more care.</p></div></div>
+      <div class="seg" id="progSeg"><button class="on" data-r="day">Day</button><button data-r="week">Week</button><button data-r="month">Month</button><button data-r="year">Year</button></div>
+      <div id="progBody"></div>
+      <div class="space"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="v-settings">
+      <div class="topbar light"><div class="pagehead"><h1>Settings</h1></div><button class="icon-btn" aria-label="Back" onclick="A.go('home')">✕</button></div>
+      <div class="sec"><h2>Reminders <span id="remindNote"></span></h2><div class="card">
+        <div class="row"><div class="t"><b>Before a prayer becomes qada</b><small>Nudge when the window is nearly over and nothing is logged</small></div><button class="switch" data-set="preQada" aria-label="Before a prayer becomes qada"></button></div>
+        <div class="row" style="padding-top:6px"><div class="t"><small style="margin-bottom:8px">Lead time</small><div class="seg" style="margin:0;background:var(--ivory)" id="leadSeg"><button data-m="5">5 min</button><button data-m="10">10 min</button><button data-m="15">15 min</button><button data-m="30">30 min</button></div></div></div>
+        <div class="row"><div class="t"><b>Prayer time alerts</b><small>At the start of each prayer</small></div><button class="switch" data-set="prayerAlerts" aria-label="Prayer time alerts"></button></div>
+        <div class="row"><div class="t"><b>Evening check-in</b><small>9:30 PM, only if anything is still unlogged</small></div><button class="switch" data-set="evening" aria-label="Evening check-in"></button></div>
+      </div></div>
+      <div class="sec"><h2>Prayer times</h2><div class="card">
+        <button class="row" onclick="A.locationSheet()"><div class="t"><b>Location</b><small id="locLabel"></small></div><span class="chev">›</span></button>
+        <button class="row" onclick="A.methodSheet()"><div class="t"><b>Calculation method</b><small id="methodLabel"></small></div><span class="chev">›</span></button>
+        <button class="row" onclick="A.asrSheet()"><div class="t"><b>Asr method</b><small id="asrLabel"></small></div><span class="chev">›</span></button>
+      </div></div>
+      <div class="sec"><h2>Tracking</h2><div class="card">
+        <button class="row" onclick="A.amalListSheet()"><div class="t"><b>Daily amal list</b><small id="amalSettingCount"></small></div><span class="chev">›</span></button>
+        <div class="row"><div class="t"><b>Carry Quran position forward</b><small>Pre-fill where you stopped last time</small></div><button class="switch" data-set="carryQuran" aria-label="Carry Quran position forward"></button></div>
+        <button class="row" onclick="A.goalSheet()"><div class="t"><b>Qada monthly goal</b><small id="goalSettingLabel"></small></div><span class="chev">›</span></button>
+      </div></div>
+      <div class="sec"><h2>Content</h2><div class="card">
+        <div class="row"><div class="t"><b>Daily reflection</b><small>Ayah or hadith on Home each morning</small></div><button class="switch" data-set="reflection" aria-label="Daily reflection"></button></div>
+        <div class="row"><div class="t"><b>Weekly seerah moment</b><small>Sent Friday morning</small></div><button class="switch" data-set="seerah" aria-label="Weekly seerah moment"></button></div>
+      </div></div>
+      <div class="sec"><h2>Account</h2><div class="card">
+        <button class="row" onclick="A.nameSheet()"><div class="t"><b>Your name</b><small id="nameLabel"></small></div><span class="chev">›</span></button>
+        <div class="row" id="lockRow"><div class="t"><b>Lock app with fingerprint or face</b><small>Asks each time the app opens</small></div><button class="switch" data-set="lock" aria-label="Lock app"></button></div>
+        <button class="row" onclick="A.exportCsv()"><div class="t"><b>Export my data</b><small>CSV of every log</small></div><span class="chev">›</span></button>
+        <button class="row" onclick="A.backup()"><div class="t"><b>Back up</b><small>Save everything to a file you can restore later</small></div><span class="chev">›</span></button>
+        <button class="row" onclick="A.restore()"><div class="t"><b>Restore from backup</b><small>Replace this device's data with a backup file</small></div><span class="chev">›</span></button>
+        <button class="row" onclick="A.resetSheet()"><div class="t"><b style="color:var(--miss)">Reset all data</b><small>Everything is stored only on this device</small></div><span class="chev">›</span></button>
+      </div></div>
+      <div class="space"></div>
+    </section>
+  </div>
+
+  <nav class="nav" id="nav">
+    <button data-v="home" class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+    <button data-v="tracker"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Tracker</button>
+    <button data-v="qada"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/><path d="M21 3v6h-6"/></svg>Qada</button>
+    <button data-v="progress"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>Progress</button>
+  </nav>
+
+  <div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
+  <div class="toast" id="toast"></div>
+  <div class="lock" id="lock" hidden><div class="logo">☾</div><div style="font-family:var(--serif);font-size:22px">Prayer &amp; Amal Tracker</div><button onclick="A.unlock()">Unlock</button></div>
+</div>
+</div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
