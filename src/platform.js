@@ -71,7 +71,12 @@ export async function setStatusBar(darkBackground) {
   // Edge-to-edge (current WebViews): the page draws behind the status bar and Capacitor reports a
   // non-zero inset, so the CSS backdrop decides the colour. Older WebViews are inset instead and
   // the ivory window background shows behind the bar, which always needs dark icons.
-  const inset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--safe-area-inset-top")) || 0;
+  // iOS reports the inset through env() rather than Capacitor's CSS variable, so measure both
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:absolute;visibility:hidden;height:var(--safe-area-inset-top,env(safe-area-inset-top,0px))";
+  document.body.appendChild(probe);
+  const inset = probe.getBoundingClientRect().height;
+  probe.remove();
   try {
     const { StatusBar, Style } = await import("@capacitor/status-bar");
     await StatusBar.setStyle({ style: darkBackground && inset > 0 ? Style.Dark : Style.Light });

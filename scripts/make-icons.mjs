@@ -66,5 +66,18 @@ if (existsSync(res)) {
   if (existsSync(anydpi)) rmSync(anydpi, { recursive: true, force: true });
   console.log("android icons written");
 }
+const ios = join(root, "ios", "App", "App", "Assets.xcassets");
+if (existsSync(ios)) {
+  // iOS rounds the corners itself, so the icon is a full square with no transparency
+  await page.setViewportSize({ width: 1024, height: 1024 });
+  await page.setContent(`<html><body style="margin:0;background:#0F3D2E">${svg(1024, { pad: 0.1 })}</body></html>`);
+  await page.screenshot({ path: join(ios, "AppIcon.appiconset", "AppIcon-512@2x.png"), clip: { x: 0, y: 0, width: 1024, height: 1024 } });
+  const icon = 700;
+  await page.setViewportSize({ width: 2732, height: 2732 });
+  await page.setContent(`<html><body style="margin:0;width:2732px;height:2732px;display:grid;place-items:center;background:radial-gradient(circle at 50% 0%,#1B5A43 0%,#0F3D2E 60%)">${svg(icon, { pad: 0.05, round: 0.24 })}</body></html>`);
+  for (const f of ["splash-2732x2732.png", "splash-2732x2732-1.png", "splash-2732x2732-2.png"])
+    await page.screenshot({ path: join(ios, "Splash.imageset", f) });
+  console.log("ios icons written");
+}
 await browser.close();
 console.log("icons written");

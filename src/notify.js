@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { isNative } from "./platform.js";
 import { PRAYERS, dkey, addDays } from "./util.js";
 import { getDay } from "./store.js";
@@ -51,7 +52,9 @@ async function doSchedule(S) {
   if (perm.display !== "granted") return;
   const pending = await LocalNotifications.getPending();
   if (pending.notifications.length) await LocalNotifications.cancel({ notifications: pending.notifications.map(n => ({ id: n.id })) });
-  const list = planNotifications(S);
+  let list = planNotifications(S);
+  // iOS keeps at most 64 pending notifications; keep the soonest ones (the rest are rescheduled on next open)
+  if (Capacitor.getPlatform() === "ios") list = list.sort((a, b) => a.at - b.at).slice(0, 60);
   if (!list.length) return;
   await LocalNotifications.schedule({
     notifications: list.map(n => ({ id: n.id, title: n.title, body: n.body, schedule: { at: n.at, allowWhileIdle: true }, iconColor: "#0F3D2E" })),
