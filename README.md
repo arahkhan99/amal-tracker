@@ -12,16 +12,7 @@ Offline tracker for the five daily prayers, daily amal and qada (makeup prayers 
 2. Open it on the phone. If asked, allow "Install unknown apps" for the app you opened it from.
 3. Open **Amal Tracker** and allow location and notifications when asked.
 
-**iPhone: full app with notifications (free, installed from Windows)**
-Every push to `main` builds `AmalTracker.ipa` on a free GitHub Mac (`.github/workflows/ios.yml`) and attaches it to the latest release.
-1. On the PC, install the **web (non-Microsoft Store) versions of iTunes and iCloud**, using the links on https://sideloadly.io.
-2. Install **Sideloadly** (free) from https://sideloadly.io.
-3. Download `AmalTracker.ipa` from https://github.com/arahkhan99/amal-tracker/releases/latest.
-4. Connect the iPhone by cable, tap "Trust This Computer", then drag the `.ipa` into Sideloadly, enter your Apple ID and press Start.
-5. On the iPhone, open Settings → General → VPN & Device Management, tap your Apple ID and choose **Trust**. On iOS 16 or later, also turn on Settings → Privacy & Security → **Developer Mode** and restart when asked.
-6. A free Apple ID signs apps for 7 days. Leave Sideloadly's auto-refresh on, with the PC and phone on the same Wi-Fi, to renew it automatically. Your data is kept.
-
-**iPhone: Home Screen web app (no install tools, but reminders only inside the app)**
+**iPhone (web version, reminders only inside the app)**
 1. Open https://arahkhan99.github.io/amal-tracker/ in **Safari** (it must be Safari).
 2. Tap Share, then **Add to Home Screen**.
 3. Open it from the Home Screen icon. After the first load it works offline.
