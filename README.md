@@ -7,10 +7,12 @@ Offline tracker for the five daily prayers, daily amal and qada (makeup prayers 
 
 ## Install
 
-**Android**
-1. On the phone, open https://github.com/arahkhan99/amal-tracker/releases/latest and download `PrayerTracker.apk`. You can also copy the file from this folder by USB, Google Drive or email.
-2. Open it on the phone. If asked, allow "Install unknown apps" for the app you opened it from.
-3. Open **Amal Tracker** and allow location and notifications when asked.
+**Android (updates arrive automatically)**
+1. Every push to `main` runs `.github/workflows/android.yml`, which tests and builds the app, signs it with the permanent key, and sends it through **Firebase App Distribution**. A copy is also attached to https://github.com/arahkhan99/amal-tracker/releases/latest.
+2. The first time, open the Firebase invite email on the phone and follow it to install **App Tester**. Install Amal Tracker from there. Later updates show up in App Tester (and by email) for a one-tap install, and your data is kept.
+3. Open **Amal Tracker**, allow location and notifications, and turn on **Settings → Cloud backup** (sign in with Google) so your logs are backed up and sync.
+
+The signing key is in `C:/Users/chito/amal-tracker-signing` and in the repo's GitHub secrets. Keep that folder safe: without the key, updates can't install over the app. Firebase project: `amal-tracker-cfe23`.
 
 **iPhone (web version, reminders only inside the app)**
 1. Open https://arahkhan99.github.io/amal-tracker/ in **Safari** (it must be Safari).
