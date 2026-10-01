@@ -1,5 +1,5 @@
 /*
- * Cloud backup & sync (Android app only): Google sign-in, then the whole tracker is stored in the
+ * Cloud backup & sync (Android app and the web version): Google sign-in, then the whole tracker is stored in the
  * user's own Firestore space:
  *   users/{uid}             everything except daily logs (profile, settings, amal list, qada)
  *   users/{uid}/years/{yyyy} that year's daily logs
@@ -22,20 +22,22 @@ function saveMeta() { try { localStorage.setItem(META_KEY, JSON.stringify({ last
 
 async function firebase() {
   if (fb) return fb;
-  const [{ initializeApp }, auth, fs, { FirebaseAuthentication }] = await Promise.all([
-    import("firebase/app"), import("firebase/auth"), import("firebase/firestore"), import("@capacitor-firebase/authentication"),
-  ]);
+  const [{ initializeApp }, auth, fs] = await Promise.all([import("firebase/app"), import("firebase/auth"), import("firebase/firestore")]);
+  const FirebaseAuthentication = isNative() ? (await import("@capacitor-firebase/authentication")).FirebaseAuthentication : null;
   const app = initializeApp(firebaseConfig);
   fb = {
     auth, fs, FirebaseAuthentication,
-    a: auth.initializeAuth(app, { persistence: auth.indexedDBLocalPersistence }),
+    // The browser needs the popup helper for Google sign-in; the Android app signs in natively instead
+    a: auth.initializeAuth(app, isNative()
+      ? { persistence: auth.indexedDBLocalPersistence }
+      : { persistence: [auth.indexedDBLocalPersistence, auth.browserLocalPersistence], popupRedirectResolver: auth.browserPopupRedirectResolver }),
     db: fs.initializeFirestore(app, { experimentalAutoDetectLongPolling: true }),
   };
   return fb;
 }
 
 export async function initCloud() {
-  if (!isNative() || !firebaseConfig.apiKey) return;
+  if (!firebaseConfig.apiKey) return;
   cloud.available = true;
   loadMeta();
   const { auth, a } = await firebase();
@@ -52,15 +54,28 @@ export async function initCloud() {
 
 export async function signIn() {
   const { auth, a, FirebaseAuthentication } = await firebase();
-  const r = await FirebaseAuthentication.signInWithGoogle();
-  const cred = auth.GoogleAuthProvider.credential(r.credential?.idToken);
-  await auth.signInWithCredential(a, cred);
+  if (FirebaseAuthentication) {
+    const r = await FirebaseAuthentication.signInWithGoogle();
+    await auth.signInWithCredential(a, auth.GoogleAuthProvider.credential(r.credential?.idToken));
+  } else {
+    const provider = new auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    try { await auth.signInWithPopup(a, provider); }
+    catch (e) {
+      // Popups can be blocked (or unsupported in a Home Screen app); fall back to a full-page redirect
+      if (["auth/popup-blocked", "auth/operation-not-supported-in-this-environment", "auth/web-storage-unsupported"].includes(e.code)) {
+        await auth.signInWithRedirect(a, provider);
+        return;
+      }
+      throw e;
+    }
+  }
   await sync();
 }
 
 export async function signOut() {
   const { auth, a, FirebaseAuthentication } = await firebase();
-  await FirebaseAuthentication.signOut().catch(() => {});
+  if (FirebaseAuthentication) await FirebaseAuthentication.signOut().catch(() => {});
   await auth.signOut(a);
   pushed = {};
 }
