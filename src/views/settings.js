@@ -4,6 +4,7 @@ import { PRAYERS, esc } from "../util.js";
 import { METHODS, ASR, FALLBACK_LOCATION } from "../times.js";
 import { isNative, currentPosition, cityName, searchCity, saveFile, pickFile, biometryAvailable, authenticate } from "../platform.js";
 import { STATUS } from "./home.js";
+import { cloud, signIn, signOut, sync } from "../cloud.js";
 
 /* ---------- switches ---------- */
 $$("#v-settings .switch[data-set]").forEach(sw => {
@@ -112,9 +113,44 @@ A.restore = async () => {
   } catch (e) { toast("That file isn't a valid backup"); }
 };
 
-A.resetSheet = () => openSheet(`<h3>Reset all data?</h3><p>This deletes every log, your qada balance and settings from this phone. It can't be undone. Consider backing up first.</p>
+A.resetSheet = () => openSheet(`<h3>Reset all data?</h3><p>This deletes every log, your qada balance and settings from this phone. It can't be undone. Consider backing up first.${cloud.user ? " You'll also be signed out of cloud backup; your cloud copy is kept and comes back if you sign in again." : ""}</p>
   <div class="cta"><button class="btn ghost" onclick="A.closeSheet()">Cancel</button><button class="btn danger" onclick="A.reset()">Delete everything</button></div>`);
-A.reset = () => { closeSheet(); replaceState(store.defaultState()); A.startOnboarding(); };
+A.reset = async () => {
+  closeSheet();
+  if (cloud.user) await signOut().catch(() => {}); // otherwise the next sync would merge the cloud copy straight back
+  replaceState(store.defaultState());
+  A.startOnboarding();
+};
+
+/* ---------- cloud backup ---------- */
+function ago(t) {
+  if (!t) return "not yet";
+  const m = Math.round((Date.now() - t) / 60000);
+  return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`;
+}
+function cloudStatus() {
+  if (!cloud.user) return "Off · sign in with Google to back up and sync";
+  if (cloud.syncing) return `On · ${cloud.user.email} · syncing…`;
+  return `On · ${cloud.user.email} · ${cloud.error || "synced " + ago(cloud.lastSync)}`;
+}
+
+A.cloudSheet = () => {
+  if (!cloud.user) {
+    openSheet(`<h3>Cloud backup</h3><p>Sign in with Google and your prayers, amal, qada and settings are saved to your own private space in the cloud. They sync automatically, and signing in on a new phone brings everything back.</p>
+    <div class="cta"><button class="btn primary" onclick="A.cloudSignIn()">Sign in with Google</button></div>
+    <p class="note">Only you can read your data. It is stored in Firebase, Google's app database.</p>`);
+    return;
+  }
+  openSheet(`<h3>Cloud backup</h3><p>Signed in as ${esc(cloud.user.email)}. ${cloud.error ? esc(cloud.error) : "Last synced " + ago(cloud.lastSync) + "."}</p>
+  <div class="cta"><button class="btn ghost" onclick="A.cloudSignOut()">Sign out</button><button class="btn primary" onclick="A.cloudSync()">Sync now</button></div>
+  <p class="note">Signing out keeps everything on this phone. Changes stop syncing until you sign in again.</p>`);
+};
+A.cloudSignIn = async () => {
+  try { await signIn(); closeSheet(); toast(cloud.error || "Signed in · backup is on"); }
+  catch (e) { console.warn("sign-in", e); toast("Sign-in didn't finish. Try again."); }
+};
+A.cloudSync = async () => { await sync(); closeSheet(); toast(cloud.error || "Synced"); };
+A.cloudSignOut = async () => { await signOut(); closeSheet(); toast("Signed out · data kept on this phone"); };
 
 /* ---------- render ---------- */
 function renderSettings() {
@@ -129,6 +165,8 @@ function renderSettings() {
   $("#goalSettingLabel").textContent = `${S.qada.goal} prayers, ${S.qada.fastGoal} fasts`;
   $("#nameLabel").textContent = S.profile.name || "Not set";
   $("#lockRow").style.display = isNative() ? "flex" : "none";
+  $("#cloudRow").style.display = cloud.available ? "flex" : "none";
+  $("#cloudLabel").textContent = cloudStatus();
   $("#remindNote").textContent = isNative() ? "" : "shown in the app on this device";
 }
 

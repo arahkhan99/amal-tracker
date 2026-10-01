@@ -8,6 +8,12 @@
   "plugins": {
     "LocalNotifications": {
       "iconColor": "#0F3D2E"
+    },
+    "FirebaseAuthentication": {
+      "skipNativeAuth": true,
+      "providers": [
+        "google.com"
+      ]
     }
   }
 }

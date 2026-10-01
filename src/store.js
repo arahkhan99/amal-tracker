@@ -78,6 +78,7 @@ export function setPrayer(S, key, p, status, now = new Date()) {
     S.qada.addedLog[today] = (S.qada.addedLog[today] || 0) + 1;
   }
   if (status) day.prayers[p] = status; else delete day.prayers[p];
+  day.u = Date.now();
   return was;
 }
 
@@ -85,6 +86,7 @@ export function setAmal(S, key, id, done, detail = "") {
   const day = ensureDay(S, key);
   if (done) day.amal[id] = { done: true, detail };
   else delete day.amal[id];
+  day.u = Date.now();
 }
 
 export function monthLog(S, now = new Date()) {
@@ -122,4 +124,26 @@ export function lastDetail(S, id, beforeKey, strict = true) {
     if (a?.done && a.detail) return { key: k, detail: a.detail };
   }
   return null;
+}
+
+/* ---------- cloud merge ---------- */
+/**
+ * Combine this phone's state with the cloud copy. Each day keeps whichever side edited it last
+ * (day.u); everything else (profile, settings, amal list, qada) comes from the side saved last.
+ * A side that hasn't finished onboarding never overrides one that has.
+ */
+export function mergeStates(local, remote) {
+  if (!remote) return local;
+  if (!local.profile.onboarded && remote.profile?.onboarded) return normalize(remote);
+  if (local.profile.onboarded && !remote.profile?.onboarded) return local;
+  const newer = (remote.updatedAt || 0) > (local.updatedAt || 0) ? normalize(remote) : local;
+  const out = JSON.parse(JSON.stringify(newer));
+  out.days = {};
+  for (const k of new Set([...Object.keys(local.days), ...Object.keys(remote.days || {})])) {
+    const a = local.days[k], b = remote.days?.[k];
+    out.days[k] = !a ? b : !b ? a : (b.u || 0) > (a.u || 0) ? b : (a.u || 0) > (b.u || 0) ? a : newer === local ? a : b;
+  }
+  out.createdKey = [local.createdKey, remote.createdKey].filter(Boolean).sort()[0];
+  out.updatedAt = Math.max(local.updatedAt || 0, remote.updatedAt || 0);
+  return out;
 }

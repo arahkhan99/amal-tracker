@@ -1,5 +1,12 @@
 apply plugin: 'com.android.application'
 
+// Permanent signing key so every build (local or GitHub) installs over the previous one.
+// android/keystore.properties is not committed; the key lives in C:/Users/chito/amal-tracker-signing
+// and in the KEYSTORE_* GitHub secrets.
+def keystoreProps = new Properties()
+def keystorePropsFile = rootProject.file('keystore.properties')
+if (keystorePropsFile.exists()) keystorePropsFile.withInputStream { keystoreProps.load(it) }
+
 android {
     namespace = "com.amaltracker.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +14,9 @@ android {
         applicationId "com.amaltracker.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // Builds pass a number that only ever grows (minutes since 2026), so each update installs over the last
+        versionCode((System.getenv('APP_VERSION_CODE') ?: '1') as Integer)
+        versionName(System.getenv('APP_VERSION_NAME') ?: "1.0")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +24,22 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (keystoreProps['storeFile']) {
+            permanent {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
     buildTypes {
+        debug {
+            if (keystoreProps['storeFile']) signingConfig signingConfigs.permanent
+        }
         release {
+            if (keystoreProps['storeFile']) signingConfig signingConfigs.permanent
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

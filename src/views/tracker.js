@@ -1,4 +1,4 @@
-import { S, UI, A, $, NOW, onRender, render } from "../app.js";
+import { S, UI, A, $, NOW, onRender, render, commit } from "../app.js";
 import * as store from "../store.js";
 import { PRAYERS, DOW, MON, dkey, addDays } from "../util.js";
 import { dayPct } from "../stats.js";
@@ -18,7 +18,8 @@ function wireNote() {
     noteTimer = setTimeout(() => {
       const day = store.ensureDay(S, key);
       day.note = ta.value;
-      store.save(S);
+      day.u = Date.now();
+      commit();
     }, 400);
   };
 }

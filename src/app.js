@@ -20,18 +20,32 @@ const renderers = [];
 export function onRender(fn) { renderers.push(fn); }
 export function render() { for (const r of renderers) r(); }
 
+const commitHooks = [];
+/** Run after every user change (cloud sync listens here). */
+export function onCommit(fn) { commitHooks.push(fn); }
+
 /** Persist, refresh reminders and redraw. */
 export function commit() {
+  S.updatedAt = Date.now();
   store.save(S);
   reschedule(S);
   render();
+  for (const h of commitHooks) h();
 }
 
 /** Replace the whole state object's contents (restore / reset). */
 export function replaceState(next) {
+  applyState(next);
+  commit();
+}
+
+/** Swap in a new state without counting it as a user change (used when merging the cloud copy). */
+export function applyState(next) {
   for (const k of Object.keys(S)) delete S[k];
   Object.assign(S, next);
-  commit();
+  store.save(S);
+  reschedule(S);
+  render();
 }
 
 export function go(v) {

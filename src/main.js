@@ -15,6 +15,7 @@ import "./views/qada.js";
 import "./views/progress.js";
 import "./views/settings.js";
 import { startOnboarding } from "./views/onboarding.js";
+import { initCloud } from "./cloud.js";
 
 $$("#nav button").forEach(b => (b.onclick = () => go(b.dataset.v)));
 $("#scrim").onclick = e => { if (e.target.id === "scrim") closeSheet(); };
@@ -50,6 +51,7 @@ document.addEventListener("visibilitychange", () => {
 if (S.profile.onboarded) go("home"); else startOnboarding();
 lockIfNeeded();
 reschedule(S);
+initCloud().then(render).catch(e => console.warn("cloud", e));
 // Capacitor injects the safe-area insets shortly after load; re-pick the status bar icon colour then
 setTimeout(() => setStatusBar(UI.view === "home" || UI.view === "onboard"), 1500);
 

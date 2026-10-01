@@ -43,6 +43,7 @@ const clickText = (sel, text) => ev(`const el = [...document.querySelectorAll(${
 const fill = (sel, v) => ev(`const el = document.querySelector(${JSON.stringify(sel)}); el.value = ${JSON.stringify(v)}; el.dispatchEvent(new Event("input"));`);
 const state = () => ev('return JSON.parse(localStorage.getItem("amal-tracker-v1") || "null");');
 
+for (let i = 0; i < 60 && !(await ev("return !!document.querySelector('#obName')")); i++) await wait(500);
 await fill("#obName", "Raheem");
 await clickText("button", "Continue"); await wait(600);
 await clickText("button", "Use my location");

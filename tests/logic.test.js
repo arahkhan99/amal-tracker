@@ -204,3 +204,42 @@ describe("misc", () => {
     expect(reflectionFor(NOW).en).toBeTruthy();
   });
 });
+
+describe("cloud merge", () => {
+  const base = () => { const S = fresh(); S.profile.onboarded = true; S.updatedAt = 1000; return S; };
+
+  it("keeps the most recently edited version of each day", () => {
+    const phone = base(), cloudCopy = base();
+    phone.days["2026-09-20"] = { prayers: { Fajr: "ontime" }, amal: {}, note: "", u: 200 };
+    cloudCopy.days["2026-09-20"] = { prayers: { Fajr: "missed" }, amal: {}, note: "", u: 100 };
+    cloudCopy.days["2026-09-21"] = { prayers: { Isha: "congregation" }, amal: {}, note: "", u: 150 };
+    const m = store.mergeStates(phone, cloudCopy);
+    expect(m.days["2026-09-20"].prayers.Fajr).toBe("ontime");
+    expect(m.days["2026-09-21"].prayers.Isha).toBe("congregation");
+  });
+
+  it("takes settings and qada from whichever side saved last", () => {
+    const phone = base(), cloudCopy = base();
+    phone.qada.Fajr = 5; phone.updatedAt = 1000;
+    cloudCopy.qada.Fajr = 9; cloudCopy.updatedAt = 2000;
+    expect(store.mergeStates(phone, cloudCopy).qada.Fajr).toBe(9);
+    phone.updatedAt = 3000;
+    expect(store.mergeStates(phone, cloudCopy).qada.Fajr).toBe(5);
+  });
+
+  it("a fresh phone restores the whole backup; a backup never overwrites with an unfinished setup", () => {
+    const freshPhone = fresh(); freshPhone.updatedAt = 9999;
+    const cloudCopy = base(); cloudCopy.profile.name = "Raheem";
+    expect(store.mergeStates(freshPhone, cloudCopy).profile.name).toBe("Raheem");
+    const unfinished = fresh(); unfinished.updatedAt = 9999;
+    const phone = base(); phone.profile.name = "Me";
+    expect(store.mergeStates(phone, unfinished).profile.name).toBe("Me");
+    expect(store.mergeStates(phone, null)).toBe(phone);
+  });
+
+  it("logging stamps the day so merges can tell which is newer", () => {
+    const S = fresh();
+    store.setPrayer(S, "2026-09-22", "Fajr", "ontime", NOW);
+    expect(S.days["2026-09-22"].u).toBeGreaterThan(0);
+  });
+});

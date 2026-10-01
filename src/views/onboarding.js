@@ -2,6 +2,7 @@ import { S, UI, A, $, NOW, todayKey, onRender, commit, go, toast } from "../app.
 import { PRAYERS, esc } from "../util.js";
 import { currentPosition, cityName } from "../platform.js";
 import { FALLBACK_LOCATION } from "../times.js";
+import { cloud, signIn } from "../cloud.js";
 
 let step = 0;
 const STEPS = 4;
@@ -15,9 +16,10 @@ function frame(body, primary, secondary = "") {
 }
 
 function stepName() {
-  return frame(`<h1>Assalamu alaikum</h1><p class="lead">Track your five prayers, your daily amal and the qada you're making up, all on this phone. Nothing leaves your device.</p>
+  return frame(`<h1>Assalamu alaikum</h1><p class="lead">Track your five prayers, your daily amal and the qada you're making up, all on this phone. Nothing leaves it unless you turn on cloud backup.</p>
     <div class="panel"><div class="field"><label>What should we call you?</label><input id="obName" value="${esc(S.profile.name)}" placeholder="Your name" autocomplete="given-name"></div></div>`,
-    `<button class="btn primary" onclick="A.obNext()">Continue</button>`);
+    `<button class="btn primary" onclick="A.obNext()">Continue</button>`,
+    cloud.available ? `<button class="btn ghost" onclick="A.obRestore()">Restore my backup (sign in with Google)</button>` : "");
 }
 
 function stepLocation() {
@@ -52,7 +54,7 @@ function stepGoal() {
 let drawn = "";
 function draw() {
   // Only redraw when the step or location changes, so the minute timer doesn't wipe what's being typed
-  const sig = `${step}|${JSON.stringify(S.settings.location)}`;
+  const sig = `${step}|${JSON.stringify(S.settings.location)}|${cloud.available}`;
   if (sig === drawn && $("#v-onboard").firstChild) return;
   drawn = sig;
   $("#v-onboard").innerHTML = [stepName, stepLocation, stepQada, stepGoal][step]();
@@ -62,6 +64,13 @@ A.obNext = () => {
   if (step === 0) { S.profile.name = $("#obName").value.trim(); }
   step = Math.min(STEPS - 1, step + 1);
   commit();
+};
+A.obRestore = async () => {
+  try {
+    await signIn();
+    if (S.profile.onboarded) { step = 0; drawn = ""; go("home"); toast("Welcome back · your data is restored"); }
+    else toast("Signed in. No backup yet, so let's set things up.");
+  } catch (e) { console.warn("restore", e); toast("Sign-in didn't finish. Try again."); }
 };
 A.obGps = async () => {
   toast("Finding your location…");

@@ -1,0 +1,67 @@
+name: Android app
+# On every push to main: test, build a signed APK, send it to your phone through
+# Firebase App Distribution, and attach it to the GitHub release.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: android
+  cancel-in-progress: true
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npx cap sync android
+
+      - name: Signing key and Firebase config from secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > android/release.keystore
+          printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=amal\nkeyPassword=%s\n' "$PWD/android/release.keystore" "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" > android/keystore.properties
+          echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+
+      - name: Build signed APK
+        working-directory: android
+        run: |
+          # Minutes since 1 Jan 2026: always higher than the last build, so updates install over it
+          export APP_VERSION_CODE=$(( ($(date -u +%s) - 1767225600) / 60 ))
+          export APP_VERSION_NAME=$(date -u +%Y.%m.%d.%H%M)
+          echo "APP_VERSION_NAME=$APP_VERSION_NAME" >> "$GITHUB_ENV"
+          ./gradlew assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk ../PrayerTracker.apk
+
+      - name: Send to your phone (Firebase App Distribution)
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_ANDROID_APP_ID: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
+          TESTER_EMAIL: ${{ secrets.TESTER_EMAIL }}
+        run: |
+          echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          git log -1 --pretty=%B > "$RUNNER_TEMP/notes.txt"
+          npx firebase appdistribution:distribute PrayerTracker.apk \
+            --app "$FIREBASE_ANDROID_APP_ID" --testers "$TESTER_EMAIL" \
+            --release-notes-file "$RUNNER_TEMP/notes.txt"
+
+      - name: Attach to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload v1.0.0 PrayerTracker.apk --clobber

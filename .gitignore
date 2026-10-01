@@ -8,3 +8,7 @@ android/.gradle/
 android/local.properties
 android/app/src/main/assets/public/
 android/capacitor-cordova-android-plugins/
+firebase-debug.log
+*.keystore
+android/app/google-services.json
+android/keystore.properties

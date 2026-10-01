@@ -115,12 +115,13 @@
         <div class="row"><div class="t"><b>Weekly seerah moment</b><small>Sent Friday morning</small></div><button class="switch" data-set="seerah" aria-label="Weekly seerah moment"></button></div>
       </div></div>
       <div class="sec"><h2>Account</h2><div class="card">
+        <button class="row" id="cloudRow" onclick="A.cloudSheet()"><div class="t"><b>Cloud backup</b><small id="cloudLabel"></small></div><span class="chev">›</span></button>
         <button class="row" onclick="A.nameSheet()"><div class="t"><b>Your name</b><small id="nameLabel"></small></div><span class="chev">›</span></button>
         <div class="row" id="lockRow"><div class="t"><b>Lock app with fingerprint or face</b><small>Asks each time the app opens</small></div><button class="switch" data-set="lock" aria-label="Lock app"></button></div>
         <button class="row" onclick="A.exportCsv()"><div class="t"><b>Export my data</b><small>CSV of every log</small></div><span class="chev">›</span></button>
         <button class="row" onclick="A.backup()"><div class="t"><b>Back up</b><small>Save everything to a file you can restore later</small></div><span class="chev">›</span></button>
         <button class="row" onclick="A.restore()"><div class="t"><b>Restore from backup</b><small>Replace this device's data with a backup file</small></div><span class="chev">›</span></button>
-        <button class="row" onclick="A.resetSheet()"><div class="t"><b style="color:var(--miss)">Reset all data</b><small>Everything is stored only on this device</small></div><span class="chev">›</span></button>
+        <button class="row" onclick="A.resetSheet()"><div class="t"><b style="color:var(--miss)">Reset all data</b><small>Delete everything from this phone</small></div><span class="chev">›</span></button>
       </div></div>
       <div class="space"></div>
     </section>
