@@ -2,7 +2,7 @@
   "name": "amal-tracker",
   "version": "1.0.0",
   "private": true,
-  "description": "Prayer & Amal Tracker: offline prayer, amal and qada tracker for Android and iPhone",
+  "description": "Zad: offline prayer, amal and qada tracker for Android and iPhone",
   "type": "module",
   "scripts": {
     "dev": "vite",

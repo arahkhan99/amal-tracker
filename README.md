@@ -1,6 +1,6 @@
-# Prayer & Amal Tracker
+# Zad
 
-Offline tracker for the five daily prayers, daily amal and qada (makeup prayers and fasts), built from the "Prayer & Amal Tracker" prototype. Everything is stored on your phone. There are no accounts and no server.
+Offline tracker for the five daily prayers, daily amal and qada (makeup prayers and fasts), built from the "Prayer & Amal Tracker" prototype and named Zad. Everything is stored on your phone, with optional Google sign-in to back up and sync through Firebase.
 
 - **Android:** a real app (`PrayerTracker.apk`) with reminders, GPS prayer times and a fingerprint lock.
 - **iPhone:** the same app as a Home Screen web app (PWA). It works offline, but reminders only show inside the app because iOS doesn't let web apps schedule notifications.
@@ -9,8 +9,8 @@ Offline tracker for the five daily prayers, daily amal and qada (makeup prayers 
 
 **Android (updates arrive automatically)**
 1. Every push to `main` runs `.github/workflows/android.yml`, which tests and builds the app, signs it with the permanent key, and sends it through **Firebase App Distribution**. A copy is also attached to https://github.com/arahkhan99/amal-tracker/releases/latest.
-2. The first time, open the Firebase invite email on the phone and follow it to install **App Tester**. Install Amal Tracker from there. Later updates show up in App Tester (and by email) for a one-tap install, and your data is kept.
-3. Open **Amal Tracker**, allow location and notifications, and turn on **Settings → Cloud backup** (sign in with Google) so your logs are backed up and sync.
+2. The first time, open the Firebase invite email on the phone and follow it to install **App Tester**. Install Zad from there. Later updates show up in App Tester (and by email) for a one-tap install, and your data is kept.
+3. Open **Zad**, allow location and notifications, and turn on **Settings → Cloud backup** (sign in with Google) so your logs are backed up and sync.
 
 The signing key is in `C:/Users/chito/amal-tracker-signing` and in the repo's GitHub secrets. Keep that folder safe: without the key, updates can't install over the app. Firebase project: `amal-tracker-cfe23`.
 

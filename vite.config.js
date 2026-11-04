@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["icons/*.png"],
       manifest: {
-        name: "Prayer & Amal Tracker",
-        short_name: "Amal Tracker",
+        name: "Zad",
+        short_name: "Zad",
         description: "Track your five prayers, daily amal and qada. Works offline; everything stays on your phone.",
         theme_color: "#0F3D2E",
         background_color: "#F8F4EA",

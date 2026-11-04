@@ -102,5 +102,5 @@ export async function biometryAvailable() {
 
 export async function authenticate() {
   const { BiometricAuth } = await import("@aparajita/capacitor-biometric-auth");
-  await BiometricAuth.authenticate({ reason: "Unlock your tracker", cancelTitle: "Cancel", allowDeviceCredential: true, androidTitle: "Prayer & Amal Tracker", androidSubtitle: "Unlock to continue" });
+  await BiometricAuth.authenticate({ reason: "Unlock your tracker", cancelTitle: "Cancel", allowDeviceCredential: true, androidTitle: "Zad", androidSubtitle: "Unlock to continue" });
 }

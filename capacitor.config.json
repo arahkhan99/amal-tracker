@@ -1,6 +1,6 @@
 {
   "appId": "com.amaltracker.app",
-  "appName": "Amal Tracker",
+  "appName": "Zad",
   "webDir": "dist",
   "android": {
     "backgroundColor": "#F8F4EA"

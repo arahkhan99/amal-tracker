@@ -1,4 +1,4 @@
-// Firebase web config for the "Amal Tracker" project. These values identify the project and are
+// Firebase web config for Zad (Firebase project "Zad App", id amal-tracker-cfe23). These values identify the project and are
 // safe to ship in the app; access to data is controlled by firestore.rules (each user can only
 // reach their own users/{uid} documents).
 export const firebaseConfig = {
