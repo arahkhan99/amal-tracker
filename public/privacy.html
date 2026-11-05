@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zad Privacy Policy</title>
+<meta name="description" content="How Zad, the prayer, amal and qada tracker, handles your data.">
+<meta name="theme-color" content="#0F3D2E">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Manrope:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="legal.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="https://arahkhan99.github.io/amal-tracker/">Zad<span>.</span></a>
+  <a class="open-app" href="https://arahkhan99.github.io/amal-tracker/">Zad home</a>
+</div></header>
+
+<main class="wrap">
+  <h1>Privacy Policy</h1>
+  <p class="meta">Effective {{EFFECTIVE_DATE}}</p>
+
+  <p class="lead">Zad is a free tracker for the five daily prayers, daily amal and qada. It is built to keep your worship private: by default everything stays on your device, and nothing is sent anywhere unless you turn on cloud backup or use a feature that needs the internet, as described below.</p>
+
+  <div class="card">
+    <p><strong>In short:</strong> no ads, no analytics, no tracking, and we never sell or share your data for advertising. Cloud backup is optional and your backup can only be read by your own Google account.</p>
+  </div>
+
+  <p>This policy covers the Zad phone app for Android and iPhone (app ID <code>com.zad.app</code> on both), coming to Google Play and the App Store, and the Zad pages at <a href="https://arahkhan99.github.io/amal-tracker/">arahkhan99.github.io/amal-tracker</a>. "We" means the developer of Zad. Questions: <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a>.</p>
+
+  <h2>What stays on your device</h2>
+  <p>Zad saves its data in the app's own storage on your phone. This includes:</p>
+  <ul>
+    <li>The name you type for the greeting on Home (optional).</li>
+    <li>Your prayer logs and daily amal logs, including any counts or notes you add (for example a Quran position or a sadaqah note), and your own amal list.</li>
+    <li>Qada balances for prayers and fasts, your monthly goals and their history.</li>
+    <li>Your settings: reminder choices, the prayer-time calculation and Asr methods, app lock on or off, and your approximate location (map coordinates rounded to about 1&nbsp;km) with a city label.</li>
+    <li>If you sign in to cloud backup: the version of the Terms of use you agreed to and the date and time you agreed.</li>
+  </ul>
+  <p>We cannot see this data. It is removed when you use <strong>Settings → Reset all data</strong> or uninstall the app.</p>
+  <p>Files you create with <strong>Settings → Back up</strong> or <strong>Export my data</strong> (CSV) are saved or shared wherever you choose (for example your Files app or an email). Where they go after that is up to you.</p>
+
+  <h2>Optional cloud backup</h2>
+  <p>If you turn on <strong>Settings → Cloud backup</strong>, you sign in with your Google account and your tracker data is backed up and synced between your devices. This uses two Google services from Firebase:</p>
+  <ul>
+    <li><strong>Firebase Authentication</strong> handles the Google sign-in. It keeps your Google account's email address, a user ID, the name and profile-photo link that Google shares at sign-in, and when you created the account and last signed in.</li>
+    <li><strong>Cloud Firestore</strong> stores a copy of the same tracker data listed above (name, logs and notes, amal list, qada, settings including your approximate location and city label, and your terms agreement) under your user ID. It is hosted on Google Cloud in the United States (multi-region <code>nam5</code>).</li>
+  </ul>
+  <p>Before you sign in, the app shows "By signing in you agree to the Terms of use and Privacy policy". When sign-in succeeds, Zad saves the terms version and the date and time you agreed in your profile, which is backed up with the rest of your data. If the terms change, you are asked to agree again.</p>
+  <p>Security rules on the database allow each signed-in account to read and write only its own data. No other user can access it, and the app itself has no feature to look at other people's data. Data travels over encrypted connections (HTTPS/TLS) and Google encrypts it at rest.</p>
+  <p><strong>Sign out</strong> stops syncing on that phone and keeps the data on the phone. Your cloud copy stays until you delete it.</p>
+  <p><strong>Settings → Delete my account</strong> (shown while you are signed in to cloud backup) permanently deletes your cloud backup and your Zad sign-in from inside the app. You can also ask us by email. See <a href="delete-account.html">Delete your account and data</a>.</p>
+
+  <h2>Location</h2>
+  <p>Prayer times are calculated on your device from your location. You can allow location access or type a city instead.</p>
+  <ul>
+    <li><strong>Approximate location only:</strong> when you choose to use your location, Zad reads your coordinates once from the phone and straight away rounds them to two decimal places, which is within about 1&nbsp;km of where you are. Only this rounded, approximate location is saved in your settings, backed up or sent anywhere. The precise reading from your phone is not stored or sent anywhere. A city you pick from search is rounded the same way, and a location saved by an earlier version of Zad is rounded the next time the app opens. The calculation happens on the device. Zad does not track your location in the background.</li>
+    <li><strong>City name:</strong> when you are online, the rounded coordinates are sent once to <strong>BigDataCloud</strong>'s free reverse-geocoding service to look up the name of your city. If you are offline, Zad shows "Your location" instead.</li>
+    <li><strong>City search:</strong> if you search for a city, the text you type is sent to the <strong>Open-Meteo</strong> geocoding service to find matching places.</li>
+  </ul>
+  <p>These services receive the request and, like any website, your IP address. We do not send them your name, account or logs.</p>
+
+  <h2>Reminders and app lock</h2>
+  <p>Prayer reminders are scheduled on the phone itself. They are not sent through any server. The optional app lock uses your phone's own fingerprint, face or screen-lock prompt. Zad only receives "unlocked" or "not unlocked" and never sees your fingerprint or face data.</p>
+
+  <h2>What we don't do</h2>
+  <ul>
+    <li>No advertising and no advertising IDs.</li>
+    <li>No analytics, crash-reporting or tracking tools.</li>
+    <li>We do not sell your data or share it with anyone for marketing.</li>
+    <li>We do not access your contacts, photos, microphone or camera.</li>
+  </ul>
+
+  <h2>Services that receive data</h2>
+  <div class="table"><table>
+    <thead><tr><th>Service</th><th>What it receives</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td>Firebase Authentication (Google)</td><td>Google account email, user ID, name and photo link, sign-in times</td><td>Only if you turn on cloud backup</td></tr>
+      <tr><td>Cloud Firestore (Google)</td><td>Your tracker data and settings, including your approximate location and your terms agreement</td><td>Only while signed in to cloud backup</td></tr>
+      <tr><td>BigDataCloud</td><td>Your approximate coordinates (rounded to about 1&nbsp;km)</td><td>When you set your location while online</td></tr>
+      <tr><td>Open-Meteo</td><td>The city name you search for</td><td>When you search for a city</td></tr>
+      <tr><td>GitHub Pages</td><td>Standard web request details (such as IP address)</td><td>Only when you load these pages</td></tr>
+      <tr><td>Google Fonts</td><td>Standard web request details</td><td>When you open these policy pages (the app itself bundles its fonts)</td></tr>
+      <tr><td>Firebase App Distribution (Google)</td><td>Your email address and basic device details, if you are invited as a tester</td><td>Installing the Android app during testing</td></tr>
+    </tbody>
+  </table></div>
+  <p>Each of these providers handles data under its own privacy policy. We may also disclose data if the law requires it.</p>
+
+  <h2>How long data is kept</h2>
+  <p>Data on your device stays until you reset the app or uninstall it. Cloud backup data stays until you delete it with <strong>Settings → Delete my account</strong>, which removes it straight away, or ask us to. We delete it, and your sign-in account, within 30 days of an email request.</p>
+
+  <h2>Your choices and rights</h2>
+  <ul>
+    <li>Use Zad without signing in. Everything then stays on your device.</li>
+    <li>Turn location off and type a city instead.</li>
+    <li>Export your data at any time with <strong>Settings → Back up</strong>.</li>
+    <li>Delete your cloud backup and sign-in at any time with <strong>Settings → Delete my account</strong>.</li>
+    <li>Ask us for a copy of your cloud data, a correction, or its deletion by emailing <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a>.</li>
+  </ul>
+
+  <h2>Children</h2>
+  <p>Zad is not directed at children under 13, and we do not knowingly collect personal information from them. If you think a child has used cloud backup, contact us and we will delete the data.</p>
+
+  <h2>Changes</h2>
+  <p>If this policy changes, we will update this page and its effective date. Significant changes will also be mentioned in the <a href="release-notes.html">release notes</a>.</p>
+
+  <h2>Contact</h2>
+  <p>Email <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a>.</p>
+</main>
+
+<footer class="foot"><div class="wrap">
+  <nav aria-label="Zad pages">
+    <a href="privacy.html" aria-current="page">Privacy</a>
+    <a href="terms.html">Terms</a>
+    <a href="support.html">Support</a>
+    <a href="delete-account.html">Delete account</a>
+    <a href="release-notes.html">Release notes</a>
+    <a href="https://arahkhan99.github.io/amal-tracker/">Zad home</a>
+  </nav>
+  <div>Zad: prayer, amal and qada tracker</div>
+</div></footer>
+</body>
+</html>

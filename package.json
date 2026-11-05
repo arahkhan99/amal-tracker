@@ -9,9 +9,11 @@
     "build": "vite build",
     "preview": "vite preview --port 4173",
     "test": "vitest run",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-zad \"vitest run tests/rules.test.js\"",
     "shots": "node scripts/screenshots.mjs",
     "check:emulator": "node scripts/emulator-check.mjs",
-    "build:android": "vite build && npx cap sync android && node scripts/build-apk.mjs"
+    "build:android": "vite build && npx cap sync android && node scripts/build-apk.mjs",
+    "build:ios": "vite build && npx cap sync ios"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",
@@ -20,6 +22,7 @@
     "@capacitor/core": "^8.5.2",
     "@capacitor/filesystem": "^8.1.3",
     "@capacitor/geolocation": "^8.2.2",
+    "@capacitor/ios": "^8.6.0",
     "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/share": "^8.0.2",
     "@capacitor/status-bar": "^8.0.3",
@@ -29,8 +32,9 @@
     "firebase": "^12.19.0"
   },
   "devDependencies": {
-    "@capacitor/android": "^8.5.2",
-    "@capacitor/cli": "^8.5.2",
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "firebase-tools": "^15.31.0",
     "playwright": "^1.63.0",
     "vite": "^8.3.0",

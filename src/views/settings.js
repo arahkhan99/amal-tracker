@@ -4,7 +4,9 @@ import { PRAYERS, esc } from "../util.js";
 import { METHODS, ASR, FALLBACK_LOCATION } from "../times.js";
 import { isNative, currentPosition, cityName, searchCity, saveFile, pickFile, biometryAvailable, authenticate } from "../platform.js";
 import { STATUS } from "./home.js";
-import { cloud, signIn, signOut, sync } from "../cloud.js";
+import { cloud, signIn, signOut, sync, deleteAccount, keepAccount, recordConsent } from "../cloud.js";
+import { Capacitor } from "@capacitor/core";
+import { reschedule, askForExactAlarms, exactAlarmStatus } from "../notify.js";
 
 /* ---------- switches ---------- */
 $$("#v-settings .switch[data-set]").forEach(sw => {
@@ -130,6 +132,7 @@ function ago(t) {
 }
 function cloudStatus() {
   if (!cloud.user) return "Off · sign in with Google to back up and sync";
+  if (cloud.deletePending === cloud.user.uid) return `Paused · ${cloud.user.email} · account deletion didn't finish`;
   if (cloud.syncing) return `On · ${cloud.user.email} · syncing…`;
   return `On · ${cloud.user.email} · ${cloud.error || "synced " + ago(cloud.lastSync)}`;
 }
@@ -137,8 +140,16 @@ function cloudStatus() {
 A.cloudSheet = () => {
   if (!cloud.user) {
     openSheet(`<h3>Cloud backup</h3><p>Sign in with Google and your prayers, amal, qada and settings are saved to your own private space in the cloud. They sync automatically, and signing in on a new phone brings everything back.</p>
+    <p class="note legal">${consentLine()}</p>
     <div class="cta"><button class="btn primary" onclick="A.cloudSignIn()">Sign in with Google</button></div>
     <p class="note">Only you can read your data. It is stored in Firebase, Google's app database.</p>`);
+    return;
+  }
+  if (cloud.deletePending === cloud.user.uid) {
+    openSheet(`<h3>Cloud backup</h3><p>Signed in as ${esc(cloud.user.email)}. Deleting your account didn't finish, so sync is paused and nothing is uploaded.</p>
+    <div class="cta"><button class="btn danger" onclick="A.deleteSheet()">Delete my account</button></div>
+    <div class="cta"><button class="btn ghost" onclick="A.cloudSignOut()">Sign out</button><button class="btn ghost" onclick="A.keepAccount()">Keep my account</button></div>
+    <p class="note">Keep my account turns sync back on and uploads this phone's data again.</p>`);
     return;
   }
   openSheet(`<h3>Cloud backup</h3><p>Signed in as ${esc(cloud.user.email)}. ${cloud.error ? esc(cloud.error) : "Last synced " + ago(cloud.lastSync) + "."}</p>
@@ -151,12 +162,94 @@ A.cloudSignIn = async () => {
 };
 A.cloudSync = async () => { await sync(); closeSheet(); toast(cloud.error || "Synced"); };
 A.cloudSignOut = async () => { await signOut(); closeSheet(); toast("Signed out · data kept on this phone"); };
+A.keepAccount = async () => { closeSheet(); await keepAccount(); toast(cloud.error || "Sync is back on"); };
+
+/* ---------- terms consent ---------- */
+// Shown once when a signed-in user hasn't agreed to the current terms (e.g. after they change)
+A.consentSheet = () => {
+  const updated = !!S.profile.consent;
+  openSheet(`<h3>${updated ? "Updated terms" : "Terms of use"}</h3><p>${updated ? "The Terms of use and Privacy policy have changed." : "Cloud backup now asks you to agree to the Terms of use and Privacy policy."} Please read them and agree to keep cloud backup on.</p>
+  <p class="note legal">${links()}</p>
+  <div class="cta"><button class="btn ghost" onclick="A.consentLater()">Not now</button><button class="btn primary" onclick="A.consentAgree()">Agree</button></div>
+  <p class="note">Not now signs you out of cloud backup. Everything stays on this phone.</p>`);
+};
+A.consentAgree = () => { recordConsent(); closeSheet(); toast("Thanks · cloud backup stays on"); };
+A.consentLater = async () => { closeSheet(); await signOut().catch(() => {}); toast("Signed out · data kept on this phone"); };
+
+/* ---------- delete account ---------- */
+A.deleteSheet = () => {
+  if (!cloud.user) return;
+  openSheet(`<h3>Delete your account?</h3>
+  <p>This permanently deletes your Zad cloud backup (everything stored under your account) and your Zad sign-in. It can't be undone.</p>
+  <p>The data on this phone is kept unless you also choose to clear it below.</p>
+  <div class="cta"><button class="btn ghost" onclick="A.backup()">Back up first</button></div>
+  <label class="chk"><input type="checkbox" id="delLocal"><span><b>Also clear Zad on this phone</b><small>Every log, your qada balance and settings</small></span></label>
+  <p class="note err" id="delErr" role="alert"></p>
+  <div class="cta"><button class="btn ghost" onclick="A.closeSheet()">Cancel</button><button class="btn danger" id="delGo" onclick="A.deleteAccount()">Delete my account</button></div>`);
+};
+A.deleteAccount = async () => {
+  const go = $("#delGo"), err = $("#delErr"), clearLocal = !!$("#delLocal")?.checked;
+  if (navigator.onLine === false) { err.textContent = "You're offline. Connect to the internet and try again."; return; }
+  go.disabled = true; go.textContent = "Deleting…"; err.textContent = "";
+  try {
+    await deleteAccount();
+  } catch (e) {
+    console.warn("delete account", e);
+    go.disabled = false; go.textContent = "Try again";
+    err.textContent = e.step === "auth"
+      ? (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request" || /cancel/i.test(e.message)
+        ? "Your cloud backup was deleted. To delete your sign-in too, confirm with Google. Tap Try again."
+        : "Your cloud backup was deleted, but your sign-in wasn't. Sync is paused. Tap Try again.")
+      : "Couldn't delete your cloud backup. Sync is paused. Check your connection and tap Try again.";
+    toast(e.step === "auth" ? "Sign-in not deleted yet" : "Account not deleted");
+    return;
+  }
+  closeSheet();
+  if (clearLocal) { replaceState(store.defaultState()); A.startOnboarding(); }
+  toast("Your account and cloud backup were deleted");
+};
+
+/* ---------- about ---------- */
+// Policy pages live on the website. Inside the app the page is served from https://localhost,
+// so links point at the site itself; the system browser opens them (target=_blank).
+const SITE = "https://arahkhan99.github.io/amal-tracker/";
+export const pageUrl = page => (isNative() ? SITE + page : page);
+const links = () => `<a href="${pageUrl("terms.html")}" target="_blank" rel="noopener">Terms of use</a> · <a href="${pageUrl("privacy.html")}" target="_blank" rel="noopener">Privacy policy</a>`;
+/** The line shown before every Google sign-in (agreeing is recorded as TERMS_VERSION once sign-in succeeds). */
+export const consentLine = () => `By signing in you agree to the <a href="${pageUrl("terms.html")}" target="_blank" rel="noopener">Terms of use</a> and <a href="${pageUrl("privacy.html")}" target="_blank" rel="noopener">Privacy policy</a>.`;
+export const APP_VERSION = typeof __APP_VERSION__ === "undefined" ? "dev" : __APP_VERSION__;
+$("#versionLabel").textContent = `Version ${APP_VERSION}`;
+$$("#v-settings a[data-page]").forEach(a => { a.href = pageUrl(a.dataset.page); });
+
+/* ---------- on-time reminders (Android 12+) ---------- */
+// Android 14+ turns exact alarms off by default; without them reminders can arrive a few minutes late.
+let exactAllowed = null;
+async function refreshExact() {
+  if (Capacitor.getPlatform() !== "android") return;
+  const v = await exactAlarmStatus();
+  if (v !== exactAllowed) { exactAllowed = v; renderExact(); }
+}
+function renderExact() {
+  const row = $("#exactRow");
+  row.hidden = exactAllowed !== false; // only shown while on-time reminders are off
+  $("#exactLabel").textContent = "Off · reminders can be a few minutes late. Tap to allow";
+}
+A.exactAlarms = async () => {
+  exactAllowed = await askForExactAlarms();
+  renderExact();
+  reschedule(S);
+  toast(exactAllowed ? "Reminders will arrive on time" : "Still off · you can allow it under Alarms & reminders");
+};
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshExact(); });
 
 /* ---------- render ---------- */
 function renderSettings() {
   const st = S.settings;
-  $$("#v-settings .switch[data-set]").forEach(sw => sw.classList.toggle("on", !!st[sw.dataset.set]));
-  $$("#leadSeg button").forEach(x => x.classList.toggle("on", +x.dataset.m === st.leadMin));
+  $$("#v-settings .switch[data-set]").forEach(sw => {
+    sw.classList.toggle("on", !!st[sw.dataset.set]);
+    sw.setAttribute("aria-checked", String(!!st[sw.dataset.set]));
+  });
+  $$("#leadSeg button").forEach(x => { x.classList.toggle("on", +x.dataset.m === st.leadMin); x.setAttribute("aria-pressed", String(+x.dataset.m === st.leadMin)); });
   const loc = st.location;
   $("#locLabel").textContent = loc ? `${loc.label} · uses your location` : `Not set · using ${FALLBACK_LOCATION.label}`;
   $("#methodLabel").textContent = METHODS[st.method] || st.method;
@@ -165,8 +258,10 @@ function renderSettings() {
   $("#goalSettingLabel").textContent = `${S.qada.goal} prayers, ${S.qada.fastGoal} fasts`;
   $("#nameLabel").textContent = S.profile.name || "Not set";
   $("#lockRow").style.display = isNative() ? "flex" : "none";
+  if (exactAllowed === null) refreshExact();
   $("#cloudRow").style.display = cloud.available ? "flex" : "none";
   $("#cloudLabel").textContent = cloudStatus();
+  $("#deleteRow").style.display = cloud.available && cloud.user ? "flex" : "none";
   $("#remindNote").textContent = isNative() ? "" : "shown in the app on this device";
 }
 

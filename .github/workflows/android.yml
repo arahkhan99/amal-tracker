@@ -1,6 +1,6 @@
 name: Android app
-# On every push to main: test, build a signed APK, send it to your phone through
-# Firebase App Distribution, and attach it to the GitHub release.
+# On every push to main: test, build a signed APK and App Bundle, send the APK to your
+# phone through Firebase App Distribution, and attach both to the GitHub release.
 on:
   push:
     branches: [main]
@@ -25,6 +25,11 @@ jobs:
           java-version: 21
       - run: npm ci
       - run: npm test
+      - name: Version for this build
+        run: |
+          # Minutes since 1 Jan 2026: always higher than the last build, so updates install over it
+          echo "APP_VERSION_CODE=$(( ($(date -u +%s) - 1767225600) / 60 ))" >> "$GITHUB_ENV"
+          echo "APP_VERSION_NAME=$(date -u +%Y.%m.%d.%H%M)" >> "$GITHUB_ENV"
       - run: npm run build
       - run: npx cap sync android
 
@@ -41,12 +46,14 @@ jobs:
       - name: Build signed APK
         working-directory: android
         run: |
-          # Minutes since 1 Jan 2026: always higher than the last build, so updates install over it
-          export APP_VERSION_CODE=$(( ($(date -u +%s) - 1767225600) / 60 ))
-          export APP_VERSION_NAME=$(date -u +%Y.%m.%d.%H%M)
-          echo "APP_VERSION_NAME=$APP_VERSION_NAME" >> "$GITHUB_ENV"
           ./gradlew assembleRelease --no-daemon
-          cp app/build/outputs/apk/release/app-release.apk ../PrayerTracker.apk
+          cp app/build/outputs/apk/release/app-release.apk ../Zad.apk
+
+      - name: Build signed App Bundle (Google Play)
+        working-directory: android
+        run: |
+          ./gradlew bundleRelease --no-daemon
+          cp app/build/outputs/bundle/release/app-release.aab ../Zad.aab
 
       - name: Send to your phone (Firebase App Distribution)
         env:
@@ -57,11 +64,11 @@ jobs:
           echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
           git log -1 --pretty=%B > "$RUNNER_TEMP/notes.txt"
-          npx firebase appdistribution:distribute PrayerTracker.apk \
+          npx firebase appdistribution:distribute Zad.apk \
             --app "$FIREBASE_ANDROID_APP_ID" --testers "$TESTER_EMAIL" \
             --release-notes-file "$RUNNER_TEMP/notes.txt"
 
       - name: Attach to the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload v1.0.0 PrayerTracker.apk --clobber
+        run: gh release upload v1.0.0 Zad.apk Zad.aab --clobber

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zad</title>
+<meta name="description" content="Zad is a prayer, amal and qada tracker for Android and iPhone, coming to Google Play and the App Store.">
+<meta name="theme-color" content="#0F3D2E">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Manrope:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="legal.css">
+<style>
+  .hero { display: flex; align-items: center; gap: 16px; margin: 28px 0 18px; }
+  .hero img { width: 72px; height: 72px; border-radius: 18px; flex: none; box-shadow: 0 2px 8px rgba(15, 61, 46, .18); }
+  .hero h1 { margin: 0; }
+  .pages { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 10px; }
+  .pages li { margin: 0; }
+  .pages a { display: block; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--gold); border-radius: 12px; padding: 12px 16px; font-weight: 700; color: var(--forest); text-decoration: none; }
+  .pages a span { display: block; font-weight: 400; color: var(--muted); font-size: 14px; }
+  .pages a:hover { background: #FBF6EA; }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="./">Zad<span>.</span></a>
+</div></header>
+
+<main class="wrap">
+  <div class="hero">
+    <img src="icons/icon-192.png" alt="" width="72" height="72">
+    <h1>Zad</h1>
+  </div>
+  <p class="lead">Zad is a prayer, amal and qada tracker for Android and iPhone, coming to Google Play and the App Store.</p>
+
+  <h2>Information</h2>
+  <ul class="pages">
+    <li><a href="privacy.html">Privacy Policy<span>What Zad stores and where.</span></a></li>
+    <li><a href="terms.html">Terms of Use<span>The terms for using Zad.</span></a></li>
+    <li><a href="support.html">Support<span>Help and how to contact us.</span></a></li>
+    <li><a href="delete-account.html">Delete your account and data<span>How to remove your cloud backup and sign-in account.</span></a></li>
+    <li><a href="release-notes.html">Release notes<span>What changed in each update.</span></a></li>
+  </ul>
+</main>
+
+<footer class="foot"><div class="wrap">
+  <nav aria-label="Zad pages">
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+    <a href="support.html">Support</a>
+    <a href="delete-account.html">Delete account</a>
+    <a href="release-notes.html">Release notes</a>
+  </nav>
+  <div>Zad: prayer, amal and qada tracker</div>
+</div></footer>
+<script>
+  // The old web app installed a service worker here. sw.js now removes itself;
+  // this also clears any registration left behind for visitors who land here directly.
+  if ("serviceWorker" in navigator) navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); }).catch(function () {});
+</script>
+</body>
+</html>

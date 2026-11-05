@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application
         android:allowBackup="true"
@@ -35,19 +36,38 @@
         </provider>
     </application>
 
-    <!-- Permissions -->
+    <!-- Permissions. Every one below is used by the app. Libraries merge in a few more (see
+         android/app/build/outputs/logs/manifest-merger-*-report.txt): USE_FINGERPRINT
+         (androidx.biometric, Android 9 and older), ACCESS_NETWORK_STATE (Firebase Auth,
+         geolocation) and READ_GSERVICES (reCAPTCHA inside Firebase Auth). -->
 
+    <!-- Google sign-in and cloud backup (Firebase Auth + Firestore), and the city-name lookup. -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Prayer times from GPS -->
+
+    <!-- Prayer times are calculated on the phone from its location (src/platform.js
+         currentPosition). Network (coarse) location is tried first; fine location is the GPS
+         fallback when no network location is available. On Android 12+ the user can still pick
+         "Approximate". -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
-    <!-- Prayer reminders -->
+
+    <!-- Prayer reminders (@capacitor/local-notifications, src/notify.js) -->
+    <!-- Show the reminders (asked at runtime on Android 13+). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Re-arm the scheduled reminders after the phone restarts (the plugin's boot receiver). -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
-    <!-- App lock -->
+    <!-- On-time reminders. Pre-granted on Android 12-13; on Android 14+ the user allows it under
+         "Alarms & reminders". Without it the plugin falls back to an inexact alarm
+         (setAndAllowWhileIdle), so a reminder can arrive a few minutes late. Not capped with
+         maxSdkVersion: the plugin needs it declared on every version to check or ask for it.
+         USE_EXACT_ALARM is deliberately not used: Google Play reserves it for alarm-clock and
+         calendar apps. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- The notifications plugin declares WAKE_LOCK but never takes a wake lock (its alarms are
+         RTC_WAKEUP, which the system covers while the receiver runs), so drop it. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" tools:node="remove" />
+
+    <!-- Optional app lock with fingerprint, face or the screen lock (@aparajita/capacitor-biometric-auth). -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 </manifest>

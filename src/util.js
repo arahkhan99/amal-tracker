@@ -24,3 +24,10 @@ export function esc(s) {
 
 /** Monday-based index 0..6. */
 export function monIdx(d) { return (d.getDay() + 6) % 7; }
+
+/**
+ * Round a coordinate to 2 decimal places. Zad only keeps approximate location: the rounded point is
+ * within about 785 m of the real one (at most 0.005° off in each direction), which changes prayer
+ * times by well under a minute.
+ */
+export const roundCoord = v => Math.round(v * 100) / 100;

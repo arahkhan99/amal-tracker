@@ -3,7 +3,7 @@
 Offline tracker for the five daily prayers, daily amal and qada (makeup prayers and fasts), built from the "Prayer & Amal Tracker" prototype and named Zad. Everything is stored on your phone, with optional Google sign-in to back up and sync through Firebase.
 
 - **Android:** a real app (`PrayerTracker.apk`) with reminders, GPS prayer times and a fingerprint lock.
-- **iPhone:** the same app as a Home Screen web app (PWA). It works offline, but reminders only show inside the app because iOS doesn't let web apps schedule notifications.
+- **iPhone:** coming to the App Store. The old Home Screen web version has been retired.
 
 ## Install
 
@@ -14,10 +14,9 @@ Offline tracker for the five daily prayers, daily amal and qada (makeup prayers 
 
 The signing key is in `C:/Users/chito/amal-tracker-signing` and in the repo's GitHub secrets. Keep that folder safe: without the key, updates can't install over the app. Firebase project: `amal-tracker-cfe23`.
 
-**iPhone (web version, reminders only inside the app)**
-1. Open https://arahkhan99.github.io/amal-tracker/ in **Safari** (it must be Safari).
-2. Tap Share, then **Add to Home Screen**.
-3. Open it from the Home Screen icon. After the first load it works offline.
+**Website**
+
+https://arahkhan99.github.io/amal-tracker/ is no longer the app. It only hosts a short landing page and the pages both app stores require: privacy, terms, support, account deletion and release notes.
 
 ## Develop
 
@@ -27,6 +26,7 @@ npm run dev            # live preview at http://localhost:5173
 npm test               # unit tests (store, prayer times, stats, reminders)
 npm run build          # production web build in dist/
 npm run shots          # Playwright walk-through of every screen -> shots/ (BROWSER=webkit for Safari engine)
+node scripts/store-screenshots.mjs  # after a build: Google Play (1080x2400) and App Store 6.9" (1320x2868) screenshots -> store-shots/
 npm run check:emulator # drive the installed APK on a running Android emulator
 npm run build:android  # build, sync to Android, produce PrayerTracker.apk
 ```
@@ -37,7 +37,9 @@ winget install EclipseAdoptium.Temurin.21.JDK
 powershell -ExecutionPolicy Bypass -File scripts/setup-android-sdk.ps1
 ```
 
-The iPhone version publishes automatically: every push to `main` runs `.github/workflows/pages.yml`, which tests, builds and deploys to GitHub Pages.
+The website publishes automatically: every push to `main` runs `.github/workflows/pages.yml`, which runs the tests and deploys `site/` (landing page, `404.html`, `sw.js`) plus the policy pages and `legal.css` from `public/` to GitHub Pages. `site/sw.js` replaces the old web app's service worker: on anyone who installed the web version it deletes its caches, unregisters itself and reloads into the landing page. Keep it deployed.
+
+Store screenshots use a made-up user ("Raheem") and made-up history at a fixed date (`SHOT_DATE=YYYY-MM-DD` to change it), with a simulated status bar and safe areas (`STATUS_BAR=0` to leave that area blank).
 
 ## How it works
 

@@ -76,7 +76,7 @@ A.detailSheet = (id, key = todayKey()) => {
   } else if (a.detail === "count") {
     const last = store.lastDetail(S, id, key);
     const n = parseInt(d) || parseInt(last?.detail) || 100;
-    body = `<div class="field"><label>How many?</label><div class="stepper"><button onclick="A.step(-10)">−</button><b><input id="cnt" type="number" inputmode="numeric" min="0" value="${n}" style="width:110px;border:0;background:none;font:inherit;text-align:center;color:inherit;padding:0"></b><button onclick="A.step(10)">+</button></div></div>`;
+    body = `<div class="field"><label>How many?</label><div class="stepper"><button onclick="A.step(-10)" aria-label="10 fewer">−</button><b><input id="cnt" type="number" inputmode="numeric" min="0" value="${n}" style="width:110px;border:0;background:none;font:inherit;text-align:center;color:inherit;padding:0"></b><button onclick="A.step(10)" aria-label="10 more">+</button></div></div>`;
   } else {
     body = `<div class="field"><label>Anything to note</label><textarea id="dIn" placeholder="Optional">${esc(d)}</textarea></div>`;
   }
@@ -115,7 +115,7 @@ export function amalRow(a, key, { hint } = {}) {
   const past = key < todayKey();
   const cls = st.done ? "done" : past ? "skipped" : "";
   const sub = st.done ? esc(st.detail || "Done") : hint ?? (past ? "Not done" : "Not yet");
-  return `<div class="row ${cls}"><button class="check" aria-label="Mark ${esc(a.name)} done" onclick="A.tapAmal('${a.id}','${key}')">${CHECK}</button><div class="t" onclick="A.tapAmal('${a.id}','${key}')"><b>${esc(a.name)}</b><small>${sub}</small></div>${st.done && a.detail !== "none" ? `<button class="detail-link" onclick="A.detailSheet('${a.id}','${key}')">${st.detail ? "Edit" : "Add detail"}</button>` : ""}</div>`;
+  return `<div class="row ${cls}"><button class="check" aria-label="${st.done ? "Unmark" : "Mark"} ${esc(a.name)} done" onclick="A.tapAmal('${a.id}','${key}')">${CHECK}</button><div class="t" role="button" tabindex="0" onclick="A.tapAmal('${a.id}','${key}')"><b>${esc(a.name)}</b><small>${sub}</small></div>${st.done && a.detail !== "none" ? `<button class="detail-link" onclick="A.detailSheet('${a.id}','${key}')">${st.detail ? "Edit" : "Add detail"}</button>` : ""}</div>`;
 }
 
 /* ---------- home ---------- */
@@ -152,18 +152,19 @@ function renderHome() {
     const label = curKey === key ? cur.p : `Last night's ${cur.p}`;
     wl.style.display = "flex";
     wl.onclick = () => A.prayerSheet(cur.p, curKey);
+    wl.setAttribute("role", "button"); wl.tabIndex = 0;
     wl.innerHTML = `<span>⏱</span><span><b>${label}</b> not logged yet. Its window ends in <b>${fmtLeft(ms)}</b>.${isNative() && st.preQada && ms <= st.leadMin * 60000 ? " Reminder sent." : ""}</span>`;
   } else if (PRAYERS.every(p => day.prayers[p])) {
-    wl.style.display = "flex"; wl.onclick = null;
+    wl.style.display = "flex"; wl.onclick = null; wl.removeAttribute("role"); wl.removeAttribute("tabindex");
     wl.innerHTML = `<span>۩</span><span>All five prayers logged. Alhamdulillah.</span>`;
-  } else { wl.style.display = "none"; wl.onclick = null; }
+  } else { wl.style.display = "none"; wl.onclick = null; wl.removeAttribute("role"); wl.removeAttribute("tabindex"); }
 
   const pDone = PRAYERS.filter(p => day.prayers[p]).length;
   $("#prayerCount").textContent = `${pDone} of 5 logged`;
   $("#prayerList").innerHTML = PRAYERS.map(p => {
     const s = day.prayers[p];
     const active = cur && cur.p === p && curKey === key;
-    return `<button class="row" onclick="A.prayerSheet('${p}')"><span class="dot ${s || ""}"></span><div class="t"><b>${p}</b><small>${fmt12(T[p])}${active ? " · now" : ""}</small></div>${s ? `<span class="pill ${s}">${STATUS[s]}</span>` : `<span class="pill">Tap to log</span>`}<span class="chev">›</span></button>`;
+    return `<button class="row" onclick="A.prayerSheet('${p}')"><span class="dot ${s || ""}"></span><div class="t"><b>${p}</b><small>${fmt12(T[p])}${active ? " · now" : ""}</small></div>${s ? `<span class="pill ${s}">${STATUS[s]}</span>` : `<span class="pill">Tap to log</span>`}<span class="chev" aria-hidden="true">›</span></button>`;
   }).join("");
   const loc = st.location || FALLBACK_LOCATION;
   $("#timesSource").textContent = `Calculated on your phone · ${METHOD_SHORT[st.method] || st.method} · ${loc.label}${st.location ? "" : " (default, set your location in Settings)"}`;

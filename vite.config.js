@@ -1,9 +1,17 @@
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Version shown in Settings → About. The Android CI sets APP_VERSION_NAME (UTC YYYY.MM.DD.HHmm);
+// other builds use the same format from the build time.
+const pad = n => String(n).padStart(2, "0");
+const t = new Date();
+const APP_VERSION = process.env.APP_VERSION_NAME ||
+  `${t.getUTCFullYear()}.${pad(t.getUTCMonth() + 1)}.${pad(t.getUTCDate())}.${pad(t.getUTCHours())}${pad(t.getUTCMinutes())}`;
+
 export default defineConfig({
   base: "./", // relative paths work for GitHub Pages and inside the Android app
   build: { outDir: "dist", target: "es2019" },
+  define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
   plugins: [
     VitePWA({
       injectRegister: null, // registered manually in main.js, skipped inside the Android app

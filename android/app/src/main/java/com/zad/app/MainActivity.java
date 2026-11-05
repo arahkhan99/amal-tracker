@@ -1,4 +1,4 @@
-package com.amaltracker.app;
+package com.zad.app;
 
 import com.getcapacitor.BridgeActivity;
 

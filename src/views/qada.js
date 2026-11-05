@@ -3,8 +3,8 @@ import * as store from "../store.js";
 import { PRAYERS } from "../util.js";
 
 A.goalSheet = () => openSheet(`<h3>Monthly qada goal</h3><p>Pick something you can finish. You can always raise it next month.</p>
-  <div class="field"><label>Makeup prayers this month</label><div class="stepper"><button onclick="A.stepG('g',-5)">−</button><b id="gP">${S.qada.goal}</b><button onclick="A.stepG('g',5)">+</button></div></div>
-  <div class="field"><label>Makeup fasts this month</label><div class="stepper"><button onclick="A.stepG('f',-1)">−</button><b id="gF">${S.qada.fastGoal}</b><button onclick="A.stepG('f',1)">+</button></div></div>
+  <div class="field"><label>Makeup prayers this month</label><div class="stepper"><button onclick="A.stepG('g',-5)" aria-label="5 fewer makeup prayers">−</button><b id="gP">${S.qada.goal}</b><button onclick="A.stepG('g',5)" aria-label="5 more makeup prayers">+</button></div></div>
+  <div class="field"><label>Makeup fasts this month</label><div class="stepper"><button onclick="A.stepG('f',-1)" aria-label="1 fewer makeup fast">−</button><b id="gF">${S.qada.fastGoal}</b><button onclick="A.stepG('f',1)" aria-label="1 more makeup fast">+</button></div></div>
   <div class="cta"><button class="btn ghost" onclick="A.closeSheet()">Cancel</button><button class="btn primary" onclick="A.saveGoal()">Save goal</button></div>`);
 
 A.stepG = (k, n) => { const e = $(k === "g" ? "#gP" : "#gF"); e.textContent = Math.max(k === "g" ? 5 : 0, +e.textContent + n); };
@@ -12,7 +12,7 @@ A.saveGoal = () => { S.qada.goal = +$("#gP").textContent; S.qada.fastGoal = +$("
 
 const adjBtn = 'class="act" style="background:var(--ivory);color:var(--ink)"';
 A.balanceSheet = () => openSheet(`<h3>Adjust what you owe</h3><p>Use this if your estimate changes. Day to day, the balance moves on its own.</p>
-  ${[...PRAYERS, "fasts"].map(p => `<div class="qrow" style="padding:10px 0"><div class="t"><b>${p === "fasts" ? "Fasts" : p}</b></div><button ${adjBtn} onclick="A.adj('${p}',-1)">−</button><input class="n" type="number" inputmode="numeric" min="0" value="${S.qada[p]}" onchange="A.adjSet('${p}',this.value)" style="width:76px;text-align:center;border:0;background:none;font-family:var(--serif);font-size:26px;color:var(--forest)"><button ${adjBtn} onclick="A.adj('${p}',1)">+</button></div>`).join("")}
+  ${[...PRAYERS, "fasts"].map(p => `<div class="qrow" style="padding:10px 0"><div class="t"><b>${p === "fasts" ? "Fasts" : p}</b></div><button ${adjBtn} onclick="A.adj('${p}',-1)" aria-label="One fewer ${p === "fasts" ? "fast" : p} owed">−</button><input class="n" type="number" aria-label="${p === "fasts" ? "Fasts" : p} owed" inputmode="numeric" min="0" value="${S.qada[p]}" onchange="A.adjSet('${p}',this.value)" style="width:76px;text-align:center;border:0;background:none;font-family:var(--serif);font-size:26px;color:var(--forest)"><button ${adjBtn} onclick="A.adj('${p}',1)" aria-label="One more ${p === "fasts" ? "fast" : p} owed">+</button></div>`).join("")}
   <div class="cta"><button class="btn primary" onclick="A.closeSheet()">Done</button></div>`);
 
 A.adj = (p, n) => { S.qada[p] = Math.max(0, S.qada[p] + n); commit(); A.balanceSheet(); };

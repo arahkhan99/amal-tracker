@@ -42,7 +42,7 @@ function renderTracker() {
 
   $("#trkPrayers").innerHTML = PRAYERS.map(p => {
     const s = day.prayers[p];
-    return `<button class="row" onclick="A.prayerSheet('${p}','${key}')"><span class="dot ${s || ""}"></span><div class="t"><b>${p}</b><small>${s ? STATUS[s] + (s === "missed" ? " · added to Qada" : "") : "Not logged"}</small></div><span class="chev">Edit</span></button>`;
+    return `<button class="row" onclick="A.prayerSheet('${p}','${key}')"><span class="dot ${s || ""}"></span><div class="t"><b>${p}</b><small>${s ? STATUS[s] + (s === "missed" ? " · added to Qada" : "") : "Not logged"}</small></div><span class="chev txt">Edit</span></button>`;
   }).join("");
 
   $("#trkAmal").innerHTML = S.amalList.length

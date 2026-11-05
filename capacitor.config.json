@@ -1,5 +1,5 @@
 {
-  "appId": "com.amaltracker.app",
+  "appId": "com.zad.app",
   "appName": "Zad",
   "webDir": "dist",
   "android": {
@@ -14,6 +14,18 @@
       "providers": [
         "google.com"
       ]
+    }
+  },
+  "experimental": {
+    "ios": {
+      "spm": {
+        "swiftToolsVersion": "6.1",
+        "packageTraits": {
+          "@capacitor-firebase/authentication": [
+            "Google"
+          ]
+        }
+      }
     }
   }
 }

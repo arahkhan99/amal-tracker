@@ -1,4 +1,7 @@
-name: Deploy to GitHub Pages
+# Deploys Zad's public website: a landing page plus the policy pages both app stores
+# require (privacy, terms, support, account deletion, release notes). The web app itself
+# is no longer published; site/sw.js removes the service worker it left on old installs.
+name: Deploy website to GitHub Pages
 on:
   push:
     branches: [main]
@@ -24,10 +27,19 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npm run build
+      - name: Assemble site
+        run: |
+          set -eu
+          rm -rf _site
+          mkdir -p _site/icons
+          cp site/index.html site/404.html site/sw.js _site/
+          cp public/privacy.html public/terms.html public/support.html public/delete-account.html public/release-notes.html public/legal.css _site/
+          cp public/icons/icon-192.png public/icons/apple-touch-icon.png _site/icons/
+          touch _site/.nojekyll
+          ls -la _site _site/icons
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

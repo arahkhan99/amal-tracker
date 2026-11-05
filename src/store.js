@@ -1,4 +1,4 @@
-import { PRAYERS, dkey, ymKey } from "./util.js";
+import { PRAYERS, dkey, ymKey, roundCoord } from "./util.js";
 
 const KEY = "amal-tracker-v1";
 export const VERSION = 1;
@@ -15,7 +15,7 @@ export function defaultState(now = new Date()) {
   return {
     version: VERSION,
     createdKey: dkey(now),
-    profile: { name: "", onboarded: false },
+    profile: { name: "", onboarded: false, consent: null }, // consent: { version, at } of the terms agreed to at sign-in
     settings: {
       preQada: true, leadMin: 15, prayerAlerts: false, evening: true,
       method: "NorthAmerica", asr: "shafi",
@@ -35,11 +35,20 @@ export function normalize(s, now = new Date()) {
   const out = { ...d, ...s };
   out.profile = { ...d.profile, ...(s.profile || {}) };
   out.settings = { ...d.settings, ...(s.settings || {}) };
+  // Only approximate location is kept (about 1 km); round anything saved before that rule
+  const loc = out.settings.location;
+  if (loc && typeof loc.lat === "number") out.settings.location = { ...loc, lat: roundCoord(loc.lat), lng: roundCoord(loc.lng) };
   out.qada = { ...d.qada, ...(s.qada || {}) };
   out.amalList = Array.isArray(s.amalList) ? s.amalList : d.amalList;
   out.days = s.days || {};
   out.version = VERSION;
   return out;
+}
+
+/** True unless the profile records agreement to terms of `version` or later (versions are dates, compared as strings). */
+export function needsConsent(profile, version) {
+  const v = profile?.consent?.version;
+  return typeof v !== "string" || v < version;
 }
 
 export function load(storage = globalThis.localStorage) {

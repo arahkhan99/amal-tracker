@@ -67,7 +67,7 @@ function yearView() {
 
 function renderProgress() {
   if (UI.view !== "progress") return; // insights are the heaviest part; only build when visible
-  $$("#progSeg button").forEach(x => x.classList.toggle("on", x.dataset.r === UI.range));
+  $$("#progSeg button").forEach(x => { x.classList.toggle("on", x.dataset.r === UI.range); x.setAttribute("aria-pressed", String(x.dataset.r === UI.range)); });
   $("#progBody").innerHTML = { day: dayView, week: weekView, month: monthView, year: yearView }[UI.range]();
 }
 

@@ -20,6 +20,15 @@ import { initCloud } from "./cloud.js";
 $$("#nav button").forEach(b => (b.onclick = () => go(b.dataset.v)));
 $("#scrim").onclick = e => { if (e.target.id === "scrim") closeSheet(); };
 
+// Keyboard: Escape closes an open sheet; Enter/Space activate non-button elements with role=button
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $("#scrim").classList.contains("on")) { e.preventDefault(); closeSheet(); return; }
+  const t = e.target;
+  if ((e.key === "Enter" || e.key === " ") && t.getAttribute?.("role") === "button" && t.tagName !== "BUTTON") {
+    e.preventDefault(); t.click();
+  }
+});
+
 onBackButton(() => {
   if ($("#scrim").classList.contains("on")) { closeSheet(); return true; }
   if (UI.view !== "home" && UI.view !== "onboard") { go("home"); return true; }

@@ -51,7 +51,10 @@ export function applyState(next) {
 export function go(v) {
   UI.view = v;
   $$(".view").forEach(e => e.classList.toggle("on", e.id === "v-" + v));
-  $$("#nav button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  $$("#nav button").forEach(b => {
+    b.classList.toggle("on", b.dataset.v === v);
+    if (b.dataset.v === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  });
   $("#nav").hidden = v === "onboard";
   $("#phone").dataset.view = v;
   setStatusBar(v === "home" || v === "onboard");
@@ -66,6 +69,26 @@ export function toast(m) {
   clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 1800);
 }
 
-export function openSheet(html) { $("#sheet").innerHTML = '<div class="grab"></div>' + html; $("#scrim").classList.add("on"); }
-export function closeSheet() { $("#scrim").classList.remove("on"); }
+/* Sheets act as modal dialogs: focus moves into them, the page behind is inert, and focus
+   returns to where it was on close. Redrawing an open sheet keeps focus on the same control. */
+const FOCUSABLE = "button:not([disabled]),input,select,textarea,a[href],[tabindex]:not([tabindex='-1'])";
+let returnFocus = null;
+export function openSheet(html) {
+  const sheet = $("#sheet"), wasOpen = $("#scrim").classList.contains("on");
+  const prev = wasOpen ? [...sheet.querySelectorAll(FOCUSABLE)].indexOf(document.activeElement) : -1;
+  if (!wasOpen) returnFocus = document.activeElement;
+  sheet.innerHTML = '<div class="grab"></div>' + html;
+  sheet.setAttribute("aria-label", sheet.querySelector("h3")?.textContent.trim() || "Dialog");
+  $("#scrim").classList.add("on");
+  $("#screen").inert = $("#nav").inert = true;
+  const again = prev >= 0 && sheet.querySelectorAll(FOCUSABLE)[prev];
+  (again || sheet).focus({ preventScroll: true });
+}
+export function closeSheet() {
+  if (!$("#scrim").classList.contains("on")) return;
+  $("#scrim").classList.remove("on");
+  $("#screen").inert = $("#nav").inert = false;
+  if (returnFocus && document.contains(returnFocus) && !$("#lock").contains(returnFocus)) returnFocus.focus({ preventScroll: true });
+  returnFocus = null;
+}
 A.closeSheet = closeSheet;

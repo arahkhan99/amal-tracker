@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { isNative } from "./platform.js";
 import { PRAYERS, dkey, addDays } from "./util.js";
 import { getDay } from "./store.js";
@@ -51,9 +52,35 @@ async function doSchedule(S) {
   if (perm.display !== "granted") return;
   const pending = await LocalNotifications.getPending();
   if (pending.notifications.length) await LocalNotifications.cancel({ notifications: pending.notifications.map(n => ({ id: n.id })) });
-  const list = planNotifications(S);
+  let list = planNotifications(S);
+  // iOS keeps at most 64 pending notifications; keep the soonest (the rest are scheduled on a later open)
+  if (Capacitor.getPlatform() === "ios") list = list.sort((a, b) => a.at - b.at).slice(0, 60);
   if (!list.length) return;
+  // Exact alarms are off by default on Android 14+. Asking for them on every schedule would open the
+  // "Alarms & reminders" screen each time, so use exact timing only when it's already allowed; otherwise
+  // the reminders are scheduled as inexact alarms and can arrive a few minutes late.
+  const exact = await exactAlarmsAllowed(LocalNotifications);
   await LocalNotifications.schedule({
-    notifications: list.map(n => ({ id: n.id, title: n.title, body: n.body, schedule: { at: n.at, allowWhileIdle: true }, iconColor: "#0F3D2E" })),
+    notifications: list.map(n => ({ id: n.id, title: n.title, body: n.body, schedule: { at: n.at, allowWhileIdle: true }, isExactNotification: exact, iconColor: "#0F3D2E" })),
   });
+}
+
+async function exactAlarmsAllowed(LocalNotifications) {
+  try { return (await LocalNotifications.checkExactNotificationSetting()).exact_alarm === "granted"; }
+  catch (e) { return false; }
+}
+
+/** true/false on Android (whether exact alarms are allowed), null elsewhere. */
+export async function exactAlarmStatus() {
+  if (!isNative()) return null;
+  const { LocalNotifications } = await import("@capacitor/local-notifications");
+  return exactAlarmsAllowed(LocalNotifications);
+}
+
+/** Opens Android's "Alarms & reminders" screen so reminders can be on the minute. Returns whether it's now allowed. */
+export async function askForExactAlarms() {
+  if (!isNative()) return false;
+  const { LocalNotifications } = await import("@capacitor/local-notifications");
+  try { return (await LocalNotifications.changeExactNotificationSetting()).exact_alarm === "granted"; }
+  catch (e) { return false; }
 }

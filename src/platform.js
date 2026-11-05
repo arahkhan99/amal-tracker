@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { roundCoord } from "./util.js";
 
 export const isNative = () => Capacitor.isNativePlatform();
 
@@ -12,11 +13,11 @@ export async function currentPosition() {
     let p;
     try { p = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 10000, maximumAge: 36e5 }); }
     catch (e) { p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 25000, maximumAge: 36e5 }); }
-    return { lat: p.coords.latitude, lng: p.coords.longitude };
+    return { lat: roundCoord(p.coords.latitude), lng: roundCoord(p.coords.longitude) };
   }
   if (!navigator.geolocation) throw new Error("unsupported");
   return new Promise((res, rej) => navigator.geolocation.getCurrentPosition(
-    p => res({ lat: p.coords.latitude, lng: p.coords.longitude }), rej, { timeout: 15000, maximumAge: 36e5 }));
+    p => res({ lat: roundCoord(p.coords.latitude), lng: roundCoord(p.coords.longitude) }), rej, { timeout: 15000, maximumAge: 36e5 }));
 }
 
 /** City name for coordinates (needs internet; falls back to a generic label). */
@@ -38,7 +39,7 @@ export async function cityName(lat, lng) {
 export async function searchCity(q) {
   const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=en&format=json`);
   const j = await r.json();
-  return (j.results || []).map(x => ({ lat: x.latitude, lng: x.longitude, label: [x.name, x.admin1, x.country_code].filter(Boolean).join(", ") }));
+  return (j.results || []).map(x => ({ lat: roundCoord(x.latitude), lng: roundCoord(x.longitude), label: [x.name, x.admin1, x.country_code].filter(Boolean).join(", ") }));
 }
 
 /* ---------- files ---------- */

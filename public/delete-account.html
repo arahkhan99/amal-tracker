@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delete Zad Account</title>
+<meta name="description" content="How to delete your Zad cloud backup, your sign-in account and the data on your device.">
+<meta name="theme-color" content="#0F3D2E">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Manrope:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="legal.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="https://arahkhan99.github.io/amal-tracker/">Zad<span>.</span></a>
+  <a class="open-app" href="https://arahkhan99.github.io/amal-tracker/">Zad home</a>
+</div></header>
+
+<main class="wrap">
+  <h1>Delete your account and data</h1>
+  <p class="meta">Zad (Android app <code>com.zad.app</code> and iPhone app <code>com.zad.app</code>) · Effective {{EFFECTIVE_DATE}}</p>
+
+  <p class="lead">You can delete your Zad cloud backup and your Zad sign-in at any time, right inside the app. Your Google account itself is not deleted.</p>
+
+  <h2>Delete your account in the app</h2>
+  <p>This applies if you turned on <strong>Settings → Cloud backup</strong> and signed in with Google.</p>
+  <ol>
+    <li>Open Zad and go to <strong>Settings</strong>.</li>
+    <li>Tap <strong>Delete my account</strong>. It is shown while you are signed in to cloud backup.</li>
+    <li>If you want a copy first, tap <strong>Back up first</strong> to save a backup file.</li>
+    <li>If you also want to remove everything from this phone, tick <strong>Also clear Zad on this phone</strong>. Otherwise the data on your phone is kept.</li>
+    <li>Tap <strong>Delete my account</strong> to confirm. Google may ask you to confirm your account once more before the sign-in can be deleted.</li>
+  </ol>
+  <p>Deletion happens straight away and can't be undone. You need to be online. If it can't finish (for example the connection drops, or you close the Google confirmation), the app tells you what was and wasn't deleted, pauses syncing so nothing is uploaded again, and lets you tap <strong>Try again</strong>.</p>
+
+  <h2>No longer have the app?</h2>
+  <p>You can ask us to delete your account by email instead.</p>
+  <ol>
+    <li>Email <a href="mailto:{{SUPPORT_EMAIL}}?subject=Delete%20my%20Zad%20account">{{SUPPORT_EMAIL}}</a> with the subject "Delete my Zad account".</li>
+    <li>Send it from, or include, <strong>the Google account email address you signed in with</strong>, so we can find your account.</li>
+    <li>We may reply to confirm the request comes from you before deleting anything.</li>
+  </ol>
+  <p>We delete your data <strong>within 30 days</strong> and email you when it is done.</p>
+
+  <h3>What gets deleted</h3>
+  <ul>
+    <li>Your backup in Cloud Firestore: the <code>users/{your user ID}</code> document (name, settings including location and city, amal list, qada balances and goals, and your terms agreement) and every year of daily prayer and amal logs and notes stored under it.</li>
+    <li>Your Zad sign-in (Firebase Authentication account): the link to your Google account, your email address, user ID, name, photo link and sign-in times.</li>
+  </ul>
+  <p>Nothing is kept afterwards. We don't keep separate backups of your data, and we have no analytics or advertising records about you.</p>
+
+  <h3>What is not affected</h3>
+  <ul>
+    <li>Your Google account itself.</li>
+    <li>Data saved on your phone, unless you ticked <strong>Also clear Zad on this phone</strong>. If you sign in again later, the data on that phone would be backed up again as a new account.</li>
+    <li>Backup or CSV files you exported yourself.</li>
+  </ul>
+
+  <h2>Delete the data on your phone</h2>
+  <p>Data that is only on your phone never reaches us, so you delete it yourself:</p>
+  <ul>
+    <li>In the app: <strong>Settings → Reset all data</strong>. This deletes every log, your qada balance and settings from that phone, and signs you out of cloud backup. On its own it does not delete your cloud copy.</li>
+    <li>Or uninstall Zad from your phone.</li>
+  </ul>
+  <p>To stop backing up without deleting anything, use <strong>Settings → Cloud backup → Sign out</strong>. Your data stays on the phone and your cloud copy stays until you delete it.</p>
+
+  <p>More about how data is handled: <a href="privacy.html">Privacy Policy</a>.</p>
+</main>
+
+<footer class="foot"><div class="wrap">
+  <nav aria-label="Zad pages">
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+    <a href="support.html">Support</a>
+    <a href="delete-account.html" aria-current="page">Delete account</a>
+    <a href="release-notes.html">Release notes</a>
+    <a href="https://arahkhan99.github.io/amal-tracker/">Zad home</a>
+  </nav>
+  <div>Zad: prayer, amal and qada tracker</div>
+</div></footer>
+</body>
+</html>

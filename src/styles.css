@@ -4,7 +4,7 @@
   --forest:#0F3D2E; --moss:#1B5A43; --leaf:#2E7D5B; --mint:#DDEBE1;
   --gold:#C9A227; --honey:#E5C55C; --parchment:#F4E9C8;
   --ivory:#F8F4EA; --paper:#FFFDF8; --ink:#17231E; --ink2:#5A6862; --line:#E6DFCD;
-  --miss:#B8513C;
+  --miss:#9E3F2C; /* deepened from #B8513C for readable "Missed" text (5.2:1 on its pill) */
   --sans:'Manrope',system-ui,sans-serif; --serif:'Amiri',Georgia,serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -13,7 +13,7 @@ body{background:var(--forest);font-family:var(--sans);color:var(--ink);
   background-image:radial-gradient(circle at 50% 0%,#1B5A43 0%,var(--forest) 60%)}
 .stage{min-height:100%;display:flex;align-items:center;justify-content:center;gap:40px;padding:32px 20px}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,a:focus-visible,[role=button]:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
 .phone{width:390px;height:844px;background:var(--ivory);border-radius:46px;position:relative;overflow:hidden;
   box-shadow:0 40px 80px rgba(0,0,0,.45),0 0 0 10px #0a2a1f,0 0 0 12px #3a3a3a;flex:none;display:flex;flex-direction:column}
@@ -25,7 +25,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:56px 22px 8px;color:var(--parchment)}
 .topbar.light{color:var(--ink)}
 .brand{display:flex;align-items:center;gap:10px}
-.logo{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.1);border:1px dashed rgba(229,197,92,.6);display:grid;place-items:center;color:var(--honey);font-family:var(--serif);font-size:18px}
+.brand .logo{margin:0 1px 0 2px}
+/* Zad symbol (Zay with diamond dot), drawn without a tile; width = height * 0.794 */
+.logo{display:block;flex:none;width:37px;height:46px;object-fit:contain;-webkit-user-drag:none;user-select:none;pointer-events:none}
 .date{font-size:13px;font-weight:600}
 .hijri{font-family:var(--serif);font-size:14px;opacity:.85;margin-top:1px}
 .icon-btn{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12)}
@@ -82,7 +84,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .detail-link{font-size:12px;font-weight:700;color:var(--moss);flex:none}
 
 .nav{display:flex;justify-content:space-around;padding:10px 8px 26px;background:var(--paper);border-top:1px solid var(--line)}
-.nav button{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#8C948F;width:72px}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#6F7772;width:72px}
 .nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .nav button.on{color:var(--forest)}
 
@@ -156,7 +158,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .reflect .ar{font-family:var(--serif);font-size:24px;text-align:right;direction:rtl;color:var(--forest);line-height:1.7}
 .reflect .en{font-family:var(--serif);font-size:17px;line-height:1.45;margin-top:8px}
 .reflect .src{font-size:12px;color:var(--ink2);margin-top:8px;font-weight:600}
-.reflect .tag{position:absolute;top:-10px;left:18px;background:var(--gold);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px}
+.reflect .tag{position:absolute;top:-10px;left:18px;background:var(--gold);color:var(--forest);font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px}
 
 /* tracker date nav */
 .datenav{display:flex;align-items:center;gap:6px;padding:16px 22px 0}
@@ -219,7 +221,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   background-image:radial-gradient(circle at 50% 0%,#1B5A43 0%,var(--forest) 60%)}
 .onb .pattern{position:absolute;inset:0;opacity:.12;pointer-events:none;width:100%;height:100%}
 .onb-inner{position:relative;flex:1;display:flex;flex-direction:column;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 60px) 26px max(30px,calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 20px))}
-.onb .logo{width:56px;height:56px;font-size:26px;border-radius:16px}
+.onb .logo{width:45px;height:56px}
 .onb h1{font-family:var(--serif);font-size:34px;font-weight:400;line-height:1.1;margin-top:26px;color:var(--parchment)}
 .onb p.lead{font-size:14px;line-height:1.55;opacity:.85;margin-top:10px}
 .onb .steps{display:flex;gap:6px;margin-top:22px}
@@ -238,7 +240,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 
 /* lock screen */
 .lock{position:absolute;inset:0;z-index:50;background:var(--forest);color:var(--parchment);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
-.lock .logo{width:64px;height:64px;font-size:30px;border-radius:18px}
+.lock .logo{width:57px;height:72px}
 .lock button{padding:12px 22px;border-radius:14px;background:var(--honey);color:var(--forest);font-weight:700}
 
 /* amal list editor */
@@ -254,3 +256,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 /* backdrop behind the phone's status bar so scrolled content never runs under the clock and icons */
 .phone::before{content:"";position:absolute;top:0;left:0;right:0;height:var(--safe-area-inset-top,env(safe-area-inset-top,0px));background:var(--ivory);z-index:15;pointer-events:none}
 .phone[data-view=home]::before,.phone[data-view=onboard]::before{background:var(--forest)}
+/* accessibility: settings links styled as rows, text-contrast nudges, focus inside cards and sheets */
+a.row{color:inherit;text-decoration:none}
+.chev.txt{color:#7A7363}
+.card .row:focus-visible{outline-offset:-2px}
+.sheet:focus{outline:none}
+/* account: terms line before sign-in, delete-account checkbox and error */
+.legal a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.sheet .legal a{color:var(--forest);font-weight:600}
+.onb .small.legal{text-align:center}
+.chk{display:flex;align-items:flex-start;gap:12px;margin-top:14px;padding:14px;border-radius:14px;border:1.5px solid var(--line);background:#fff;cursor:pointer}
+.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var(--miss)}
+.chk b{display:block;font-size:15px;font-weight:600}
+.chk small{display:block;color:var(--ink2);font-size:12px;margin-top:2px}
+.sheet .note.err{color:var(--miss);font-weight:600}
+.sheet .note.err:empty{display:none}

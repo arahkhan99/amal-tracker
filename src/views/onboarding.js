@@ -3,6 +3,7 @@ import { PRAYERS, esc } from "../util.js";
 import { currentPosition, cityName } from "../platform.js";
 import { FALLBACK_LOCATION } from "../times.js";
 import { cloud, signIn } from "../cloud.js";
+import { consentLine } from "./settings.js";
 
 let step = 0;
 const STEPS = 4;
@@ -10,7 +11,7 @@ const pattern = `<svg class="pattern" viewBox="0 0 390 844" preserveAspectRatio=
 
 function frame(body, primary, secondary = "") {
   return `<div class="onb">${pattern}<div class="onb-inner">
-    <div class="logo">☾</div>
+    <img class="logo" src="logo/zad-symbol.png" srcset="logo/zad-symbol.png 1x, logo/zad-symbol@2x.png 2x" width="45" height="56" alt="Zad">
     <div class="steps">${Array.from({ length: STEPS }, (_, i) => `<i class="${i <= step ? "on" : ""}"></i>`).join("")}</div>
     ${body}<div class="grow"></div>${primary}${secondary}</div></div>`;
 }
@@ -19,7 +20,7 @@ function stepName() {
   return frame(`<h1>Assalamu alaikum</h1><p class="lead">Track your five prayers, your daily amal and the qada you're making up, all on this phone. Nothing leaves it unless you turn on cloud backup.</p>
     <div class="panel"><div class="field"><label>What should we call you?</label><input id="obName" value="${esc(S.profile.name)}" placeholder="Your name" autocomplete="given-name"></div></div>`,
     `<button class="btn primary" onclick="A.obNext()">Continue</button>`,
-    cloud.available ? `<button class="btn ghost" onclick="A.obRestore()">Restore my backup (sign in with Google)</button>` : "");
+    cloud.available ? `<button class="btn ghost" onclick="A.obRestore()">Restore my backup (sign in with Google)</button><p class="small legal">${consentLine()}</p>` : "");
 }
 
 function stepLocation() {
@@ -45,8 +46,8 @@ function stepQada() {
 function stepGoal() {
   return frame(`<h1>A monthly goal</h1><p class="lead">Pick something you can finish. Small and steady beats big and abandoned. You can change it any time.</p>
     <div class="panel">
-      <div class="field"><label>Makeup prayers this month</label><div class="stepper"><button onclick="A.stepG('g',-5)">−</button><b id="gP">${S.qada.goal}</b><button onclick="A.stepG('g',5)">+</button></div></div>
-      <div class="field"><label>Makeup fasts this month</label><div class="stepper"><button onclick="A.stepG('f',-1)">−</button><b id="gF">${S.qada.fastGoal}</b><button onclick="A.stepG('f',1)">+</button></div></div>
+      <div class="field"><label>Makeup prayers this month</label><div class="stepper"><button onclick="A.stepG('g',-5)" aria-label="5 fewer makeup prayers">−</button><b id="gP">${S.qada.goal}</b><button onclick="A.stepG('g',5)" aria-label="5 more makeup prayers">+</button></div></div>
+      <div class="field"><label>Makeup fasts this month</label><div class="stepper"><button onclick="A.stepG('f',-1)" aria-label="1 fewer makeup fast">−</button><b id="gF">${S.qada.fastGoal}</b><button onclick="A.stepG('f',1)" aria-label="1 more makeup fast">+</button></div></div>
     </div>`,
     `<button class="btn primary" onclick="A.obFinish()">Start tracking</button>`);
 }
