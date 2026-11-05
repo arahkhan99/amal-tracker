@@ -5,6 +5,10 @@ import "@fontsource/manrope/500.css";
 import "@fontsource/manrope/600.css";
 import "@fontsource/manrope/700.css";
 import "./styles.css";
+import "./css/theme.css";
+import "./css/onboarding.css";
+import "./css/home.css";
+import "./css/progress.css";
 
 import { S, UI, A, $, $$, go, render, tick, closeSheet } from "./app.js";
 import { reschedule } from "./notify.js";

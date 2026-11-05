@@ -21,6 +21,14 @@ export const ASR = { shafi: "Standard (Shafi'i)", hanafi: "Hanafi" };
 /** Used until the user shares a location. */
 export const FALLBACK_LOCATION = { lat: 41.8781, lng: -87.6298, label: "Chicago, IL" };
 
+/**
+ * Best guess of where the user is before they set a location (e.g. from the phone's time zone).
+ * Returns { lat, lng, label, method, guessed: true }. Placeholder until the fixes agent fills it in.
+ */
+export function defaultLocation() {
+  return { ...FALLBACK_LOCATION, method: "NorthAmerica", guessed: true };
+}
+
 function params(settings) {
   const make = CalculationMethod[settings.method] || CalculationMethod.NorthAmerica;
   const p = make();

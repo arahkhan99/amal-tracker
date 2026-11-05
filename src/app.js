@@ -63,10 +63,22 @@ export function go(v) {
 }
 A.go = go;
 
-export function toast(m) {
+/**
+ * Show a short message. Pass { undo: fn } to add an Undo button (shown longer, 5 s);
+ * tapping it runs fn once and hides the toast.
+ */
+export function toast(m, { undo } = {}) {
   const t = $("#toast");
-  t.textContent = m; t.classList.add("on");
-  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 1800);
+  t.textContent = m;
+  if (undo) {
+    const b = document.createElement("button");
+    b.className = "toast-undo"; b.type = "button"; b.textContent = "Undo";
+    b.onclick = () => { t.classList.remove("on"); clearTimeout(t._h); undo(); };
+    t.append(" ", b);
+  }
+  t.classList.toggle("has-undo", !!undo);
+  t.classList.add("on");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), undo ? 5000 : 1800);
 }
 
 /* Sheets act as modal dialogs: focus moves into them, the page behind is inert, and focus
