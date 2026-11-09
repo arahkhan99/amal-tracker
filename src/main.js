@@ -9,8 +9,10 @@ import "./css/theme.css";
 import "./css/onboarding.css";
 import "./css/home.css";
 import "./css/progress.css";
+import "./css/settings.css";
 
-import { S, UI, A, $, $$, go, render, tick, closeSheet } from "./app.js";
+import { S, UI, A, $, go, render, tick, closeSheet, commit, todayKey } from "./app.js";
+import { syncExcusedMode } from "./store.js";
 import { reschedule } from "./notify.js";
 import { isNative, authenticate, onBackButton, setStatusBar } from "./platform.js";
 import "./views/home.js";
@@ -18,10 +20,12 @@ import "./views/tracker.js";
 import "./views/qada.js";
 import "./views/progress.js";
 import "./views/settings.js";
+// Tools: registers the #v-tools renderer and the Home cards
+import "./views/tools/index.js";
 import { startOnboarding } from "./views/onboarding.js";
 import { initCloud } from "./cloud.js";
 
-$$("#nav button").forEach(b => (b.onclick = () => go(b.dataset.v)));
+// The bottom bar is built by app.js (renderNav, from features.navTabs); its buttons call A.go themselves.
 $("#scrim").onclick = e => { if (e.target.id === "scrim") closeSheet(); };
 
 // Keyboard: Escape closes an open sheet; Enter/Space activate non-button elements with role=button
@@ -34,7 +38,9 @@ document.addEventListener("keydown", e => {
 });
 
 onBackButton(() => {
+  if (UI.view === "tools" && A.toolsBack?.()) return true; // closes a sheet, or steps back inside Tools
   if ($("#scrim").classList.contains("on")) { closeSheet(); return true; }
+  if (UI.view === "settings" && A.settingsBack) { A.settingsBack(); return true; } // sub-page → Settings (or back to Tools)
   if (UI.view !== "home" && UI.view !== "onboard") { go("home"); return true; }
   return false;
 });
@@ -42,7 +48,7 @@ onBackButton(() => {
 // Keep the countdown live and roll over at midnight
 setInterval(() => {
   const newDay = tick();
-  if (newDay) { UI.trkDay = 0; UI.selDay = 0; reschedule(S); }
+  if (newDay) { UI.trkDay = 0; UI.selDay = 0; if (syncExcusedMode(S, todayKey())) commit(); else reschedule(S); }
   if (!$("#scrim").classList.contains("on") || newDay) render();
 }, 20000);
 
@@ -56,11 +62,15 @@ function lockIfNeeded() {
 }
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) { hiddenAt = Date.now(); return; }
-  tick(); render(); reschedule(S);
+  const newDay = tick();
+  if (newDay) { UI.trkDay = 0; UI.selDay = 0; }
+  if (syncExcusedMode(S, todayKey())) commit(); else { render(); reschedule(S); }
   if (Date.now() - hiddenAt > 30000) lockIfNeeded();
 });
 
 /* ---------- start ---------- */
+// If excused mode is on, flag every day from its start to today
+if (syncExcusedMode(S, todayKey())) commit();
 if (S.profile.onboarded) go("home"); else startOnboarding();
 lockIfNeeded();
 reschedule(S);

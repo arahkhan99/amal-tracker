@@ -61,7 +61,11 @@ describe("store: prayers and qada", () => {
     const N = store.normalize({ days: {}, qada: { Fajr: 5 } });
     expect(N.qada.Fajr).toBe(5);
     expect(N.qada.monthLog).toEqual({});
-    expect(N.settings.method).toBe("NorthAmerica");
+    expect(N.settings.method).toBe("Karachi"); // the new-install default
+    // existing users keep their method, including a set-up save with none (the old ISNA default)
+    expect(store.normalize({ profile: { onboarded: true }, settings: { method: "NorthAmerica" } }).settings.method).toBe("NorthAmerica");
+    expect(store.normalize({ profile: { onboarded: true }, settings: { lock: false } }).settings.method).toBe("NorthAmerica");
+    expect(store.defaultState().settings.method).toBe("Karachi");
   });
 
   it("lastDetail finds the most recent earlier entry", () => {
@@ -148,10 +152,10 @@ describe("stats", () => {
     expect(st.amalStreak(S, "quran", NOW)).toBe(21);
     expect(st.prayerStreak(S, NOW)).toBe(0); // Asr missed yesterday
     const { good, warn } = st.insights(S, NOW);
-    expect(good.some(g => g.title.startsWith("Fajr in congregation"))).toBe(true);
-    expect(good.some(g => g.title.startsWith("Quran read on 21"))).toBe(true);
-    expect(warn.some(w => w.title.startsWith("Asr missed 3 times"))).toBe(true);
-    expect(warn.some(w => w.title.includes("at 0%") || w.title.includes("Salawat"))).toBe(true);
+    expect(good.some(g => g.title.startsWith("Fajr in jamāʿah"))).toBe(true);
+    expect(good.some(g => g.title.startsWith("Qurʾān read on 21"))).toBe(true);
+    expect(warn.some(w => w.title.startsWith("ʿAsr missed 3 times"))).toBe(true);
+    expect(warn.some(w => w.title.includes("at 0%") || w.title.includes("Salawāt"))).toBe(true);
   });
 
   it("status counts, month and year", () => {

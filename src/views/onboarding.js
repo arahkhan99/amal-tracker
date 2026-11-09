@@ -1,103 +1,263 @@
-import { S, UI, A, $, NOW, todayKey, onRender, commit, go, toast } from "../app.js";
-import { PRAYERS, esc } from "../util.js";
-import { currentPosition, cityName } from "../platform.js";
-import { FALLBACK_LOCATION } from "../times.js";
+/* Welcome, log in (L2), welcome back (R2), setup (S2: one question per screen), permission asks (PM1) and the lock screen (LK2). */
+import { S, UI, A, $, NOW, todayKey, onRender, commit, go, toast, openSheet, closeSheet, glossBtn } from "../app.js";
+import * as store from "../store.js";
+import * as feat from "../features.js";
+import { PRAYERS, esc, dkey, DOW, MON } from "../util.js";
+import { currentPosition, cityName, notificationsGranted, requestNotifications, authenticate } from "../platform.js";
+import { FALLBACK_LOCATION, METHODS, METHOD_SHORT, timesFor, nextPrayer } from "../times.js";
 import { cloud, signIn } from "../cloud.js";
+import { hijriLabel } from "../hijri.js";
+import { madhhabOptions, madhhabOf } from "../rules/madhhab.js";
 import { consentLine } from "./settings.js";
+import { SETUP, SETTINGS as T, COMMON, MADHHAB_UI, ASR_UI, FEATURE, TIMES, EXCUSED, MAKEUPS as M, APP, prayerName, STATUS } from "../strings.js";
+import { SETUP_X } from "../strings.js";
+import "../css/onboarding.css";
 
-let step = 0;
-const STEPS = 4;
+/* Setup-only labels (strings.js SETUP_X). */
+const X = SETUP_X;
+
 const pattern = `<svg class="pattern" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice"><rect width="100%" height="100%" fill="url(#st)"/></svg>`;
+const logo = (w = 72) => `<img class="logo" src="logo/zad-symbol.png" srcset="logo/zad-symbol.png 1x, logo/zad-symbol@2x.png 2x" width="${w}" height="${Math.round(w * 1.26)}" style="width:${w}px;height:${Math.round(w * 1.26)}px" alt="">`;
+const ic = {
+  back: '<path d="M15 5l-7 7 7 7"/>', pin: '<path d="M12 22s7-6.3 7-12a7 7 0 1 0-14 0c0 5.7 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.01"/>', lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', bell: '<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+  mosque: '<path d="M4 21V11l3-3 3 3v10M14 21V9a3 3 0 0 1 6 0v12M2 21h20M7 8V5"/>', layers: '<path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5M3 17.5l9 5 9-5"/>',
+  heart: '<path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z"/>', refresh: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>',
+  chart: '<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8"/>', bars: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>', grid: '<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><path d="M17.25 13.5v7.5M13.5 17.25H21"/>',
+  finger: '<path d="M12 11a2 2 0 0 0-2 2c0 3 .5 5 1.5 7M12 7a6 6 0 0 0-6 6c0 2 .3 3.6.9 5M12 3a10 10 0 0 0-9 6M12 7a6 6 0 0 1 6 6c0 3-.5 5-1.5 7M16 13c0 3-.3 5-1 7M20 13a8 8 0 0 0-1.5-4.7"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+};
+const svg = (k, c = "") => `<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${ic[k]}</svg>`;
+const FEAT_ICON = { prayers: "mosque", sunnah: "layers", deeds: "heart", makeups: "refresh", week: "chart", progress: "bars", tools: "grid" };
+const google = `<svg viewBox="0 0 24 24" class="gg" aria-hidden="true"><path fill="#4285F4" d="M22 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.6a4.8 4.8 0 0 1-2.1 3.1v2.6h3.4c2-1.8 3.1-4.5 3.1-7.5z"/><path fill="#34A853" d="M12 22.5c2.8 0 5.2-.9 6.9-2.5l-3.4-2.6c-.9.6-2.1 1-3.5 1a6.1 6.1 0 0 1-5.8-4.2H2.7v2.7A10.5 10.5 0 0 0 12 22.5z"/><path fill="#FBBC05" d="M6.2 14.2a6.2 6.2 0 0 1 0-4V7.5H2.7a10.5 10.5 0 0 0 0 9.4z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.9.5 4 1.6l3-3A10.5 10.5 0 0 0 2.7 7.5l3.5 2.7A6.2 6.2 0 0 1 12 5.9z"/></svg>`;
 
-function frame(body, primary, secondary = "") {
-  return `<div class="onb">${pattern}<div class="onb-inner">
-    <img class="logo" src="logo/zad-symbol.png" srcset="logo/zad-symbol.png 1x, logo/zad-symbol@2x.png 2x" width="45" height="56" alt="Zad">
-    <div class="steps">${Array.from({ length: STEPS }, (_, i) => `<i class="${i <= step ? "on" : ""}"></i>`).join("")}</div>
-    ${body}<div class="grow"></div>${primary}${secondary}</div></div>`;
+/* ---------- flow state ---------- */
+// screen: welcome | login | restored | nobackup | name | where | madhhab | features | owe
+let screen = "welcome";
+let owe = { mode: "", span: "", goalPerDay: 2, exact: false };
+const stepList = () => ["name", "where", "madhhab", "features", ...(feat.isOn(S, "makeups") ? ["owe"] : [])];
+const SPANS = { none: 0, under: 177, oneTwo: 531, threeFive: 1416 }; // days (a lunar year is ~354 days)
+
+const fmtT = d => `${(d.getHours() % 12) || 12}:${String(d.getMinutes()).padStart(2, "0")}`;
+const num = n => n.toLocaleString("en");
+
+function frame(body, { back = false, top = "", cls = "", btn = "" } = {}) {
+  return `<div class="onb ${cls}">${pattern}<div class="onb-inner">${top}${body}<div class="grow"></div>${btn}</div></div>`;
+}
+const primary = (label, fn, extra = "") => `<button class="btn primary ob-primary" ${extra} onclick="${fn}">${esc(label)}</button>`;
+function stepFrame(id, body, btn, eyebrow, title, sub = "") {
+  const list = stepList(), i = list.indexOf(id) + 1, n = list.length;
+  const top = `<div class="ob-top"><button class="ob-back" onclick="A.obBack()" aria-label="${esc(X.back)}">${svg("back")}</button><div class="ob-bar" role="progressbar" aria-valuemin="1" aria-valuemax="${n}" aria-valuenow="${i}"><i style="width:${Math.round(i / n * 100)}%"></i></div><span class="ob-count">${esc(X.stepOf(i, n))}</span></div>`;
+  return frame(`<p class="eyebrow">${esc(eyebrow)}</p><h1>${esc(title)}</h1>${sub ? `<p class="lead">${esc(sub)}</p>` : ""}${body}`, { top, btn });
 }
 
-function stepName() {
-  return frame(`<h1>Assalamu alaikum</h1><p class="lead">Track your five prayers, your daily amal and the qada you're making up, all on this phone. Nothing leaves it unless you turn on cloud backup.</p>
-    <div class="panel"><div class="field"><label>What should we call you?</label><input id="obName" value="${esc(S.profile.name)}" placeholder="Your name" autocomplete="given-name"></div></div>`,
-    `<button class="btn primary" onclick="A.obNext()">Continue</button>`,
-    cloud.available ? `<button class="btn ghost" onclick="A.obRestore()">Restore my backup (sign in with Google)</button><p class="small legal">${consentLine()}</p>` : "");
+/* ---------- screens ---------- */
+function sWelcome() {
+  return frame(`<div class="center-col">${logo(86)}<h1 class="brand-name">${esc(APP.name)}</h1><div class="orn"><i></i><b></b><i></i></div><p class="quote">${esc(X.quote)}</p><p class="quote-src">${esc(X.quoteSrc)}</p></div>`,
+    { cls: "welcome", btn: `${primary(X.getStarted, "A.obStart()")}${cloud.available ? `<button class="btn ghost ob-ghost" onclick="A.obGo('login')">${esc(X.logIn)}</button><p class="small legal">${consentLine()}</p>` : ""}` });
+}
+function sLogin() {
+  return frame(`<div class="center-col top">${logo(80)}<h1 class="login-h">${esc(X.welcomeBack)}</h1><p class="lead c">${esc(X.loginLead)}</p></div>`,
+    { top: `<div class="ob-top"><button class="ob-back" onclick="A.obGo('welcome')" aria-label="${esc(X.back)}">${svg("back")}</button></div>`,
+      btn: `<button class="btn white" onclick="A.obRestore()">${google}${esc(X.continueGoogle)}</button><p class="small legal">${consentLine()}</p><div class="privnote">${svg("lock")}<span>${esc(X.privateNote)}</span></div>` });
+}
+function sRestored() {
+  const days = Object.keys(S.days).length, m = store.monthLog(S, NOW()), loc = S.settings.location;
+  const since = S.createdKey ? new Date(S.createdKey + "T12:00:00") : null;
+  const sinceTxt = since ? `${since.getDate()} ${MON[since.getMonth()]} ${since.getFullYear()}` : "";
+  const email = cloud.user?.email || "";
+  const rows = [
+    [X.daysOf(days), X.since(sinceTxt)],
+    ...(feat.isOn(S, "makeups") ? [[X.makeupsLeft(store.qadaOwed(S)), X.goalLine(S.qada.goal, m.prayers)]] : []),
+    [X.settingsLoc, `${loc ? loc.label : FALLBACK_LOCATION.label} · ${METHOD_SHORT[S.settings.method] || S.settings.method}`],
+  ];
+  const remind = notifOK ? "" : `<div class="rrow remind"><span class="rcheck bell">${svg("bell")}</span><div><b>${esc(X.remindersOff)}</b><small>${esc(X.remindersOffSub)}</small></div><button class="turnon" onclick="A.obTurnOn()">${esc(X.turnOn)}</button></div>`;
+  return frame(`<div class="center-col top short">${logo(64)}<p class="eyebrow c">${esc(X.restoredFrom)}</p><h1 class="login-h">${esc(X.welcomeBackName(S.profile.name))}</h1></div>
+    <div class="rcard">${rows.map(([a, b]) => `<div class="rrow"><span class="rcheck">${svg("check")}</span><div><b>${esc(a)}</b><small>${esc(b)}</small></div></div>`).join("")}${remind}</div>
+    ${email ? `<p class="acct"><span class="av">${esc(email[0].toUpperCase())}</span>${esc(email)} · ${esc(X.backupOn)}</p>` : ""}`,
+    { btn: primary(X.openZad, "A.obOpen()") });
+}
+function sNoBackup() {
+  const email = cloud.user?.email || "";
+  return frame(`<div class="center-col top">${logo(64)}<h1 class="login-h">${esc(X.noBackupTitle)}</h1><p class="lead c">${esc(X.noBackupLead(email))}</p></div>`,
+    { btn: `${primary(X.setUp, "A.obStart()")}<button class="btn ghost ob-ghost" onclick="A.obGo('login')">${esc(X.tryAnother)}</button>` });
+}
+function sName() {
+  return stepFrame("name", `<div class="panel"><div class="field"><label for="obName">${esc(SETUP.callYou)}</label><input id="obName" value="${esc(S.profile.name)}" placeholder="${esc(X.namePlaceholder)}" autocomplete="given-name" onkeydown="if(event.key==='Enter')A.obNext()"></div><p class="hint">${esc(X.nameSub)}</p></div>`,
+    primary(COMMON.continue, "A.obNext()"), X.nameEyebrow, SETUP.welcome, SETUP.welcomeLead);
+}
+function sWhere() {
+  const loc = S.settings.location, now = NOW(), t = timesFor(now, S.settings), nx = nextPrayer(now, S.settings);
+  const asr = S.settings.asr === "hanafi" ? ASR_UI.hanafi : ASR_UI.standard;
+  const card = loc ? `<div class="loccard"><div class="lochead"><span class="pinbox">${svg("pin")}</span><div><b>${esc(loc.label)}</b><small>${esc(X.foundFrom)} · ${esc(METHOD_SHORT[S.settings.method] || S.settings.method)} · ${esc(asr)} ${esc(ASR_UI.title.replace("ʿAsr time", ""))}</small></div><button class="chg" onclick="A.locationSheet()">${esc(X.change)}</button></div>
+      <div class="dash"></div><div class="times">${PRAYERS.map(p => `<div class="${nx.p === p ? "nx" : ""}"><span>${esc(prayerName(p))}</span><b>${fmtT(t[p])}</b></div>`).join("")}</div>
+      <p class="nextline">${esc(DOW[now.getDay()])} ${now.getDate()} ${esc(MON[now.getMonth()])} · ${esc(X.nextIs(prayerName(nx.p)))} <b>${fmtT(nx.time)}</b>${nx.tomorrow ? ` ${esc(COMMON.tomorrow)}` : ""}</p></div>`
+    : `<div class="loccard"><div class="lochead"><span class="pinbox">${svg("pin")}</span><div><b>${esc(X.notSet)}</b><small>${esc(SETUP.untilSet(FALLBACK_LOCATION.label))}</small></div></div></div>`;
+  const btn = loc ? `${primary(X.looksRight, "A.obNext()")}` : `${primary(SETUP.useLocation, "A.obLocate()")}<button class="btn ghost ob-ghost" onclick="A.locationSheet()">${esc(X.searchCity)}</button><button class="skip" onclick="A.obNext()">${esc(SETUP.skipForNow)}</button>`;
+  return stepFrame("where", `${card}<p class="note-i">${svg("info")}<span>${esc(X.calcNote)}</span></p>`, btn, X.whereEyebrow, X.whereTitle, X.whereLead);
+}
+/* Asr time on this step is today's, so each option shows the consequence of the choice. */
+function asrFor(m) {
+  const probe = { ...S.settings, asr: m === "hanafi" ? "hanafi" : "shafi" };
+  return fmtT(timesFor(NOW(), probe).Asr);
+}
+function sMadhhab() {
+  const cur = madhhabOf(S);
+  const opts = madhhabOptions().map(o => `<button class="mcard ${cur === o.id ? "sel" : ""}" role="radio" aria-checked="${cur === o.id}" onclick="A.obMadhhab('${o.id}')"><span class="radio"></span><span class="mt"><b>${esc(o.name)}${o.isDefault ? `<em>${esc(MADHHAB_UI.defaultTag)}</em>` : ""}</b><small>${esc(o.summary)}</small></span><span class="masr"><small>${esc(X.asr)}</small><b>${asrFor(o.id)}</b></span></button>`).join("");
+  return stepFrame("madhhab", `<div class="mlist" role="radiogroup">${opts}</div><p class="note-i">${svg("info")}<span>${esc(X.madhhabNote)}</span></p>`,
+    primary(X.continueWith(madhhabOptions().find(o => o.id === cur).name), "A.obNext()"), X.madhhabEyebrow, X.madhhabTitle);
+}
+function sFeatures() {
+  const rows = feat.featureRows(S), { on } = feat.featureCount(S);
+  const tiles = rows.map(r => `<button class="ftile ${r.locked ? "locked" : r.on ? "on" : ""}" ${r.locked ? 'aria-disabled="true"' : `role="switch" aria-checked="${r.on}" onclick="A.obFeat('${r.id}')"`}><span class="fi">${svg(FEAT_ICON[r.id])}</span><span class="fk">${r.locked ? svg("lock") : r.on ? svg("check") : ""}</span><b>${esc(r.name)}</b><small>${esc(r.locked ? X.alwaysOn : r.sub)}</small></button>`).join("");
+  const justOn = !feat.SWITCHABLE.some(f => feat.isOn(S, f));
+  return stepFrame("features", `<div class="presets"><button class="${justOn ? "on" : ""}" onclick="A.obPreset('prayers')">${esc(X.justPrayers)}</button><button class="${feat.SWITCHABLE.every(f => feat.isOn(S, f)) ? "on" : ""}" onclick="A.obPreset('all')">${esc(X.everything)}</button></div><div class="ftiles">${tiles}</div><p class="note-i">${svg("info")}<span>${esc(X.featNote)}</span></p>`,
+    primary(stepList().includes("owe") ? X.continueN(on) : X.continueN(on), "A.obNext()"), X.featEyebrow, X.featTitle);
+}
+function estimate() {
+  const days = SPANS[owe.span] ?? 0, per = store.qadaKeys(S).length;
+  return { prayers: days * per, fasts: Math.round(days / 354 * 30), days, per };
+}
+function sOwe() {
+  const q = S.qada, hasWitr = store.qadaKeys(S).includes("Witr");
+  const seg = ["yes", "no", "notsure"].map(k => `<button class="${owe.mode === k ? "on" : ""}" onclick="A.obOwe('${k}')">${esc(X[k === "notsure" ? "notSure" : k])}</button>`).join("");
+  let body = "";
+  if (owe.mode === "yes") {
+    const e = estimate();
+    const spans = [["none", X.none], ["under", X.underYear], ["oneTwo", X.oneTwo], ["threeFive", X.threeFive]];
+    body = `<div class="panel owep"><h4>${esc(X.howLong)}</h4><div class="spans">${spans.map(([k, l]) => `<button class="${owe.span === k ? "sel" : ""}" onclick="A.obSpan('${k}')">${esc(l)}</button>`).join("")}</div>
+      <button class="exact ${owe.exact ? "sel" : ""}" onclick="A.obExact()">${esc(X.exact)}<span>›</span></button>
+      ${owe.exact ? `<div class="qgrid" style="margin-top:12px">${[...store.qadaKeys(S), "fasts"].map(p => `<div class="field"><label for="ob_${p}">${esc(p === "fasts" ? M.fasts : prayerName(p))}</label><input type="number" inputmode="numeric" min="0" id="ob_${p}" value="${q[p] || 0}"></div>`).join("")}</div>`
+      : owe.span ? `<p class="est">${esc(X.about)} <b>${num(e.prayers)}</b> ${esc(X.prayersWord)} · ${num(e.fasts)} ${esc(X.fastsWord)}</p>${hasWitr ? `<p class="witrnote">${svg("check")}<span><b>${esc(X.includesWitr)}</b> · ${esc(X.witrWajib)}</span></p>` : ""}` : ""}
+      <div class="hr"></div><h4>${esc(X.perDay)} <span>· ${esc(X.yourGoal)}</span></h4>
+      <div class="goals">${[1, 2, 6].map(n => `<button class="${owe.goalPerDay === n ? "sel" : ""}" onclick="A.obGoal(${n})"><b>${n}</b><small>${esc(X.aMonth(n * 30))}</small></button>`).join("")}</div></div>`;
+  } else if (owe.mode === "notsure") {
+    body = `<div class="panel fine"><b>${esc(X.fine)}</b><p>${esc(X.fineBody)}</p></div>`;
+  }
+  return stepFrame("owe", `<div class="oseg">${seg}</div>${body}`, primary(X.start, "A.obFinish()"), X.oweEyebrow, X.oweTitle);
 }
 
-function stepLocation() {
-  const loc = S.settings.location;
-  return frame(`<h1>Prayer times</h1><p class="lead">Times are calculated on your phone from your location, so they work without internet. The default method is ISNA; you can change it in Settings.</p>
-    <div class="panel"><div class="field"><label>Location</label><div style="font-size:15px;font-weight:600">${loc ? esc(loc.label) : "Not set yet"}</div>
-    <small class="muted" style="font-size:12px">${loc ? `${loc.lat.toFixed(3)}, ${loc.lng.toFixed(3)}` : `Until you set it, times use ${FALLBACK_LOCATION.label}.`}</small></div></div>`,
-    loc ? `<button class="btn primary" onclick="A.obNext()">Continue</button>` : `<button class="btn primary" onclick="A.obGps()">Use my location</button>`,
-    loc ? `<button class="btn ghost" onclick="A.obGps()">Update location</button>` : `<button class="btn ghost" onclick="A.obNext()">Skip for now</button>`);
-}
-
-function stepQada() {
-  const q = S.qada;
-  return frame(`<h1>What you owe</h1><p class="lead">An honest estimate is enough. After today the balance moves on its own: missed prayers add, made-up ones subtract.</p>
-    <div class="panel">
-      <div class="field"><label>Quick fill: years of prayers and fasts missed</label><div style="display:flex;gap:8px"><input id="obYears" type="number" inputmode="decimal" min="0" step="0.5" placeholder="e.g. 2"><button class="btn ghost" style="flex:none;padding:12px 14px;background:var(--ivory);color:var(--ink2);margin:0;width:auto" onclick="A.obYears()">Fill</button></div></div>
-      <div class="qgrid" style="margin-top:14px">${[...PRAYERS, "fasts"].map(p => `<div class="field"><label>${p === "fasts" ? "Fasts" : p}</label><input type="number" inputmode="numeric" min="0" id="ob_${p}" value="${q[p]}"></div>`).join("")}</div>
-    </div>`,
-    `<button class="btn primary" onclick="A.obSaveQada();A.obNext()">Continue</button>`,
-    `<button class="btn ghost" onclick="A.obNext()">I don't owe any</button>`);
-}
-
-function stepGoal() {
-  return frame(`<h1>A monthly goal</h1><p class="lead">Pick something you can finish. Small and steady beats big and abandoned. You can change it any time.</p>
-    <div class="panel">
-      <div class="field"><label>Makeup prayers this month</label><div class="stepper"><button onclick="A.stepG('g',-5)" aria-label="5 fewer makeup prayers">−</button><b id="gP">${S.qada.goal}</b><button onclick="A.stepG('g',5)" aria-label="5 more makeup prayers">+</button></div></div>
-      <div class="field"><label>Makeup fasts this month</label><div class="stepper"><button onclick="A.stepG('f',-1)" aria-label="1 fewer makeup fast">−</button><b id="gF">${S.qada.fastGoal}</b><button onclick="A.stepG('f',1)" aria-label="1 more makeup fast">+</button></div></div>
-    </div>`,
-    `<button class="btn primary" onclick="A.obFinish()">Start tracking</button>`);
-}
-
-let drawn = "";
+let notifOK = false;
 function draw() {
-  // Only redraw when the step or location changes, so the minute timer doesn't wipe what's being typed
-  const sig = `${step}|${JSON.stringify(S.settings.location)}|${cloud.available}`;
-  if (sig === drawn && $("#v-onboard").firstChild) return;
+  const root = $("#v-onboard");
+  const sig = `${screen}|${JSON.stringify(S.settings.location)}|${S.settings.asr}|${S.settings.method}|${JSON.stringify(S.settings.features)}|${cloud.available}|${cloud.user?.email || ""}|${notifOK}|${JSON.stringify(owe)}`;
+  if (sig === drawn && root.firstChild) return;
   drawn = sig;
-  $("#v-onboard").innerHTML = [stepName, stepLocation, stepQada, stepGoal][step]();
+  const f = { welcome: sWelcome, login: sLogin, restored: sRestored, nobackup: sNoBackup, name: sName, where: sWhere, madhhab: sMadhhab, features: sFeatures, owe: sOwe }[screen];
+  const keep = root.querySelector("input")?.value;
+  root.innerHTML = f();
+  void keep;
+  root.firstChild?.scrollTo?.(0, 0);
 }
+let drawn = "";
 
+/* ---------- actions ---------- */
+A.obGo = s => { screen = s; drawn = ""; commit(); };
+A.obStart = () => A.obGo("name");
+A.obBack = () => {
+  const list = stepList(), i = list.indexOf(screen);
+  if (screen === "name") return A.obGo("welcome");
+  if (i > 0) { if (screen === "name") S.profile.name = ($("#obName")?.value || "").trim(); A.obGo(list[i - 1]); }
+};
 A.obNext = () => {
-  if (step === 0) { S.profile.name = $("#obName").value.trim(); }
-  step = Math.min(STEPS - 1, step + 1);
-  commit();
+  const list = stepList(), i = list.indexOf(screen);
+  if (screen === "name") S.profile.name = ($("#obName")?.value || "").trim();
+  if (screen === "features" && !list.includes("owe")) return A.obFinish();
+  if (i < list.length - 1) A.obGo(list[i + 1]);
 };
-A.obRestore = async () => {
-  try {
-    await signIn();
-    if (S.profile.onboarded) { step = 0; drawn = ""; go("home"); toast("Welcome back · your data is restored"); }
-    else toast("Signed in. No backup yet, so let's set things up.");
-  } catch (e) { console.warn("restore", e); toast("Sign-in didn't finish. Try again."); }
+A.obMadhhab = m => { store.setMadhhab(S, m); commit(); };
+A.obFeat = f => { feat.setFeature(S, f, !feat.isOn(S, f)); commit(); };
+A.obPreset = p => { feat.applyPreset(S, p); commit(); };
+A.obOwe = k => { owe.mode = k; if (k === "yes" && !owe.span) owe.span = "oneTwo"; drawn = ""; commit(); };
+A.obSpan = k => { owe.span = k; owe.exact = false; drawn = ""; commit(); };
+A.obExact = () => { owe.exact = !owe.exact; drawn = ""; commit(); };
+A.obGoal = n => { owe.goalPerDay = n; drawn = ""; commit(); };
+
+/* PM1: location ask (our own sheet first, then the system prompt) */
+A.obLocate = () => {
+  openSheet(`<div class="perm"><span class="permic">${svg("pin")}</span><h3>${esc(X.permLocTitle)}</h3><p>${esc(X.permLocBody)}</p>
+    <div class="cta col">${primary(X.permLocYes, "A.obLocateGo()")}<button class="btn ghost" onclick="A.closeSheet();A.locationSheet()">${esc(X.permLocNo)}</button></div><p class="note c">${esc(X.permLocFoot)}</p></div>`);
 };
-A.obGps = async () => {
-  toast("Finding your location…");
+A.obLocateGo = async () => {
+  closeSheet(); toast(T.finding);
   try {
     const { lat, lng } = await currentPosition();
     S.settings.location = { lat, lng, label: await cityName(lat, lng) };
     commit();
-  } catch (e) { toast("Couldn't get your location. You can set it later in Settings."); }
-};
-A.obYears = () => {
-  const y = parseFloat($("#obYears").value) || 0;
-  // A lunar year is ~354 days of five prayers, plus one Ramadan of fasts
-  for (const p of PRAYERS) $(`#ob_${p}`).value = Math.round(y * 354);
-  $("#ob_fasts").value = Math.round(y * 30);
-};
-A.obSaveQada = () => { for (const p of [...PRAYERS, "fasts"]) S.qada[p] = Math.max(0, parseInt($(`#ob_${p}`).value) || 0); };
-A.obFinish = () => {
-  S.qada.goal = +$("#gP").textContent; S.qada.fastGoal = +$("#gF").textContent;
-  S.profile.onboarded = true;
-  S.createdKey = todayKey();
-  step = 0; drawn = "";
-  commit();
-  go("home");
-  toast(S.profile.name ? `Welcome, ${S.profile.name}` : "Welcome");
+  } catch (e) { toast(SETUP.locFailed); }
 };
 
-onRender(() => { if (UI.view === "onboard") draw(); });
-export function startOnboarding() { step = 0; drawn = ""; go("onboard"); }
+/* PM1: reminders ask */
+function notifSheet() {
+  const t = timesFor(NOW(), S.settings), nx = nextPrayer(NOW(), S.settings), nm = prayerName(nx.p);
+  openSheet(`<div class="perm"><span class="permic">${svg("bell")}</span><h3>${esc(X.permNotTitle)}</h3><p>${esc(X.permNotBody)}</p>
+    <div class="fakenote"><span class="appic">${logo(22)}</span><div><b>${esc(X.notifTitle)}</b><span class="now">${esc(X.now)}</span><i>${esc(nm)} · ${fmtT(nx.time)}</i><small>${esc(X.notifBody(nm))}</small></div></div>
+    <div class="ptimes">${PRAYERS.map(p => `<div><span>${esc(prayerName(p))}</span><b>${fmtT(t[p])}</b></div>`).join("")}</div>
+    <div class="cta col">${primary(X.permNotYes, "A.obNotifyYes()")}<button class="btn text" onclick="A.obNotifyNo()">${esc(X.permNotNo)}</button></div><p class="note c">${esc(X.permNotFoot)}</p></div>`);
+}
+A.obNotifyYes = async () => { const ok = await requestNotifications(); if (ok) S.settings.prayerAlerts = true; closeSheet(); completeSetup(); };
+A.obNotifyNo = () => { closeSheet(); completeSetup(); };
+A.obTurnOn = async () => { notifOK = await requestNotifications(); if (notifOK) { S.settings.prayerAlerts = true; toast(X.remindersOn); } drawn = ""; commit(); };
+
+A.obRestore = async () => {
+  try {
+    await signIn();
+    notifOK = await notificationsGranted();
+    screen = S.profile.onboarded ? "restored" : "nobackup";
+    drawn = ""; commit();
+  } catch (e) { console.warn("restore", e); toast(T.signInFailed); }
+};
+A.obOpen = () => { screen = "welcome"; drawn = ""; go("home"); toast(SETUP.welcomeBack); };
+
+A.obFinish = () => {
+  // Apply the make-ups answer, then ask about reminders (PM1) before opening Home
+  if (screen === "owe" || owe.mode) {
+    if (owe.mode === "yes") {
+      if (owe.exact) { for (const p of [...store.qadaKeys(S), "fasts"]) S.qada[p] = Math.max(0, parseInt($(`#ob_${p}`)?.value) || 0); }
+      else { const e = estimate(); for (const p of store.qadaKeys(S)) S.qada[p] = Math.round(e.days); S.qada.fasts = e.fasts; }
+      S.qada.goal = owe.goalPerDay * 30;
+    }
+  }
+  if (isNativeAsk()) { notifSheet(); return; }
+  completeSetup();
+};
+const isNativeAsk = () => true; // always show our pre-ask; the system prompt follows only on "Turn on reminders"
+function completeSetup() {
+  S.profile.onboarded = true;
+  S.createdKey = todayKey();
+  screen = "welcome"; drawn = "";
+  commit();
+  go("home");
+  toast(SETUP.welcomeName(S.profile.name));
+}
+
+/* ---------- start ---------- */
+/** New installs get Karachi (University of Islamic Sciences) from store.defaultState. A copy saved before set-up
+ *  finished, still on the old ISNA default, moves to Karachi here too. Set-up users keep their method. */
+export function startOnboarding() {
+  if (!S.profile.onboarded && !S.settings.methodChosen && S.settings.method === "NorthAmerica") S.settings.method = "Karachi";
+  screen = "welcome"; owe = { mode: "", span: "", goalPerDay: 2, exact: false }; drawn = "";
+  go("onboard");
+}
 A.startOnboarding = startOnboarding;
+onRender(() => { if (UI.view === "onboard") draw(); });
+
+/* ---------- lock screen (LK2) ---------- */
+function renderLock() {
+  const el = $("#lock");
+  if (!el) return;
+  const now = NOW(), nx = nextPrayer(now, S.settings);
+  const mins = Math.max(0, Math.round((nx.time - now) / 60000));
+  const date = `${DOW[now.getDay()]} ${now.getDate()} ${MON[now.getMonth()]}`;
+  const longDay = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][now.getDay()];
+  const hj = hijriLabel(now).replace(/ \d{4}$/, "");
+  el.innerHTML = `<svg class="pattern" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice"><rect width="100%" height="100%" fill="url(#st)"/></svg>
+    <div class="lock-in">${logo(64)}<p class="lock-date">${esc(longDay)} ${now.getDate()} ${esc(MON[now.getMonth()])}${hj ? ` · ${esc(hj)}` : ""}</p>
+    <h1>${esc(X.greet(S.profile.name))}</h1>
+    <div class="nextpill">${svg("clock")}<span>${esc(prayerName(nx.p))} at <b>${fmtT(nx.time)}</b> · in ${esc(TIMES.hm(Math.floor(mins / 60), mins % 60))}</span></div>
+    <div class="grow"></div>
+    <button class="fp" onclick="A.unlock()" aria-label="${esc(X.unlock)}"><span>${svg("finger")}</span></button>
+    <p class="touch">${esc(X.lockTouch)}</p><p class="pin">${esc(X.lockOr)} <button onclick="A.unlock()">${esc(X.lockPin)}</button></p></div>`;
+}
+onRender(renderLock);

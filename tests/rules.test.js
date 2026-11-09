@@ -51,6 +51,11 @@ describe.skipIf(!emulator)("firestore.rules", () => {
       await assertSucceeds(getDocs(collection(alice(), "users/alice/years")));
       await assertSucceeds(setDoc(doc(alice(), "users/alice/years/2027"), year));
     });
+    it("can save tool progress (S.tools) inside the main state document", async () => {
+      const state = JSON.stringify({ settings: {}, tools: { quran: { mushaf: "indopak15", pages: { indopak15: 42 } }, hizb: { weeks: {}, khatms: 1 } } });
+      await assertSucceeds(setDoc(doc(alice(), "users/alice"), { ...main, state, updatedAt: 4 }));
+      await assertFails(setDoc(doc(bob(), "users/alice"), { ...main, state, updatedAt: 5 }));
+    });
     it("can delete their own documents", async () => {
       await assertSucceeds(deleteDoc(doc(alice(), "users/alice/years/2026")));
       await assertSucceeds(deleteDoc(doc(alice(), "users/alice")));

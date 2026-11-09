@@ -20,7 +20,7 @@ export default defineConfig({
       manifest: {
         name: "Zad",
         short_name: "Zad",
-        description: "Track your five prayers, daily amal and qada. Works offline; everything stays on your phone.",
+        description: "Track your five prayers, Good Deeds and make-ups. Works offline; everything stays on your phone.",
         theme_color: "#0F3D2E",
         background_color: "#F8F4EA",
         display: "standalone",
@@ -36,6 +36,13 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,png,svg,woff,woff2}"],
         navigateFallback: "index.html",
+        // The offline Qurʾān (public/quran, about 6 MB) is not precached: each index, page file and font is
+        // kept once it has been opened, so pages read before work offline (cache-first, never refetched).
+        runtimeCaching: [{
+          urlPattern: ({ url }) => url.pathname.includes("/quran/"),
+          handler: "CacheFirst",
+          options: { cacheName: "zad-quran", expiration: { maxEntries: 400 }, cacheableResponse: { statuses: [0, 200] } },
+        }],
       },
     }),
   ],

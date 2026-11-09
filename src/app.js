@@ -3,6 +3,8 @@ import * as store from "./store.js";
 import { reschedule } from "./notify.js";
 import { dkey } from "./util.js";
 import { setStatusBar } from "./platform.js";
+import { navTabs } from "./features.js";
+import { NAV } from "./strings.js";
 
 export const S = store.load();
 export const UI = { view: "home", range: "day", selDay: 0, trkDay: 0 };
@@ -23,6 +25,9 @@ export function render() { for (const r of renderers) r(); }
 const commitHooks = [];
 /** Run after every user change (cloud sync listens here). */
 export function onCommit(fn) { commitHooks.push(fn); }
+
+/** A change saved without a redraw (tool counters, reading position): only tell the listeners (cloud sync). */
+export function touched() { for (const h of commitHooks) h(); }
 
 /** Persist, refresh reminders and redraw. */
 export function commit() {
@@ -48,13 +53,42 @@ export function applyState(next) {
   render();
 }
 
+/* ---------- appearance: S.settings.appearance = "system" | "light" | "dark" ---------- */
+const darkQuery = typeof matchMedia === "function" ? matchMedia("(prefers-color-scheme: dark)") : null;
+export const systemIsDark = () => !!darkQuery?.matches;
+export function resolvedTheme() {
+  const a = S.settings.appearance || "system";
+  return a === "dark" || (a === "system" && systemIsDark()) ? "dark" : "light";
+}
+export function applyTheme() {
+  const t = resolvedTheme();
+  document.documentElement.dataset.theme = t;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", t === "dark" ? "#0C1613" : "#0F3D2E");
+}
+darkQuery?.addEventListener?.("change", () => { applyTheme(); render(); });
+
+/* ---------- bottom bar N2 (tabs come from features.navTabs) ---------- */
+// Outline icons (IC-O). The active tab fills in (see theme.css).
+const NAV_ICON = {
+  home: '<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  tracker: '<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/>',
+  tools: '<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><path d="M17.25 13.5v7.5M13.5 17.25H21"/>',
+  qada: '<path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/><path d="M21 3v6h-6"/>',
+  progress: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
+};
+let navSig = "";
+function renderNav() {
+  const tabs = navTabs(S);
+  const sig = tabs.map(t => t.id).join() + "|" + UI.view;
+  if (sig === navSig) return;
+  navSig = sig;
+  $("#nav").innerHTML = tabs.map(t => `<button type="button" data-v="${t.id}" class="${t.id === UI.view ? "on" : ""}"${t.id === UI.view ? ' aria-current="page"' : ""} onclick="A.go('${t.id}')"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_ICON[t.id]}</svg>${NAV[t.id] || t.label}</button>`).join("");
+}
+onRender(() => { applyTheme(); renderNav(); });
+
 export function go(v) {
   UI.view = v;
   $$(".view").forEach(e => e.classList.toggle("on", e.id === "v-" + v));
-  $$("#nav button").forEach(b => {
-    b.classList.toggle("on", b.dataset.v === v);
-    if (b.dataset.v === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
-  });
   $("#nav").hidden = v === "onboard";
   $("#phone").dataset.view = v;
   setStatusBar(v === "home" || v === "onboard");
@@ -104,3 +138,19 @@ export function closeSheet() {
   returnFocus = null;
 }
 A.closeSheet = closeSheet;
+applyTheme();
+
+/* ---------- glossary explainers ("?" / ⓘ next to an Arabic term) ---------- */
+import { gloss } from "./glossary.js";
+import { APP as APP_STR, COMMON } from "./strings.js";
+const escH = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+/** Small ⓘ button that opens the explainer for a glossary id. Put it next to the term. */
+export function glossBtn(id) {
+  const g = gloss(id);
+  return g ? `<button type="button" class="info-btn" aria-label="${escH(COMMON.whatDoesThisMean)}: ${escH(g.term)}" onclick="event.stopPropagation();A.gloss('${id}')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.01"/></svg></button>` : "";
+}
+A.gloss = id => {
+  const g = gloss(id); if (!g) return;
+  openSheet(`<h3>${escH(g.term)} <span class="gl-ar" lang="ar" dir="rtl">${escH(g.ar)}</span></h3><p class="gl-body">${escH(g.meaning)}</p>${g.draft ? `<p class="gl-draft">${escH(APP_STR.draftFlag)}</p>` : ""}
+    <div class="cta"><button class="btn primary" onclick="A.closeSheet()">${escH(COMMON.gotIt)}</button></div>`);
+};

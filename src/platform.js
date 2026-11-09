@@ -105,3 +105,20 @@ export async function authenticate() {
   const { BiometricAuth } = await import("@aparajita/capacitor-biometric-auth");
   await BiometricAuth.authenticate({ reason: "Unlock your tracker", cancelTitle: "Cancel", allowDeviceCredential: true, androidTitle: "Zad", androidSubtitle: "Unlock to continue" });
 }
+
+/* ---------- notification permission (setup's permission ask, restore screen) ---------- */
+/** Whether reminders are already allowed on this device. */
+export async function notificationsGranted() {
+  try {
+    if (isNative()) { const { LocalNotifications } = await import("@capacitor/local-notifications"); return (await LocalNotifications.checkPermissions()).display === "granted"; }
+    return typeof Notification !== "undefined" && Notification.permission === "granted";
+  } catch (e) { return false; }
+}
+/** Ask the system for permission to send reminders. Returns true when granted. */
+export async function requestNotifications() {
+  try {
+    if (isNative()) { const { LocalNotifications } = await import("@capacitor/local-notifications"); return (await LocalNotifications.requestPermissions()).display === "granted"; }
+    if (typeof Notification === "undefined") return false;
+    return (await Notification.requestPermission()) === "granted";
+  } catch (e) { return false; }
+}
