@@ -46,5 +46,6 @@ export default defineConfig({
       },
     }),
   ],
-  test: { environment: "node" },
+  // Tests use local-time dates for a Chicago sample day, so pin the zone (CI runs in UTC).
+  test: { environment: "node", env: { TZ: "America/Chicago" } },
 });
