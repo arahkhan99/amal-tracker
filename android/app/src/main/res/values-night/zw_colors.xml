@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="zw_missed">#D0624B</color>
+    <color name="zw_card">#16231E</color>
+    <color name="zw_card_ink">#ECE5D3</color>
+    <color name="zw_card_ink2">#9FADA5</color>
+    <color name="zw_card_inset">#1F302A</color>
+    <color name="zw_card_dash">#56665E</color>
+    <color name="zw_card_focus_bg">#3A3218</color>
+    <color name="zw_card_focus_ink">#E8C766</color>
+    <color name="zw_card_chip_bg">#24313A</color>
+    <color name="zw_card_chip_ink">#9DB6CE</color>
+</resources>

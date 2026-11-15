@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="zw_small_desc">Next prayer and countdown</string>
+    <string name="zw_medium_desc">Next prayer and today\'s five prayers</string>
+    <string name="zw_large_desc">Next prayer, today\'s prayers and Good Deeds</string>
+    <string name="zw_stale">Open Zad to update</string>
+</resources>

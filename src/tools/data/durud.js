@@ -15,7 +15,7 @@ export const DURUD_META = {
   ],
   "repeatCounts": "None given in the PDF.",
   "source": "docs/durud-40.md",
-  "status": "draft-pending-review"
+  "status": "approved"
 };
 
 export const DURUD = [
@@ -28,7 +28,7 @@ export const DURUD = [
     "pdfPages": "3",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 2,
@@ -39,7 +39,7 @@ export const DURUD = [
     "pdfPages": "4",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 3,
@@ -50,7 +50,7 @@ export const DURUD = [
     "pdfPages": "4 (Arabic, transliteration); 5 (translation)",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 4,
@@ -61,7 +61,7 @@ export const DURUD = [
     "pdfPages": "5 (Arabic, transliteration, start of translation); 6 (end of translation)",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 5,
@@ -72,7 +72,7 @@ export const DURUD = [
     "pdfPages": "6 (Arabic, transliteration, start of translation); 7 (end of translation)",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 6,
@@ -83,7 +83,7 @@ export const DURUD = [
     "pdfPages": "7 (Arabic, transliteration, start of translation); 8 (end of translation)",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 7,
@@ -94,7 +94,7 @@ export const DURUD = [
     "pdfPages": "8",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 8,
@@ -105,7 +105,7 @@ export const DURUD = [
     "pdfPages": "9",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 9,
@@ -116,7 +116,7 @@ export const DURUD = [
     "pdfPages": "10",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 10,
@@ -127,7 +127,7 @@ export const DURUD = [
     "pdfPages": "10 (Arabic); 11 (transliteration, translation)",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 11,
@@ -138,7 +138,7 @@ export const DURUD = [
     "pdfPages": "11 (Arabic); 12 (transliteration, translation)",
     "isTashahhud": false,
     "note": "The PDF's own English translation (p. 12) ends \"...upon the family of Ibrahim in all the worlds\", but neither the printed Arabic nor the printed transliteration of this durud contains \"fil-'alamin\". Flag for the reviewer.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 12,
@@ -149,7 +149,7 @@ export const DURUD = [
     "pdfPages": "12 (Arabic, start of transliteration); 13 (rest of transliteration, translation)",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 13,
@@ -160,7 +160,7 @@ export const DURUD = [
     "pdfPages": "13 (Arabic, start of transliteration); 14 (rest of transliteration, translation)",
     "isTashahhud": false,
     "note": "The PDF prints this heading as \"---- 13----\" (no space before the closing dashes). Differs from no. 12 only by \"wa 'ala\" before \"azwajihi\".",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 14,
@@ -171,7 +171,7 @@ export const DURUD = [
     "pdfPages": "14 (Arabic, transliteration); 15 (translation)",
     "isTashahhud": false,
     "note": "The Arabic prints a small nun (nun qutni) under the hamzat al-wasl of \"an-nabiyyi\", i.e. Muhammadin + an-nabiyyi read with a linking \"ni\"; the PDF transliteration likewise reads MUHAMMADI-NIN-NABIYYI. The PDF's English (p. 15) says \"upon the family of Ibrahim\", but the printed Arabic and transliteration say \"'ala Ibrahim\" (no \"al\").",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 15,
@@ -182,7 +182,7 @@ export const DURUD = [
     "pdfPages": "15 (Arabic, transliteration); 16 (translation)",
     "isTashahhud": false,
     "note": "No closing \"innaka Hamidun Majid\" is printed in this durud.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 16,
@@ -193,7 +193,7 @@ export const DURUD = [
     "pdfPages": "16 (Arabic begins); 17 (Arabic ends, transliteration); 18 (translation)",
     "isTashahhud": false,
     "note": "In the second section the first \"Ibrahim\" is printed with a hamza above the alif and a kasra below (أِبْرَاهِيْمَ, p. 16, 4th Arabic line); elsewhere it is printed اِبْرَاهِيْمَ. Transcribed as printed.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 17,
@@ -204,7 +204,7 @@ export const DURUD = [
     "pdfPages": "18 (Arabic begins); 19 (Arabic ends, transliteration, translation)",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 18,
@@ -215,7 +215,7 @@ export const DURUD = [
     "pdfPages": "19 (Arabic begins); 20 (Arabic ends, transliteration, translation)",
     "isTashahhud": false,
     "note": "Same wording as no. 16's first two sections.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 19,
@@ -226,7 +226,7 @@ export const DURUD = [
     "pdfPages": "20 (Arabic begins); 21 (Arabic ends, transliteration, translation)",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 20,
@@ -237,7 +237,7 @@ export const DURUD = [
     "pdfPages": "21 (Arabic); 26 (transliteration, translation). Pages 22-25 between them are a chart of the Prophet's names (see \"Other content\" above).",
     "isTashahhud": false,
     "note": "The PDF renders \"al-ummi\" as \"untaught\" throughout; my draft uses \"unlettered\". Small nun (nun qutni) printed under \"an-nabiyyi\" both times.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 21,
@@ -248,7 +248,7 @@ export const DURUD = [
     "pdfPages": "26 (Arabic); 27 (transliteration, start of translation); 28 (end of translation)",
     "isTashahhud": false,
     "note": "In \"الْمَحْمُوْدَ\" (p. 26, 5th Arabic line) a solid black square is printed over the letter ha / its vowel, a typesetting defect. Read as الْمَحْمُوْدَ; the PDF transliteration (p. 27) confirms MAHMUDA.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 22,
@@ -259,7 +259,7 @@ export const DURUD = [
     "pdfPages": "28 (Arabic, start of transliteration); 29 (rest of transliteration, translation)",
     "isTashahhud": false,
     "note": "Opens with اَللّٰهُمَّ (alif with fatha, no hamza sign), unlike most of the other durud, which print أَللّٰهُمَّ. The PDF's English (p. 29) leaves out \"and the family of Muhammad\" in the second half, though the Arabic and transliteration have it.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 23,
@@ -270,7 +270,7 @@ export const DURUD = [
     "pdfPages": "29 (Arabic begins, start of transliteration); 30 (Arabic ends, rest of transliteration, translation)",
     "isTashahhud": false,
     "note": "The first word is printed اَللّٰهُمَّ (no hamza sign); the later two are أَللّٰهُمَّ. No pause marks inside this durud.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 24,
@@ -281,7 +281,7 @@ export const DURUD = [
     "pdfPages": "30 (Arabic); 31 (transliteration, translation)",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 25,
@@ -292,7 +292,7 @@ export const DURUD = [
     "pdfPages": "31 (Arabic, at the foot of the page); 32 (transliteration, translation)",
     "isTashahhud": false,
     "note": "A single short line, the shortest item in the collection together with no. 40.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 26,
@@ -303,7 +303,7 @@ export const DURUD = [
     "pdfPages": "32 (Arabic, transliteration, start of translation); 33 (end of translation)",
     "isTashahhud": true,
     "note": "Nos. 26 to 39 are forms of the tashahhud. The PDF's English renders \"ayyuhan-nabiyyu\" as \"O Messenger\" in every one of them.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 27,
@@ -314,7 +314,7 @@ export const DURUD = [
     "pdfPages": "33 (Arabic, transliteration, start of translation); 34 (end of translation)",
     "isTashahhud": true,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 28,
@@ -325,7 +325,7 @@ export const DURUD = [
     "pdfPages": "34 (Arabic, transliteration, start of translation); 35 (end of translation)",
     "isTashahhud": true,
     "note": "No pause marks are printed inside this durud.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 29,
@@ -336,7 +336,7 @@ export const DURUD = [
     "pdfPages": "35 (Arabic, transliteration, start of translation); 36 (end of translation)",
     "isTashahhud": true,
     "note": "\"Salamun\" (indefinite) is used twice here, not \"as-salamu\".",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 30,
@@ -347,7 +347,7 @@ export const DURUD = [
     "pdfPages": "36 (Arabic, transliteration, start of translation); 37 (end of translation)",
     "isTashahhud": true,
     "note": "\"الصَّلِحِيْنَ\" is printed here without the alif after the sad (elsewhere الصَّالِحِيْنَ). The PDF's English (p. 37) renders \"wa a'udhu billahi minan-nar\" as \"I seek His mercy from the Fire\"; the Arabic means \"I seek refuge in Allah from the Fire\".",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 31,
@@ -358,7 +358,7 @@ export const DURUD = [
     "pdfPages": "37 (Arabic, start of transliteration); 38 (rest of transliteration, translation)",
     "isTashahhud": true,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 32,
@@ -369,7 +369,7 @@ export const DURUD = [
     "pdfPages": "38 (Arabic); 39 (transliteration, translation)",
     "isTashahhud": true,
     "note": "Page 39 carries only the transliteration and translation of this durud; there is no Arabic on p. 39.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 33,
@@ -380,7 +380,7 @@ export const DURUD = [
     "pdfPages": "40",
     "isTashahhud": true,
     "note": "Contains no shahadah and no salam on \"us\"; it ends after \"wa barakatuh\". \"أَيُّهَا\" is printed here with a hamza sign (elsewhere اَيُّهَا).",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 34,
@@ -391,7 +391,7 @@ export const DURUD = [
     "pdfPages": "40 (Arabic, start of transliteration); 41 (rest of transliteration, translation)",
     "isTashahhud": true,
     "note": "\"لَآ\" is printed here without a shadda (contrast لَّآ in the other tashahhud forms). Uses \"shahidtu\" (past tense) instead of \"ash-hadu\", and \"as-salamu 'alan-nabiyyi\" (third person) instead of \"'alayka ayyuhan-nabiyyu\".",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 35,
@@ -402,7 +402,7 @@ export const DURUD = [
     "pdfPages": "41 (Arabic); 42 (transliteration, translation)",
     "isTashahhud": true,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 36,
@@ -413,7 +413,7 @@ export const DURUD = [
     "pdfPages": "42 (Arabic); 43 (transliteration, translation)",
     "isTashahhud": true,
     "note": "\"وَاَشْهَدُ\" (second one) is printed with a plain alif plus fatha, no hamza sign. The PDF's English (p. 43) says \"his servant\", but the Arabic and transliteration (`ABDUL-LAHI) say \"'abdullahi\", the servant of Allah. See the uncertain readings for two marks in this durud.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 37,
@@ -424,7 +424,7 @@ export const DURUD = [
     "pdfPages": "43 (Arabic, start of transliteration); 44 (rest of transliteration, translation)",
     "isTashahhud": true,
     "note": "The PDF prints this heading as \"---- 37----\" (no space before the closing dashes). No shahadah is printed in this durud.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 38,
@@ -435,7 +435,7 @@ export const DURUD = [
     "pdfPages": "44 (Arabic, transliteration); 45 (translation)",
     "isTashahhud": true,
     "note": "Has \"wa rahmatullah\" without \"wa barakatuh\". The first \"اَشْهَدُ\" is printed with a plain alif plus fatha, no hamza sign.",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 39,
@@ -446,7 +446,7 @@ export const DURUD = [
     "pdfPages": "45 (Arabic, transliteration, start of translation); 46 (end of translation)",
     "isTashahhud": true,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 40,
@@ -457,6 +457,6 @@ export const DURUD = [
     "pdfPages": "46",
     "isTashahhud": false,
     "note": null,
-    "status": "draft-pending-review"
+    "status": "approved"
   }
 ];

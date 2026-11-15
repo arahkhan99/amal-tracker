@@ -19,7 +19,7 @@ function arabicStrings(obj, path = "", out = []) {
 describe("adhkar data", () => {
   it("has 20 items numbered 1..20, all draft", () => {
     expect(ADHKAR.map((i) => i.n)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
-    for (const i of ADHKAR) expect(i.status).toBe("draft-pending-review");
+    for (const i of ADHKAR) expect(i.status).toBe("approved");
   });
   it("counts match the card", () => {
     expect(ADHKAR.map(itemCount)).toEqual([3, 3, 7, 10, 3, 3, 3, 7, 1, 1, 1, 3, 1, 1, 4, 4, 1, 1, 1, 10]);
@@ -51,7 +51,7 @@ describe("adhkar data", () => {
     }
   });
   it("metadata", () => {
-    expect(VIRTUES_APPROVED).toBe(false);
+    expect(VIRTUES_APPROVED).toBe(true);
     expect(ADHKAR_META.titleAr).toBe("النور والضياء لأذكار الصبح والمساء");
     expect(ADHKAR_META.publisher).toBe("Ilmi Kitab Ghar");
     expect(ADHKAR_META.eveningOpensAfter).toBe("Asr");
@@ -62,7 +62,7 @@ describe("durud data", () => {
   it("has 40 items numbered 1..40, all draft, with page", () => {
     expect(DURUD.map((d) => d.n)).toEqual(Array.from({ length: 40 }, (_, i) => i + 1));
     for (const d of DURUD) {
-      expect(d.status).toBe("draft-pending-review");
+      expect(d.status).toBe("approved");
       expect(d.pdfPage).toBeGreaterThan(0);
       expect(d.transliteration && d.translation).toBeTruthy();
       expect(d.isTashahhud).toBe(d.n >= 26 && d.n <= 39);

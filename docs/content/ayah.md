@@ -1,0 +1,407 @@
+# Weekly āyāt (A01–A52)
+
+52 cards, one per week, for the Home screen: encouragement and hope, gentle in tone. Each is one āyah or a short passage of 2–3 consecutive āyāt.
+
+Themes (count): Provision for the Ākhirah 6 · Hope in Allah’s mercy 6 · Steadfastness and consistency 7 · Dhikr 6 · Repentance and return 6 · Patience 6 · Gratitude 5 · Tawakkul (trust in Allah) 5 · Good opinion of Allah (husn al-zann) 5. Neighbouring weeks always differ in theme.
+
+- **Arabic:** copied by script from the app's default 15-line IndoPak muṣḥaf (`public/quran/indopak15/p/*.json`, DigitalKhatt text), available per āyah for every item. It is verbatim, including the āyah-end markers («۝n»), waqf signs and the ruku sign (ࣖ), and uses the DigitalKhatt encoding (e.g. U+089C, U+034F), so it must be shown in the DigitalKhatt IndoPak font. Consecutive āyāt are joined with a space.
+- **Text:** Pickthall, copied exactly from `public/quran/translations/pickthall/*.json`; consecutive āyāt are joined with a space. Surahs 6–38 use Tanzil's edited Pickthall, not the 1930 print (see docs/build/quran-data.md); every such item says so in its Note.
+- **Avoided:** āyāt already in the Manzil, the after-salah adhkār (incl. Āyat al-Kursī), the 20 adhkār (e.g. 9:129, 30:17–19, 40:1–3, 59:22–24) and al-Hizb al-Aʿzam (e.g. 3:8, 3:191, 21:83, 21:87, 27:19, 66:8, 7:156).
+- No transliteration.
+
+### A01
+- **Title:** The best provision
+- **Theme:** Provision for the Ākhirah
+- **Arabic:** اَلْحَجُّ اَشْهُرٌ مَّعْلُوْمٰتٌۚ فَمَنْ فَرَضَ فِيْهِنَّ الْحَجَّ فَلَا رَفَثَ وَلَا فُسُوْقَۙ وَلَا جِدَالَ فِي الْحَجِّؕ وَمَا تَفْعَلُوْا مِنْ خَيْرٍ يَّعْلَمْهُ اللّٰهُؕؔ وَتَزَوَّدُوْا فَاِنَّ خَيْرَ الزَّادِ التَّقْوٰيؗ وَاتَّقُوْنِ يٰٓاُولِي الْاَلْبَابِ ۝١٩٧
+- **Text:** The pilgrimage is (in) the well-known months, and whoever is minded to perform the pilgrimage therein (let him remember that) there is (to be) no lewdness nor abuse nor angry conversation on the pilgrimage. And whatsoever good ye do Allah knoweth it. So make provision for yourselves (Hereafter); for the best provision is to ward off evil. Therefore keep your duty unto Me, O men of understanding.
+- **Source:** Qurʾān 2:197 (Al-Baqarah, "The Cow")
+- **Note:** The āyah opens with rulings of Hajj; the Home card could show only from «وَتَزَوَّدُوْا» ("So make provision…"), if the reviewer prefers. Chosen first because it gives the app its name (al-zād).
+
+### A02
+- **Title:** Never lose hope
+- **Theme:** Hope in Allah’s mercy
+- **Arabic:** قُلْ يٰعِبَادِيَ الَّذِيْنَ اَسْرَفُوْا عَلٰٓي اَنْفُسِهِمْ لَا تَقْنَطُوْا مِنْ رَّحْمَةِ اللّٰهِؕ اِنَّ اللّٰهَ يَغْفِرُ الذُّنُوْبَ جَمِيْعًاؕ اِنَّهٗ هُوَ الْغَفُوْرُ الرَّحِيْمُ ۝٥٣
+- **Text:** Say: O My slaves who have been prodigal to their own hurt! Despair not of the mercy of Allah, Who forgiveth all sins. Lo! He is the Forgiving, the Merciful.
+- **Source:** Qurʾān 39:53 (Az-Zumar, "The Groups")
+
+### A03
+- **Title:** Until the very end
+- **Theme:** Steadfastness and consistency
+- **Arabic:** وَاعْبُدْ رَبَّكَ حَتّٰي يَاْتِيَكَ الْيَقِيْنُ ۝٩٩ࣖ
+- **Text:** And serve thy Lord till the Inevitable cometh unto thee.
+- **Source:** Qurʾān 15:99 (Al-Hijr, "The Rock")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print. "The Inevitable" renders al-yaqīn, usually understood as death; the reviewer may want to confirm the wording suits a card.
+
+### A04
+- **Title:** Remember Me
+- **Theme:** Dhikr
+- **Arabic:** فَاذْكُرُوْنِيْٓ اَذْكُرْكُمْ وَاشْكُرُوْا لِيْ وَلَا تَكْفُرُوْنِ ۝١٥٢ࣖ
+- **Text:** Therefore remember Me, I will remember you. Give thanks to Me, and reject not Me.
+- **Source:** Qurʾān 2:152 (Al-Baqarah, "The Cow")
+
+### A05
+- **Title:** Turning back at once
+- **Theme:** Repentance and return
+- **Arabic:** وَالَّذِيْنَ اِذَا فَعَلُوْا فَاحِشَةً اَوْ ظَلَمُوْٓا اَنْفُسَهُمْ ذَكَرُوا اللّٰهَ فَاسْتَغْفَرُوْا لِذُنُوْبِهِمْࣕ وَمَنْ يَّغْفِرُ الذُّنُوْبَ اِلَّا اللّٰهُࣕࣞ وَلَمْ يُصِرُّوْا عَلٰي مَا فَعَلُوْا وَهُمْ يَعْلَمُوْنَ ۝١٣٥
+- **Text:** And those who, when they do an evil thing or wrong themselves, remember Allah and implore forgiveness for their sins—Who forgiveth sins save Allah only?—and will not knowingly repeat (the wrong) they did.
+- **Source:** Qurʾān 3:135 (Āl ʿImrān, "The Family of Imraan")
+
+### A06
+- **Title:** Glad tidings for the patient
+- **Theme:** Patience
+- **Arabic:** وَلَنَبْلُوَنَّكُمْ بِشَيْءٍ مِّنَ الْخَوْفِ وَالْجُوْعِ وَنَقْصٍ مِّنَ الْاَمْوَالِ وَالْاَنْفُسِ وَالثَّمَرٰتِؕ وَبَشِّرِ الصّٰبِرِيْنَ ۝١٥٥ۙ الَّذِيْنَ اِذَا͏ٓ اَصَابَتْهُمْ مُّصِيْبَةٌۙ قَالُوْٓا اِنَّا لِلّٰهِ وَاِنَّا͏ٓ اِلَيْهِ رٰجِعُوْنَ ۝١٥٦ؕ اُولٰ࢜ىِٕكَ عَلَيْهِمْ صَلَوٰتٌ مِّنْ رَّبِّهِمْ وَرَحْمَةٌࣞ وَاُولٰ࢜ىِٕكَ هُمُ الْمُهْتَدُوْنَ ۝١٥٧
+- **Text:** And surely We shall try you with something of fear and hunger, and loss of wealth and lives and crops; but give glad tidings to the steadfast, Who say, when a misfortune striketh them: Lo! we are Allah's and lo! unto Him we are returning. Such are they on whom are blessings from their Lord, and mercy. Such are the rightly guided.
+- **Source:** Qurʾān 2:155–157 (Al-Baqarah, "The Cow")
+
+### A07
+- **Title:** Thanks brings more
+- **Theme:** Gratitude
+- **Arabic:** وَاِذْ تَاَذَّنَ رَبُّكُمْ لَىِٕنْ شَكَرْتُمْ لَاَزِيْدَنَّكُمْ وَلَىِٕنْ كَفَرْتُمْ اِنَّ عَذَابِيْ لَشَدِيْدٌ ۝٧
+- **Text:** And when your Lord proclaimed: If ye give thanks, I will give you more; but if ye are thankless, lo! My punishment is dire.
+- **Source:** Qurʾān 14:7 (Ibrāhīm, "Abraham")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print. Ends with a warning to the thankless; kept because the āyah is mainly about gratitude.
+
+### A08
+- **Title:** He is enough
+- **Theme:** Tawakkul (trust in Allah)
+- **Arabic:** وَّيَرْزُقْهُ مِنْ حَيْثُ لَا يَحْتَسِبُؕ وَمَنْ يَّتَوَكَّلْ عَلَي اللّٰهِ فَهُوَ حَسْبُهٗؕ اِنَّ اللّٰهَ بَالِغُ اَمْرِهٖؕ قَدْ جَعَلَ اللّٰهُ لِكُلِّ شَيْءٍ قَدْرًا ۝٣
+- **Text:** And will provide for him from (a quarter) whence he hath no expectation. And whosoever putteth his trust in Allah, He will suffice him. Lo! Allah bringeth His command to pass. Allah hath set a measure for all things.
+- **Source:** Qurʾān 65:3 (At-Talāq, "Divorce")
+- **Note:** Begins mid-sentence: 65:2 ends "And whosoever keepeth his duty to Allah, Allah will appoint a way out for him," but 65:2 opens with divorce rulings, so it is left out.
+
+### A09
+- **Title:** He is near
+- **Theme:** Good opinion of Allah (husn al-zann)
+- **Arabic:** وَاِذَا سَاَلَكَ عِبَادِيْ عَنِّيْ فَاِنِّيْ قَرِيْبٌؕ اُجِيْبُ دَعْوَةَ الدَّاعِ اِذَا دَعَانِۙ فَلْيَسْتَجِيْبُوْا لِيْ وَلْيُو͏ٔ͏ْمِنُوْا بِيْ لَعَلَّهُمْ يَرْشُدُوْنَ ۝١٨٦
+- **Text:** And when My servants question thee concerning Me, then surely I am nigh. I answer the prayer of the suppliant when he crieth unto Me. So let them hear My call and let them trust in Me, in order that they may be led aright.
+- **Source:** Qurʾān 2:186 (Al-Baqarah, "The Cow")
+
+### A10
+- **Title:** What you send ahead
+- **Theme:** Provision for the Ākhirah
+- **Arabic:** يٰٓاَيُّهَا الَّذِيْنَ اٰمَنُوا اتَّقُوا اللّٰهَ وَلْتَنْظُرْ نَفْسٌ مَّا قَدَّمَتْ لِغَدٍۚ وَاتَّقُوا اللّٰهَؕ اِنَّ اللّٰهَ خَبِيْرٌۢ بِمَا تَعْمَلُوْنَ ۝١٨
+- **Text:** O ye who believe! Observe your duty to Allah. And let every soul look to that which it sendeth on before for the morrow. And observe your duty to Allah. Lo! Allah is Informed of what ye do.
+- **Source:** Qurʾān 59:18 (Al-Hashr, "The Exile")
+
+### A11
+- **Title:** With hardship, ease
+- **Theme:** Hope in Allah’s mercy
+- **Arabic:** فَاِنَّ مَعَ الْعُسْرِ يُسْرًا ۝٥ۙ اِنَّ مَعَ الْعُسْرِ يُسْرًا ۝٦ؕ
+- **Text:** But lo! with hardship goeth ease, Lo! with hardship goeth ease;
+- **Source:** Qurʾān 94:5–6 (Ash-Sharh, "The Consolation")
+
+### A12
+- **Title:** Those who stand firm
+- **Theme:** Steadfastness and consistency
+- **Arabic:** اِنَّ الَّذِيْنَ قَالُوْا رَبُّنَا اللّٰهُ ثُمَّ اسْتَقَامُوْا تَتَنَزَّلُ عَلَيْهِمُ الْمَلٰ࢜ىِٕكَةُ اَلَّا تَخَافُوْا وَلَا تَحْزَنُوْا وَاَبْشِرُوْا بِالْجَنَّةِ الَّتِيْ كُنْتُمْ تُوْعَدُوْنَ ۝٣٠ نَحْنُ اَوْلِيٰ࢜و͏ٔ͏ُكُمْ فِي الْحَيٰوةِ الدُّنْيَا وَفِي الْاٰخِرَةِۚ وَلَكُمْ فِيْهَا مَا تَشْتَهِيْٓ اَنْفُسُكُمْ وَلَكُمْ فِيْهَا مَا تَدَّعُوْنَ ۝٣١ؕ
+- **Text:** Lo! those who say: Our Lord is Allah, and afterward are upright, the angels descend upon them, saying: Fear not nor grieve, but hear good tidings of the paradise which ye are promised. We are your protecting friends in the life of the world and in the Hereafter. There ye will have (all) that your souls desire, and there ye will have (all) for which ye pray.
+- **Source:** Qurʾān 41:30–31 (Fussilat, "Explained in detail")
+
+### A13
+- **Title:** Hearts at rest
+- **Theme:** Dhikr
+- **Arabic:** اَلَّذِيْنَ اٰمَنُوْا وَتَطْمَىِٕنُّ قُلُوْبُهُمْ بِذِكْرِ اللّٰهِؕ اَلَا بِذِكْرِ اللّٰهِ تَطْمَىِٕنُّ الْقُلُوْبُ ۝٢٨ؕ
+- **Text:** Who have believed and whose hearts have rest in the remembrance of Allah. Verily in the remembrance of Allah do hearts find rest!
+- **Source:** Qurʾān 13:28 (Ar-Raʿd, "The Thunder")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print. Begins with "Who…" (continues from 13:27); it reads well alone.
+
+### A14
+- **Title:** Always ready to forgive
+- **Theme:** Repentance and return
+- **Arabic:** وَاِنِّيْ لَغَفَّارٌ لِّمَنْ تَابَ وَاٰمَنَ وَعَمِلَ صَالِحًا ثُمَّ اهْتَدٰي ۝٨٢
+- **Text:** And lo! verily I am Forgiving toward him who repenteth and believeth and doeth good, and afterward walketh aright.
+- **Source:** Qurʾān 20:82 (Tā Hā, "Taa-Haa")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print.
+
+### A15
+- **Title:** Reward without measure
+- **Theme:** Patience
+- **Arabic:** قُلْ يٰعِبَادِ الَّذِيْنَ اٰمَنُوا اتَّقُوْا رَبَّكُمْؕ لِلَّذِيْنَ اَحْسَنُوْا فِيْ هٰذِهِ الدُّنْيَا حَسَنَةٌؕ وَاَرْضُ اللّٰهِ وَاسِعَةٌؕ اِنَّمَا يُوَفَّي الصّٰبِرُوْنَ اَجْرَهُمْ بِغَيْرِ حِسَابٍ ۝١٠
+- **Text:** Say: O My bondmen who believe! Observe your duty to your Lord. For those who do good in this world there is good, and Allah's earth is spacious. Verily the steadfast will be paid their wages without stint.
+- **Source:** Qurʾān 39:10 (Az-Zumar, "The Groups")
+
+### A16
+- **Title:** Blessings beyond counting
+- **Theme:** Gratitude
+- **Arabic:** وَاِنْ تَعُدُّوْا نِعْمَةَ اللّٰهِ لَا تُحْصُوْهَاؕ اِنَّ اللّٰهَ لَغَفُوْرٌ رَّحِيْمٌ ۝١٨
+- **Text:** And if ye would count the favour of Allah ye cannot reckon it. Lo! Allah is indeed Forgiving, Merciful.
+- **Source:** Qurʾān 16:18 (An-Nahl, "The Bee")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print.
+
+### A17
+- **Title:** Let the believers trust
+- **Theme:** Tawakkul (trust in Allah)
+- **Arabic:** اَللّٰهُ لَا͏ٓ اِلٰهَ اِلَّا هُوَؕ وَعَلَي اللّٰهِ فَلْيَتَوَكَّلِ الْمُو͏ٔ͏ْمِنُوْنَ ۝١٣
+- **Text:** Allah! There is no God save Him. In Allah, therefore, let believers put their trust.
+- **Source:** Qurʾān 64:13 (At-Taghābun, "Mutual Disillusion")
+
+### A18
+- **Title:** Tenfold for every good
+- **Theme:** Good opinion of Allah (husn al-zann)
+- **Arabic:** مَنْ جَا࢜ءَ بِالْحَسَنَةِ فَلَهٗ عَشْرُ اَمْثَالِهَاۚ وَمَنْ جَا࢜ءَ بِالسَّيِّي͏ٔ͏َةِ فَلَا يُجْزٰٓي اِلَّا مِثْلَهَا وَهُمْ لَا يُظْلَمُوْنَ ۝١٦٠
+- **Text:** Whoso bringeth a good deed will receive tenfold the like thereof, while whoso bringeth an ill-deed will be awarded but the like thereof; and they will not be wronged.
+- **Source:** Qurʾān 6:160 (Al-Anʿām, "The Cattle")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print. Mentions the ill-deed too, to show its recompense is only its like.
+
+### A19
+- **Title:** Better and more lasting
+- **Theme:** Provision for the Ākhirah
+- **Arabic:** بَلْ تُو͏ٔ͏ْثِرُوْنَ الْحَيٰوةَ الدُّنْيَا ۝١٦ۚۖ وَالْاٰخِرَةُ خَيْرٌ وَّاَبْقٰي ۝١٧ؕ
+- **Text:** But ye prefer the life of the world Although the Hereafter is better and more lasting.
+- **Source:** Qurʾān 87:16–17 (Al-Aʿlā, "The Most High")
+
+### A20
+- **Title:** Mercy He has written
+- **Theme:** Hope in Allah’s mercy
+- **Arabic:** وَاِذَا جَا࢜ءَكَ الَّذِيْنَ يُو͏ٔ͏ْمِنُوْنَ بِاٰيٰتِنَا فَقُلْ سَلٰمٌ عَلَيْكُمْ كَتَبَ رَبُّكُمْ عَلٰي نَفْسِهِ الرَّحْمَةَۙ اَنَّهٗ مَنْ عَمِلَ مِنْكُمْ سُوْ࢜ءًاۢ بِجَهَالَةٍ ثُمَّ تَابَ مِنْۢ بَعْدِهٖ وَاَصْلَحَ فَاَنَّهٗ غَفُوْرٌ رَّحِيْمٌ ۝٥٤
+- **Text:** And when those who believe in Our revelations come unto thee, say: Peace be unto you! Your Lord hath prescribed for Himself mercy, that whoso of you doeth evil through ignorance and repenteth afterward thereof and doeth right, (for him) lo! He is Forgiving, Merciful.
+- **Source:** Qurʾān 6:54 (Al-Anʿām, "The Cattle")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print.
+
+### A21
+- **Title:** As best you can
+- **Theme:** Steadfastness and consistency
+- **Arabic:** فَاتَّقُوا اللّٰهَ مَا اسْتَطَعْتُمْ وَاسْمَعُوْا وَاَطِيْعُوْا وَاَنْفِقُوْا خَيْرًا لِّاَنْفُسِكُمْؕ وَمَنْ يُّوْقَ شُحَّ نَفْسِهٖ فَاُولٰ࢜ىِٕكَ هُمُ الْمُفْلِحُوْنَ ۝١٦
+- **Text:** So keep your duty to Allah as best ye can, and listen, and obey, and spend; that is better for your souls. And whoso is saved from his own greed, such are the successful.
+- **Source:** Qurʾān 64:16 (At-Taghābun, "Mutual Disillusion")
+
+### A22
+- **Title:** Remember Him much
+- **Theme:** Dhikr
+- **Arabic:** يٰٓاَيُّهَا الَّذِيْنَ اٰمَنُوا اذْكُرُوا اللّٰهَ ذِكْرًا كَثِيْرًا ۝٤١ۙ وَّسَبِّحُوْهُ بُكْرَةً وَّاَصِيْلًا ۝٤٢ هُوَ الَّذِيْ يُصَلِّيْ عَلَيْكُمْ وَمَلٰ࢜ىِٕكَتُهٗ لِيُخْرِجَكُمْ مِّنَ الظُّلُمٰتِ اِلَي النُّوْرِؕ وَكَانَ بِالْمُو͏ٔ͏ْمِنِيْنَ رَحِيْمًا ۝٤٣
+- **Text:** O ye who believe! Remember Allah with much remembrance. And glorify Him early and late. He it is Who blesseth you, and His angels (bless you), that He may bring you forth from darkness unto light; and He is ever Merciful to the believers.
+- **Source:** Qurʾān 33:41–43 (Al-Ahzāb, "The Clans")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print.
+
+### A23
+- **Title:** Sins turned to good
+- **Theme:** Repentance and return
+- **Arabic:** اِلَّا مَنْ تَابَ وَاٰمَنَ وَعَمِلَ عَمَلًا صَالِحًا فَاُولٰ࢜ىِٕكَ يُبَدِّلُ اللّٰهُ سَيِّاٰتِهِمْ حَسَنٰتٍؕ وَكَانَ اللّٰهُ غَفُوْرًا رَّحِيْمًا ۝٧٠
+- **Text:** Save him who repenteth and believeth and doth righteous work; as for such, Allah will change their evil deeds to good deeds. Allah is ever Forgiving, Merciful.
+- **Source:** Qurʾān 25:70 (Al-Furqān, "The Criterion")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print. Begins "Save him who…", an exception to 25:68–69 (about grave sins and their punishment); it is commonly quoted alone.
+
+### A24
+- **Title:** Endure and hold firm
+- **Theme:** Patience
+- **Arabic:** يٰٓاَيُّهَا الَّذِيْنَ اٰمَنُوا اصْبِرُوْا وَصَابِرُوْا وَرَابِطُوْاࣞ وَاتَّقُوا اللّٰهَ لَعَلَّكُمْ تُفْلِحُوْنَ ۝٢٠٠ࣖ
+- **Text:** O ye who believe! Endure, outdo all others in endurance, be ready, and observe your duty to Allah, in order that ye may succeed.
+- **Source:** Qurʾān 3:200 (Āl ʿImrān, "The Family of Imraan")
+
+### A25
+- **Title:** Thanks is for your own good
+- **Theme:** Gratitude
+- **Arabic:** وَلَقَدْ اٰتَيْنَا لُقْمٰنَ الْحِكْمَةَ اَنِ اشْكُرْ لِلّٰهِؕ وَمَنْ يَّشْكُرْ فَاِنَّمَا يَشْكُرُ لِنَفْسِهٖۚ وَمَنْ كَفَرَ فَاِنَّ اللّٰهَ غَنِيٌّ حَمِيْدٌ ۝١٢
+- **Text:** And verily We gave Luqman wisdom, saying: Give thanks unto Allah; and whosoever giveth thanks, he giveth thanks for (the good of) his soul. And whosoever refuseth - Lo! Allah is Absolute, Owner of Praise.
+- **Source:** Qurʾān 31:12 (Luqmān, "Luqman")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print.
+
+### A26
+- **Title:** Every provision is with Allah
+- **Theme:** Tawakkul (trust in Allah)
+- **Arabic:** وَمَا مِنْ دَا࢜بَّةٍ فِي الْاَرْضِ اِلَّا عَلَي اللّٰهِ رِزْقُهَا وَيَعْلَمُ مُسْتَقَرَّهَا وَمُسْتَوْدَعَهَاؕ كُلٌّ فِيْ كِتٰبٍ مُّبِيْنٍ ۝٦
+- **Text:** And there is not a beast in the earth but the sustenance thereof dependeth on Allah. He knoweth its habitation and its repository. All is in a clear Record.
+- **Source:** Qurʾān 11:6 (Hūd, "Hud")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print.
+
+### A27
+- **Title:** A lighter load
+- **Theme:** Good opinion of Allah (husn al-zann)
+- **Arabic:** يُرِيْدُ اللّٰهُ اَنْ يُّخَفِّفَ عَنْكُمْۚ وَخُلِقَ الْاِنْسَانُ ضَعِيْفًا ۝٢٨
+- **Text:** Allah would make the burden light for you, for man was created weak.
+- **Source:** Qurʾān 4:28 (An-Nisāʾ, "The Women")
+
+### A28
+- **Title:** Deeds that last
+- **Theme:** Provision for the Ākhirah
+- **Arabic:** اَلْمَالُ وَالْبَنُوْنَ زِيْنَةُ الْحَيٰوةِ الدُّنْيَاۚ وَالْبٰقِيٰتُ الصّٰلِحٰتُ خَيْرٌ عِنْدَ رَبِّكَ ثَوَابًا وَّخَيْرٌ اَمَلًا ۝٤٦
+- **Text:** Wealth and children are an ornament of the life of the world. But the good deeds which endure are better in thy Lord's sight for reward, and better in respect of hope.
+- **Source:** Qurʾān 18:46 (Al-Kahf, "The Cave")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print.
+
+### A29
+- **Title:** Do not despair
+- **Theme:** Hope in Allah’s mercy
+- **Arabic:** يٰبَنِيَّ اذْهَبُوْا فَتَحَسَّسُوْا مِنْ يُّوْسُفَ وَاَخِيْهِ وَلَا تَايْـٔ͏َسُوْا مِنْ رَّوْحِ اللّٰهِؕ اِنَّهٗ لَا يَايْـٔ͏َسُ مِنْ رَّوْحِ اللّٰهِ اِلَّا الْقَوْمُ الْكٰفِرُوْنَ ۝٨٧
+- **Text:** Go, O my sons, and ascertain concerning Joseph and his brother, and despair not of the Spirit of Allah. Lo! none despaireth of the Spirit of Allah save disbelieving folk.
+- **Source:** Qurʾān 12:87 (Yūsuf, "Joseph")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print. Yaʿqūb (peace be upon him) speaking to his sons. Pickthall renders «رَّوْحِ اللّٰهِ» as "the Spirit of Allah"; the reviewer may want to check this wording (rawh is often taken as Allah’s mercy and relief).
+
+### A30
+- **Title:** Hidden joy
+- **Theme:** Steadfastness and consistency
+- **Arabic:** تَتَجَافٰي جُنُوْبُهُمْ عَنِ الْمَضَاجِعِ يَدْعُوْنَ رَبَّهُمْ خَوْفًا وَّطَمَعًاؗ وَّمِمَّا رَزَقْنٰهُمْ يُنْفِقُوْنَ ۝١٦ فَلَا تَعْلَمُ نَفْسٌ مَّا͏ٓ اُخْفِيَ لَهُمْ مِّنْ قُرَّةِ اَعْيُنٍۚ جَزَا࢜ءًۢ بِمَا كَانُوْا يَعْمَلُوْنَ ۝١٧
+- **Text:** Who forsake their beds to cry unto their Lord in fear and hope, and spend of that We have bestowed on them. No soul knoweth what is kept hid for them of joy, as a reward for what they used to do.
+- **Source:** Qurʾān 32:16–17 (As-Sajdah, "The Prostration")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print. Begins with "Who…" (describing the believers of 32:15).
+
+### A31
+- **Title:** Morning and evening
+- **Theme:** Dhikr
+- **Arabic:** وَاذْكُرْ رَّبَّكَ فِيْ نَفْسِكَ تَضَرُّعًا وَّخِيْفَةً وَّدُوْنَ الْجَهْرِ مِنَ الْقَوْلِ بِالْغُدُوِّ وَالْاٰصَالِ وَلَا تَكُنْ مِّنَ الْغٰفِلِيْنَ ۝٢٠٥
+- **Text:** And do thou (O Muhammad) remember thy Lord within thyself humbly and with awe, below thy breath, at morn and evening. And be not thou of the neglectful.
+- **Source:** Qurʾān 7:205 (Al-Aʿrāf, "The Heights")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print. Addressed to the Prophet ﷺ; Pickthall adds "(O Muhammad)" without ﷺ.
+
+### A32
+- **Title:** You will find Him Forgiving
+- **Theme:** Repentance and return
+- **Arabic:** وَمَنْ يَّعْمَلْ سُوْ࢜ءًا اَوْ يَظْلِمْ نَفْسَهٗ ثُمَّ يَسْتَغْفِرِ اللّٰهَ يَجِدِ اللّٰهَ غَفُوْرًا رَّحِيْمًا ۝١١٠
+- **Text:** Yet whoso doeth evil or wrongeth his own soul, then seeketh pardon of Allah, will find Allah Forgiving, Merciful.
+- **Source:** Qurʾān 4:110 (An-Nisāʾ, "The Women")
+
+### A33
+- **Title:** In Our sight
+- **Theme:** Patience
+- **Arabic:** وَاصْبِرْ لِحُكْمِ رَبِّكَ فَاِنَّكَ بِاَعْيُنِنَا وَسَبِّحْ بِحَمْدِ رَبِّكَ حِيْنَ تَقُوْمُ ۝٤٨ۙ وَمِنَ الَّيْلِ فَسَبِّحْهُ وَاِدْبَارَ النُّجُوْمِ ۝٤٩ࣖ
+- **Text:** So wait patiently (O Muhammad) for thy Lord's decree, for surely thou art in Our sight; and hymn the praise of thy Lord when thou uprisest, And in the night-time also hymn His praise, and at the setting of the stars.
+- **Source:** Qurʾān 52:48–49 (At-Tūr, "The Mount")
+- **Note:** Addressed to the Prophet ﷺ; Pickthall adds "(O Muhammad)" without ﷺ. "In Our sight" renders «بِاَعْيُنِنَا» without bodily wording.
+
+### A34
+- **Title:** Night and day
+- **Theme:** Gratitude
+- **Arabic:** اَللّٰهُ الَّذِيْ جَعَلَ لَكُمُ الَّيْلَ لِتَسْكُنُوْا فِيْهِ وَالنَّهَارَ مُبْصِرًاؕ اِنَّ اللّٰهَ لَذُوْ فَضْلٍ عَلَي النَّاسِ وَلٰكِنَّ اَكْثَرَ النَّاسِ لَا يَشْكُرُوْنَ ۝٦١
+- **Text:** Allah it is Who hath appointed for you night that ye may rest therein, and day for seeing. Lo! Allah is a Lord of bounty for mankind, yet most of mankind give not thanks.
+- **Source:** Qurʾān 40:61 (Ghāfir, "The Forgiver")
+
+### A35
+- **Title:** He sees you stand
+- **Theme:** Tawakkul (trust in Allah)
+- **Arabic:** وَتَوَكَّلْ عَلَي الْعَزِيْزِ الرَّحِيْمِ ۝٢١٧ۙ الَّذِيْ يَرٰىكَ حِيْنَ تَقُوْمُ ۝٢١٨ۙ وَتَقَلُّبَكَ فِي السّٰجِدِيْنَ ۝٢١٩
+- **Text:** And put thy trust in the Mighty, the Merciful. Who seeth thee when thou standest up (to pray) And (seeth) thine abasement among those who fall prostrate (in worship).
+- **Source:** Qurʾān 26:217–219 (Ash-Shuʿarāʾ, "The Poets")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print. Addressed to the Prophet ﷺ; Pickthall adds "(O Muhammad)" without ﷺ.
+
+### A36
+- **Title:** Gentle with His servants
+- **Theme:** Good opinion of Allah (husn al-zann)
+- **Arabic:** اَللّٰهُ لَطِيْفٌۢ بِعِبَادِهٖ يَرْزُقُ مَنْ يَّشَا࢜ءُۚ وَهُوَ الْقَوِيُّ الْعَزِيْزُ ۝١٩ࣖ
+- **Text:** Allah is gracious unto His slaves. He provideth for whom He will. And He is the Strong, the Mighty.
+- **Source:** Qurʾān 42:19 (Ash-Shūrā, "Consultation")
+
+### A37
+- **Title:** Found with Allah
+- **Theme:** Provision for the Ākhirah
+- **Arabic:** وَاَقِيْمُوا الصَّلٰوةَ وَاٰتُوا الزَّكٰوةَؕ وَمَا تُقَدِّمُوْا لِاَنْفُسِكُمْ مِّنْ خَيْرٍ تَجِدُوْهُ عِنْدَ اللّٰهِؕ اِنَّ اللّٰهَ بِمَا تَعْمَلُوْنَ بَصِيْرٌ ۝١١٠
+- **Text:** Establish worship, and pay the poor-due; and whatever of good ye send before (you) for your souls, ye will find it with Allah. Lo! Allah is Seer of what ye do.
+- **Source:** Qurʾān 2:110 (Al-Baqarah, "The Cow")
+
+### A38
+- **Title:** Signs of mercy
+- **Theme:** Hope in Allah’s mercy
+- **Arabic:** فَانْظُرْ اِلٰٓي اٰثٰرِ رَحْمَتِ اللّٰهِ كَيْفَ يُحْيِ الْاَرْضَ بَعْدَ مَوْتِهَاؕ اِنَّ ذٰلِكَ لَمُحْيِ الْمَوْتٰىۚ وَهُوَ عَلٰى كُلِّ شَيْءٍ قَدِيْرٌ ۝٥٠
+- **Text:** Look, therefore, at the prints of Allah's mercy (in creation): how He quickeneth the earth after her death. Lo! He verily is the Quickener of the Dead, and He is Able to do all things.
+- **Source:** Qurʾān 30:50 (Ar-Rūm, "The Romans")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print.
+
+### A39
+- **Title:** Steadfast in worship
+- **Theme:** Steadfastness and consistency
+- **Arabic:** رَبُّ السَّمٰوٰتِ وَالْاَرْضِ وَمَا بَيْنَهُمَا فَاعْبُدْهُ وَاصْطَبِرْ لِعِبَادَتِهٖؕ هَلْ تَعْلَمُ لَهٗ سَمِيًّا ۝٦٥ࣖ
+- **Text:** Lord of the heavens and the earth and all that is between them! Therefor, worship thou Him and be thou steadfast in His service. Knowest thou one that can be named along with Him?
+- **Source:** Qurʾān 19:65 (Maryam, "Mary")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print.
+
+### A40
+- **Title:** The greatest remembrance
+- **Theme:** Dhikr
+- **Arabic:** اُتْلُ مَا͏ٓ اُوْحِيَ اِلَيْكَ مِنَ الْكِتٰبِ وَاَقِمِ الصَّلٰوةَؕ اِنَّ الصَّلٰوةَ تَنْهٰي عَنِ الْفَحْشَا࢜ءِ وَالْمُنْكَرِؕ وَلَذِكْرُ اللّٰهِ اَكْبَرُؕ وَاللّٰهُ يَعْلَمُ مَا تَصْنَعُوْنَ ۝٤٥
+- **Text:** Recite that which hath been inspired in thee of the Scripture, and establish worship. Lo! worship preserveth from lewdness and iniquity, but verily remembrance of Allah is more important. And Allah knoweth what ye do.
+- **Source:** Qurʾān 29:45 (Al-ʿAnkabūt, "The Spider")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print. In the IndoPak print this āyah opens para 21.
+
+### A41
+- **Title:** Seek forgiveness
+- **Theme:** Repentance and return
+- **Arabic:** فَقُلْتُ اسْتَغْفِرُوْا رَبَّكُمْؕ اِنَّهٗ كَانَ غَفَّارًا ۝١٠ۙ يُّرْسِلِ السَّمَا࢜ءَ عَلَيْكُمْ مِّدْرَارًا ۝١١ۙ وَّيُمْدِدْكُمْ بِاَمْوَالٍ وَّبَنِيْنَ وَيَجْعَلْ لَّكُمْ جَنّٰتٍ وَّيَجْعَلْ لَّكُمْ اَنْهٰرًا ۝١٢ؕ
+- **Text:** And I have said: Seek pardon of your Lord. Lo! He was ever Forgiving. He will let loose the sky for you in plenteous rain, And will help you with wealth and sons, and will assign unto you Gardens and will assign unto you rivers.
+- **Source:** Qurʾān 71:10–12 (Nūh, "Noah")
+- **Note:** Nūḥ (peace be upon him) speaking to his people.
+
+### A42
+- **Title:** What remains
+- **Theme:** Patience
+- **Arabic:** مَا عِنْدَكُمْ يَنْفَدُ وَمَا عِنْدَ اللّٰهِ بَاقٍؕ وَلَنَجْزِيَنَّ الَّذِيْنَ صَبَرُوْٓا اَجْرَهُمْ بِاَحْسَنِ مَا كَانُوْا يَعْمَلُوْنَ ۝٩٦
+- **Text:** That which ye have wasteth away, and that which Allah hath remaineth. And verily We shall pay those who are steadfast a recompense in proportion to the best of what they used to do.
+- **Source:** Qurʾān 16:96 (An-Nahl, "The Bee")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print.
+
+### A43
+- **Title:** Thankful and believing
+- **Theme:** Gratitude
+- **Arabic:** مَا يَفْعَلُ اللّٰهُ بِعَذَابِكُمْ اِنْ شَكَرْتُمْ وَاٰمَنْتُمْؕ وَكَانَ اللّٰهُ شَاكِرًا عَلِيْمًا ۝١٤٧
+- **Text:** What concern hath Allah for your punishment if ye are thankful (for His mercies) and believe (in Him)? Allah was ever Responsive, Aware.
+- **Source:** Qurʾān 4:147 (An-Nisāʾ, "The Women")
+- **Note:** The question about punishment is rhetorical: Allah gains nothing by punishing those who are thankful and believe.
+
+### A44
+- **Title:** Trust in Allah
+- **Theme:** Tawakkul (trust in Allah)
+- **Arabic:** وَّتَوَكَّلْ عَلَي اللّٰهِؕ وَكَفٰي بِاللّٰهِ وَكِيْلًا ۝٣
+- **Text:** And put thy trust in Allah, for Allah is sufficient as Trustee.
+- **Source:** Qurʾān 33:3 (Al-Ahzāb, "The Clans")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print. Addressed to the Prophet ﷺ; Pickthall adds "(O Muhammad)" without ﷺ.
+
+### A45
+- **Title:** Never forsaken
+- **Theme:** Good opinion of Allah (husn al-zann)
+- **Arabic:** مَا وَدَّعَكَ رَبُّكَ وَمَا قَلٰي ۝٣ؕ وَلَلْاٰخِرَةُ خَيْرٌ لَّكَ مِنَ الْاُوْلٰي ۝٤ؕ وَلَسَوْفَ يُعْطِيْكَ رَبُّكَ فَتَرْضٰي ۝٥ؕ
+- **Text:** Thy Lord hath not forsaken thee nor doth He hate thee, And verily the latter portion will be better for thee than the former, And verily thy Lord will give unto thee so that thou wilt be content.
+- **Source:** Qurʾān 93:3–5 (Ad-Duhā, "The Morning Hours")
+- **Note:** Addressed to the Prophet ﷺ; Pickthall adds "(O Muhammad)" without ﷺ.
+
+### A46
+- **Title:** Not an atom lost
+- **Theme:** Provision for the Ākhirah
+- **Arabic:** فَمَنْ يَّعْمَلْ مِثْقَالَ ذَرَّةٍ خَيْرًا يَّرَهٗ ۝٧ؕ
+- **Text:** And whoso doeth good an atom's weight will see it then,
+- **Source:** Qurʾān 99:7 (Az-Zalzalah, "The Earthquake")
+- **Note:** The English ends with a comma; 99:8 (the same for evil) is left out to keep the card gentle.
+
+### A47
+- **Title:** A healing and a mercy
+- **Theme:** Hope in Allah’s mercy
+- **Arabic:** يٰٓاَيُّهَا النَّاسُ قَدْ جَا࢜ءَتْكُمْ مَّوْعِظَةٌ مِّنْ رَّبِّكُمْ وَشِفَا࢜ءٌ لِّمَا فِي الصُّدُوْرِ࣢ۙ وَهُدًي وَّرَحْمَةٌ لِّلْمُو͏ٔ͏ْمِنِيْنَ ۝٥٧ قُلْ بِفَضْلِ اللّٰهِ وَبِرَحْمَتِهٖ فَبِذٰلِكَ فَلْيَفْرَحُوْاؕ هُوَ خَيْرٌ مِّمَّا يَجْمَعُوْنَ ۝٥٨
+- **Text:** O mankind! There hath come unto you an exhortation from your Lord, a balm for that which is in the breasts, a guidance and a mercy for believers. Say: In the bounty of Allah and in His mercy: therein let them rejoice. It is better than what they hoard.
+- **Source:** Qurʾān 10:57–58 (Yūnus, "Jonas")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print.
+
+### A48
+- **Title:** Strive and be guided
+- **Theme:** Steadfastness and consistency
+- **Arabic:** وَالَّذِيْنَ جَاهَدُوْا فِيْنَا لَنَهْدِيَنَّهُمْ سُبُلَنَاؕ وَاِنَّ اللّٰهَ لَمَعَ الْمُحْسِنِيْنَ ۝٦٩ࣖ
+- **Text:** As for those who strive in Us, We surely guide them to Our paths, and lo! Allah is with the good.
+- **Source:** Qurʾān 29:69 (Al-ʿAnkabūt, "The Spider")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print.
+
+### A49
+- **Title:** Devote yourself
+- **Theme:** Dhikr
+- **Arabic:** وَاذْكُرِ اسْمَ رَبِّكَ وَتَبَتَّلْ اِلَيْهِ تَبْتِيْلًا ۝٨ؕ رَبُّ الْمَشْرِقِ وَالْمَغْرِبِ لَا͏ٓ اِلٰهَ اِلَّا هُوَ فَاتَّخِذْهُ وَكِيْلًا ۝٩
+- **Text:** So remember the name of thy Lord and devote thyself with a complete devotion— Lord of the East and the West; there is no God save Him; so choose thou Him alone for thy defender—
+- **Source:** Qurʾān 73:8–9 (Al-Muzzammil, "The Enshrouded One")
+- **Note:** Addressed to the Prophet ﷺ; Pickthall adds "(O Muhammad)" without ﷺ. The English of 73:9 ends with a dash (the sentence runs on into 73:10).
+
+### A50
+- **Title:** He accepts repentance
+- **Theme:** Repentance and return
+- **Arabic:** وَهُوَ الَّذِيْ يَقْبَلُ التَّوْبَةَ عَنْ عِبَادِهٖ وَيَعْفُوْا عَنِ السَّيِّاٰتِ وَيَعْلَمُ مَا تَفْعَلُوْنَ ۝٢٥ۙ
+- **Text:** And He it is Who accepteth repentance from His bondmen, and pardoneth the evil deeds, and knoweth what ye do,
+- **Source:** Qurʾān 42:25 (Ash-Shūrā, "Consultation")
+- **Note:** The English ends with a comma (42:26 continues the description).
+
+### A51
+- **Title:** Patience and prayer
+- **Theme:** Patience
+- **Arabic:** وَاسْتَعِيْنُوْا بِالصَّبْرِ وَالصَّلٰوةِؕ وَاِنَّهَا لَكَبِيْرَةٌ اِلَّا عَلَي الْخٰشِعِيْنَ ۝٤٥ۙ الَّذِيْنَ يَظُنُّوْنَ اَنَّهُمْ مُّلٰقُوْا رَبِّهِمْ وَاَنَّهُمْ اِلَيْهِ رٰجِعُوْنَ ۝٤٦ࣖ
+- **Text:** Seek help in patience and prayer; and truly it is hard save for the humble-minded, Who know that they will have to meet their Lord, and that unto Him they are returning.
+- **Source:** Qurʾān 2:45–46 (Al-Baqarah, "The Cow")
+
+### A52
+- **Title:** Good deeds erase bad
+- **Theme:** Steadfastness and consistency
+- **Arabic:** وَاَقِمِ الصَّلٰوةَ طَرَفَيِ النَّهَارِ وَزُلَفًا مِّنَ الَّيْلِؕ اِنَّ الْحَسَنٰتِ يُذْهِبْنَ السَّيِّاٰتِؕ ذٰلِكَ ذِكْرٰي لِلذّٰكِرِيْنَ ۝١١٤ۚ وَاصْبِرْ فَاِنَّ اللّٰهَ لَا يُضِيْعُ اَجْرَ الْمُحْسِنِيْنَ ۝١١٥
+- **Text:** Establish worship at the two ends of the day and in some watches of the night. Lo! good deeds annul ill-deeds. This is reminder for the mindful. And have patience, (O Muhammad), for lo! Allah loseth not the wages of the good.
+- **Source:** Qurʾān 11:114–115 (Hūd, "Hud")
+- **Note:** Pickthall here is the edited Tanzil text (surahs 6–38), not the 1930 print. 11:115 is addressed to the Prophet ﷺ; Pickthall adds "(O Muhammad)" without ﷺ.

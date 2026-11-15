@@ -186,7 +186,8 @@ export const TIMES = {
 /* ---------- Home ---------- */
 export const HOME = {
   greeting: "As-salāmu ʿalaykum",
-  greetingName: name => `As-salāmu ʿalaykum, ${name}`,
+  greetingName: name => `As-salāmu ʿalaykum, ${name}`, // plain-text form (e.g. screen readers)
+  greetingLine1: "As-salāmu ʿalaykum,", // Home shows the name on its own second line
   salahToday: "Salāh today",
   todaysPrayers: "Today's prayers",
   nOfFivePrayed: n => `${n} of 5 prayed`,
@@ -441,12 +442,14 @@ export const FEATURE = {
     tools: "Adhkār, durūd, Hizb al-Aʿzam and Qurʾān",
   },
 };
-export const TOOL_NAME = { adhkar: "Adhkār", durud: "Durūd", hizb: "Hizb al-Aʿzam", quran: "Qurʾān" };
+export const TOOL_NAME = { adhkar: "Adhkār", durud: "Durūd", hizb: "Hizb al-Aʿzam", quran: "Qurʾān", manzil: "Manzil", afterSalah: "Adhkār after Salāh" };
 export const TOOL_SUB = {
   adhkar: "Morning and evening",
   durud: "Forty durūd · suggested daily, at least on Friday",
   hizb: "One manzil a day · Saturday is manzil 1",
   quran: "Read the mushaf",
+  manzil: "Verses for protection · morning and evening",
+  afterSalah: "After each fard · tasbīh counter",
 };
 export const TOOLS_UI = {
   title: "Tools",
@@ -466,11 +469,20 @@ export const WEEK_UI = {
   ayah: "Āyah of the week", hadith: "Hadīth of the week", dua: "Duʿāʾ of the week", seerah: "Sīrah moment",
   tabs: { ayah: "Āyah", hadith: "Hadīth", dua: "Duʿāʾ", seerah: "Sīrah" },
   sahabi: m => `Sahābī · ${m}`, sunnah: m => `Sunnah · ${m}`,
+  afterSalah: "Adhkar after Salah",
+  todaysFact: "Today's fact", earlierThisMonth: "Earlier this month", pastMonths: "Past months", pastMonthsSub: "Earlier Sahābī of the month",
+  factDay: (d, mon) => `${d} ${mon}`, factsCount: n => `${n} ${n === 1 ? "fact" : "facts"}`, pastNone: "No earlier months yet.",
   thisMonth: "This month", readMore: "Read more", new: "New",
+  narrator: "Narrator", collection: "Collection", source: "Source",
+  recapTitle: name => `A look back at ${name}`,
+  recapLead: name => `This month you met ${name}. Here are a few things to remember.`,
+  recapTile: "Month recap", recapAll: "All of this month's facts",
   weekOf: d => `Week of ${d}`,
   weekRange: (a, b) => `${a} – ${b}`,
 };
-/** Day letters for a Saturday-first week (This week, Hizb). */
+/** Day letters for a Sunday-first week (This week on Home, Progress). */
+export const WEEK_LETTERS_SUN = ["S", "M", "T", "W", "T", "F", "S"];
+/** Day letters for a Saturday-first week (Hizb al-Aʿzam). */
 export const WEEK_LETTERS_SAT = ["S", "S", "M", "T", "W", "T", "F"];
 /** Day letters for a Monday-first week (legacy views). */
 export const WEEK_LETTERS_MON = ["M", "T", "W", "T", "F", "S", "S"];
@@ -513,6 +525,8 @@ export const SETTINGS = {
   remindNote: "shown in the app on this device",
   lock: "App lock", lockSub: "Fingerprint or face each time Zad opens",
   noBiometry: "No fingerprint or screen lock set up on this phone", notTurnedOn: "Not turned on",
+  crashReports: "Send crash reports", crashReportsSub: "Error details only, never your logs or name",
+  crashReportsOffToast: "Crash reports off", crashReportsOnToast: "Crash reports on",
   // location
   location: "Location",
   locSet: (label, lat, lng) => `${label} · ${lat}, ${lng}`,
@@ -624,7 +638,7 @@ export const HOME_X = {
   celebTitle: "All five prayers, Alhamdulillah", celebSub: n => `${n} ${n === 1 ? "day" : "days"} in a row`,
   wasMissed: p => `${p} was missed`, comesOff: () => "Pray it before Fajr and it comes off your make-ups", plusOne: "+1 make-up",
   prayedLbl: STATUS_EXTRA.prayed, later: "Later",
-  notOpened: "Not opened yet", goldChange: "Gold tiles change each Hijri month", afterJumuah: "new set after Jumuʿah",
+  notOpened: "Not opened yet", goldChange: "Gold tiles change each month", afterJumuah: "new set after Jumuʿah",
   arLabel: { ayah: "آية", hadith: "حديث", dua: "دعاء", seerah: "سيرة", sahabi: "صحابي", sunnah: "سنة" },
   mkNotNow: COMMON.notNow, undone: "Undone",
   loggedN: n => `${n} ${n === 1 ? "prayer" : "prayers"} logged`,
@@ -748,12 +762,104 @@ export const SETTINGS_X = {
   perMonth: "/ month", fastsLabel: "Fasts", note: "Note",
 };
 
+/**
+ * Setup "Can you read Arabic?", the Home tour, one-time tool tips and Settings → Help & tour
+ * (views/onboarding.js, views/tour.js, views/help.js; logic in guide.js).
+ * Strings marked HTML contain markup; everything else is plain text.
+ */
+export const GUIDE = {
+  // setup step
+  readEyebrow: "How you read", readTitle: "Can you read Arabic?",
+  readOpts: {
+    yes: ["Yes, I read Arabic", "Arabic only. Meanings are there when you want them."],
+    little: ["A little", "Arabic with transliteration and meaning."],
+    notyet: ["Not yet", "Arabic with transliteration and meaning under every line."],
+  },
+  readShort: { yes: "Yes", little: "A little", notyet: "Not yet" },
+  readNote: "You can change this any time in Settings.",
+  preview: "Preview",
+  previewAr: "سُبْحَانَ اللّٰهِ وَبِحَمْدِهِ", previewTr: "Subhanallahi wa bihamdihi", previewMn: "Glory be to Allah, and praise be to Him.",
+  meaningTap: "Meaning is one tap away",
+  readLead: "This sets what the adhkār, durūd, Hizb and after-salah readers show. The Qurʾān reader never shows transliteration. You can still change each one with Aa.",
+  readSaved: a => `How you read: ${a}`,
+
+  // tour
+  tourLabel: (n, of) => `Tour, step ${n} of ${of}`, stepOf: (n, of) => `Step ${n} of ${of}`,
+  skip: "Skip tour", next: "Next", start: "Start",
+  prayerT: "Log a prayer",
+  prayerP: "Tap <b>Prayed</b> when you have prayed, or <b>In jamāʿah</b> if you prayed with others.", // HTML
+  prayerAltP: "Tap <b>Salāh today</b> to log each of today's prayers.", // HTML
+  statusT: "Every choice",
+  statusP: ({ excused, sunnah }) => `The <b>···</b> button opens all of them: in jamāʿah, on time, made up, missed${excused ? " or excused" : ""}.${sunnah ? " Your sunnah prayers are here too." : ""}`, // HTML
+  deedsT: "Your good deeds", deedsP: "Tick off the good deeds you choose each day.",
+  toolsT: "Tools", toolsP: "Adhkār, Qurʾān, Hizb, durūd and more.",
+  progressT: "Progress", progressP: "See where you're steady and where to grow.",
+  trackerT: "Tracker and Make-ups", trackerOnlyT: "Tracker",
+  trackerP: "<b>Tracker</b> shows every day, so you can fill in or fix a past prayer. <b>Make-ups</b> counts what you owe and helps you pray it back.", // HTML
+  trackerOnlyP: "<b>Tracker</b> shows every day, so you can fill in or fix a past prayer.", // HTML
+  finishT: "You're all set", finishP: "Small, consistent deeds are most beloved to Allah.",
+
+  // one-time tool tips (HTML)
+  gotIt: "Got it",
+  tipAdhkar: `Tap the card each time you say it. The counter keeps your place, even if you leave. Tap <b class="tl-aa-chip">Aa</b> to show transliteration and meaning.`,
+  tipQuran: "Swipe to turn the page. Tap the page for the menu: go to a sūrah or juzʾ, bookmarks, and <b>Translation</b> for the meaning. Your page is saved.",
+  tipHizb: `Read at your own pace. Your place is saved as you scroll, and today's manzil is ticked when you finish. Tap <b class="tl-aa-chip">Aa</b> for transliteration and meaning.`,
+
+  // Settings row + Help & tour page
+  helpRow: "Help & tour", helpRowSub: "Replay the tour, how statuses and make-ups work", newTag: "New",
+  helpTitle: "Help & tour", helpLead: "A quick walk through Zad, and answers to the questions people ask most.",
+  learn: "Learn Zad", touch: "Get in touch",
+  replay: "Replay the tour", replaySub: "A short walk through Home, Tools and Progress", replaySubShort: "A short walk through Home and the tabs",
+  howRead: "How you read", howReadSub: "Arabic, transliteration and meaning in the tools",
+  howStatus: "How statuses work", howStatusSub: "In jamāʿah, on time, made up, missed, excused",
+  howMakeups: "How make-ups work", howMakeupsSub: "What is added, and what comes off",
+  contact: "Contact us", email: "zadapp.team@gmail.com", contactFoot: "We read every message and reply as soon as we can.",
+
+  // How statuses work
+  stLead: "Each prayer gets one status. On Home, tap Prayed or In jamāʿah, or ··· for every choice.",
+  stItems: {
+    congregation: "You prayed it with the congregation. It also counts as on time.",
+    ontime: "You prayed it within its time.",
+    madeup: "You prayed it late, before the next Fajr. It counts as prayed and is never added to your make-ups.",
+    missed: "Its time passed and it wasn't prayed. One is added to your make-ups.",
+    missedNoTab: "Its time passed and it wasn't prayed. It is counted as owed.",
+    excused: "Hayd or nifās. Not missed, nothing is owed, and it is left out of your percentages.",
+  },
+  stNotLogged: "Not logged",
+  stNotLoggedP: "No status yet. Log it any time from Home, or from Tracker for an earlier day.",
+  stStreaks: "Streaks",
+  stStreakAll: "All five: days with every prayer prayed. Made up counts.",
+  stStreakOnTime: "All on time: days with every prayer on time or in jamāʿah.",
+  stStreakSame: "So a prayer made up the same day keeps your all-five streak, but not your on-time streak.",
+  stStreakExcused: "Excused days are skipped. They never break a streak.",
+  stStreakToday: "Today counts once ʿIshāʾ is logged.",
+  stSunnah: "Sunnah prayers are logged in the same sheet, and counted apart from the fard.",
+  stChange: "Changed your mind? Open the prayer again and pick another status.",
+
+  // How make-ups work
+  mkLead: "Make-ups are the fard prayers you owe and are praying back.",
+  mkAddsH: "What is added",
+  mkAdds: "Marking a prayer Missed adds one to its make-ups.",
+  mkWitr: "In the Hanafī madhhab Witr is wājib, so a missed Witr is added too.",
+  mkExcused: "Excused days (hayd or nifās) are never added.",
+  mkSameH: "Made up the same day",
+  mkSame: "Prayed it late? Mark it Made up, or tap “I made it up” on Home. Its +1 comes off, so it never reaches your make-ups list.",
+  mkSameUntil: "The same day lasts until the next Fajr.",
+  mkSameStreak: "It keeps your all-five streak, but not your on-time streak.",
+  mkOffH: "What comes off",
+  mkOff: "When you pray an older make-up, log it on the Make-ups tab. It comes off what you owe and counts toward your monthly goal.",
+  mkUndo: "Change a Missed prayer to any other status and its +1 is removed.",
+  mkAdjust: "Your estimate changed? Use Adjust what you owe on the Make-ups tab.",
+  mkGoal: "Your monthly goal is a guide, not a deadline. Pick something you can finish.",
+  mkFasts: "Owed fasts are counted the same way, on the Make-ups tab.",
+};
+
 /** Everything, for lookups by group name. */
 export const STR = {
   APP, NAV, COMMON, PRAYER_NAME, STATUS, STATUS_SHORT, STATUS_HELP, STATUS_EXTRA, WITR_STATUS,
   MADHHAB_NAME, MADHHAB_SUMMARY, MADHHAB_UI, ASR_LABEL, ASR_UI, TIER, WITR_TAG, WITR_UI, SUNNAH_NAME, SUNNAH_UI, MEASURE,
   TIMES, HOME, EXCUSED, DEEDS, DEED_NAME, DEED_HINT, TRACKER, LOG, MAKEUPS, PROGRESS, INSIGHT,
-  FEATURE, TOOL_NAME, TOOL_SUB, TOOLS_UI, WEEK_UI, WEEK_LETTERS_SAT, WEEK_LETTERS_MON, NOTIFY, SETTINGS, SETUP,
-  HOME_X, PROGRESS_L, MAKEUPS_X, SETUP_X, SETTINGS_X,
+  FEATURE, TOOL_NAME, TOOL_SUB, TOOLS_UI, WEEK_UI, WEEK_LETTERS_SUN, WEEK_LETTERS_SAT, WEEK_LETTERS_MON, NOTIFY, SETTINGS, SETUP,
+  HOME_X, PROGRESS_L, MAKEUPS_X, SETUP_X, SETTINGS_X, GUIDE,
 };
 export default STR;

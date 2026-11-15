@@ -13,7 +13,13 @@ import {
   SETTINGS as T, APP, COMMON, MADHHAB_UI, ASR_UI, SUNNAH_UI, EXCUSED, MAKEUPS, FEATURE,
   STATUS, prayerName, WITR_STATUS, DEED_NAME, NAV,
 } from "../strings.js";
-import { SETTINGS_X } from "../strings.js";
+import { SETTINGS_X, GUIDE } from "../strings.js";
+import { helpPage } from "./help.js";
+import { helpIsNew } from "../guide.js";
+import { setHijriSource, currentHijri, normalizeHijri, hijriLabel, hijriParts, calendarAvailable, calcParts, CALENDARS, HIJRI_MONTHS } from "../hijri.js";
+import { COMMITTEES, committeeById, committeeData, suggestedHijri, monthToSet, plausibleStart, monthId } from "../hijri-committees.js";
+import { hijriEditors, refreshHijriCommittee, saveCommitteeMonth } from "../cloud.js";
+import { setCrashReporting } from "../crash.js";
 
 /* Settings-only labels (strings.js SETTINGS_X). */
 const X = SETTINGS_X;
@@ -52,11 +58,14 @@ const P = {
   grid: '<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><path d="M17.25 13.5v7.5M13.5 17.25H21"/>',
   half: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>',
   chev: '<path d="M9 6l6 6-6 6"/>',
+  play: '<circle cx="12" cy="12" r="9"/><path d="M10 8.5l5 3.5-5 3.5z"/>',
+  checkc: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
   back: '<path d="M15 5l-7 7 7 7"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M13.5 13.2a3 3 0 1 0 0 5.4 3.6 3.6 0 0 1 0-5.4z"/>',
 };
 const svg = (k, cls = "") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[k]}</svg>`;
 const FEATURE_ICON = { prayers: "mosque", sunnah: "layers", deeds: "heart", makeups: "refresh", week: "chart", progress: "bars", tools: "grid" };
-const TOOL_ICON = { adhkar: "sun", durud: "heart", hizb: "book", quran: "book" };
+const TOOL_ICON = { adhkar: "sun", durud: "heart", hizb: "book", quran: "book", manzil: "shield", afterSalah: "sun" };
 
 /* ---------- row building blocks ---------- */
 const tile = (icon, tone = "gold") => `<span class="ic ${tone}">${svg(icon)}</span>`;
@@ -72,10 +81,10 @@ const group = (title, rows, foot = "") => `<section class="sgroup"><h2>${esc(tit
 const head = (title, back = "A.settingsBack()") => `<header class="shead"><button class="back" onclick="${back}" aria-label="${esc(COMMON.back)}">${svg("back")}</button><h1>${esc(title)}</h1></header>`;
 
 /* ---------- page state ---------- */
-let page = "main"; // "main" | "features" | "sunnah"
+let page = "main"; // "main" | "features" | "sunnah" | "help" | "hStatus" | "hMakeups" (Help & tour, views/help.js)
 let backTo = ""; // "tools" when the Features page was opened from the Tools hub
 A.settingsPage = p => { page = p; backTo = ""; $("#screen").scrollTop = 0; UI.settingsPage = p; renderSettings(); };
-A.settingsBack = () => { if (backTo) { const v = backTo; backTo = ""; page = "main"; A.go(v); } else if (page !== "main") A.settingsPage("main"); else A.go("home"); };
+A.settingsBack = () => { if (backTo) { const v = backTo; backTo = ""; page = "main"; A.go(v); } else if (page === "hStatus" || page === "hMakeups") A.settingsPage("help"); else if (page !== "main") A.settingsPage("main"); else A.go("home"); };
 /** From the Tools hub: open Settings → Features, scrolled to the Tools section. Back returns to Tools. */
 A.settingsTools = () => {
   A.go("settings"); A.settingsPage("features"); backTo = "tools";
@@ -92,6 +101,14 @@ A.toggle = async k => {
   }
   S.settings[k] = on;
   commit();
+};
+/* Crash reports default on (S.settings.crashReports !== false); crash-only diagnostics, see src/crash.js */
+A.crashToggle = () => {
+  const on = S.settings.crashReports === false;
+  S.settings.crashReports = on;
+  setCrashReporting(on);
+  commit();
+  toast(on ? T.crashReportsOnToast : T.crashReportsOffToast);
 };
 A.setLead = m => { S.settings.leadMin = +m; commit(); toast(T.leadToast(m)); };
 A.featToggle = f => { feat.setFeature(S, f, !feat.isOn(S, f)); commit(); };
@@ -145,6 +162,87 @@ A.asrSheet = () => openSheet(`<h3>${esc(ASR_UI.title)}</h3><p>${esc(ASR_UI.lead)
   <button class="opt ${S.settings.asr === "hanafi" ? "sel" : ""}" onclick="A.setAsrOpt('hanafi')"><div><b>${esc(ASR_UI.hanafi)}</b><small>${esc(ASR_UI.hanafiSub)}</small></div></button></div>
   <p class="note">${esc(X.asrFollows)}</p>`);
 A.setAsrOpt = v => { store.setAsr(S, v); closeSheet(); commit(); toast(ASR_UI.updated); };
+
+
+/* ---------- Hijri date (S.settings.hijri = { method, committee, adjust }) ---------- */
+// No saved choice yet: the region default (CHC in the US and Canada, Umm al-Qura elsewhere).
+setHijriSource(() => S.settings.hijri || { ...hijriRegion(), adjust: 0 });
+const H = {
+  title: "Hijri date",
+  lead: "How Zad works out today's Hijri date. Moon sighting can differ from the calendar by a day.",
+  today: "Today",
+  calcGroup: "Calculated", committeeGroup: "Follow a moon-sighting committee",
+  methods: { umalqura: ["Umm al-Qura", "The Saudi calendar. Works offline."], civil: ["Civil (tabular)", "A fixed 30/29-day pattern. Works offline."], tbla: ["Astronomical tabular", "Fixed pattern with the astronomical epoch. Works offline."] },
+  committeeSub: "One decision per month, shared with everyone who follows it.",
+  suggested: "Suggested", defaultTag: "Default",
+  adjustTitle: "Adjust by days", adjustNote: "Applies on top of the method above. Use it if your community started the month a day earlier or later.",
+  srcCommittee: n => "From " + n, srcFallback: n => n + " has no decision for this month yet. Using the calculated date plus its last difference.", srcNone: n => "No data from " + n + " yet. Using the calculated date.",
+  needSignIn: "Sign in (Settings → Cloud backup) to fetch the latest decisions. Saved decisions work offline.",
+  editorRow: "Update this month's start",
+  edTitle: "Update this month's start", edLead: "Pick the Gregorian date of the 1st of the month, as decided by the committee.",
+  edMonth: "Month", edDate: "Date of the 1st", edNote: "Note (optional)", edSaved: "Month start saved", edFailed: "Couldn't save. Check your connection.", edBad: "That date is more than 3 days from the calculated start. Check it.", edNeedDate: "Pick a date.",
+};
+const hijriSummary = () => {
+  const h = currentHijri();
+  const base = h.method === "committee" ? (committeeById(h.committee)?.short || "Committee") : H.methods[h.method][0];
+  return h.adjust ? `${base}, ${h.adjust > 0 ? "+" : "−"}${Math.abs(h.adjust)}` : base;
+};
+const hijriRegion = () => { try { return suggestedHijri({ lang: navigator.language || "", tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "" }); } catch (e) { return suggestedHijri(); } };
+function hijriSourceNote() {
+  const h = currentHijri();
+  if (h.method !== "committee") return "";
+  const c = committeeById(h.committee), name = c?.short || "the committee", p = hijriParts(new Date());
+  if (!Object.keys(committeeData(h.committee).months).length) return H.srcNone(name);
+  return p?.source === "committee" ? H.srcCommittee(name) : H.srcFallback(name);
+}
+A.hijriSheet = (fetch = true) => {
+  const h = currentHijri(), sug = hijriRegion();
+  const opt = (title, sub, sel, onclick, tag = "") => `<button class="opt mopt ${sel ? "sel" : ""}" role="radio" aria-checked="${sel}" onclick="${onclick}"><div><b>${esc(title)}${tag ? `<em class="deftag">${esc(tag)}</em>` : ""}</b><small>${esc(sub)}</small></div><span class="radio${sel ? " on" : ""}"></span></button>`;
+  const calcs = Object.keys(CALENDARS).filter(m => m === "umalqura" || calendarAvailable(m)).map(m => opt(H.methods[m][0], H.methods[m][1], h.method === m, `A.setHijri('${m}')`, m === "umalqura" && sug.method !== "committee" ? H.defaultTag : ""));
+  const coms = COMMITTEES.map(c => { const on = h.method === "committee" && h.committee === c.id; return opt(c.name, on ? hijriSourceNote() || H.committeeSub : H.committeeSub, on, `A.setHijriCommittee('${c.id}')`, sug.committee === c.id ? H.defaultTag : ""); });
+  const adj = [-2, -1, 0, 1, 2].map(n => `<button class="${h.adjust === n ? "on" : ""}" aria-pressed="${h.adjust === n}" onclick="A.setHijriAdjust(${n})">${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n)}</button>`).join("");
+  const editor = h.method === "committee" && cloud.user && hijriEditors[h.committee];
+  openSheet(`<div id="hijriSheetMark"></div><div class="sheet-head"><h3>${esc(H.title)}</h3><button class="link-btn" onclick="A.closeSheet()">${esc(COMMON.done)}</button></div>
+    <p>${esc(H.lead)}</p>
+    <p class="follow"><i></i>${esc(H.today)} · <b>${esc(hijriLabel(new Date()))}</b></p>
+    <h4 class="hj-h">${esc(H.calcGroup)}</h4><div class="opts" role="radiogroup" aria-label="${esc(H.calcGroup)}" style="margin-top:8px">${calcs.join("")}</div>
+    <h4 class="hj-h">${esc(H.committeeGroup)}</h4><div class="opts" role="radiogroup" aria-label="${esc(H.committeeGroup)}" style="margin-top:8px">${coms.join("")}</div>
+    ${h.method === "committee" && !cloud.user ? `<p class="note">${esc(H.needSignIn)}</p>` : ""}
+    ${editor ? `<div class="cta"><button class="btn ghost" onclick="A.hijriEditorSheet()">${esc(H.editorRow)}</button></div>` : ""}
+    <h4 class="hj-h">${esc(H.adjustTitle)}</h4><div class="seg" role="group" aria-label="${esc(H.adjustTitle)}" style="margin:8px 0 0">${adj}</div>
+    <p class="note">${esc(H.adjustNote)}</p>`);
+  $("#sheet").querySelectorAll(".hj-h").forEach(e => { e.style.cssText = "margin:18px 0 0;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)"; });
+  if (fetch && h.method === "committee" && cloud.user) refreshHijriCommittee(h.committee).then(ok => { if (ok && $("#hijriSheetMark")) A.hijriSheet(false); });
+};
+function saveHijri(patch) { S.settings.hijri = normalizeHijri({ ...currentHijri(), ...patch }); commit(); A.hijriSheet(false); }
+A.setHijri = m => saveHijri({ method: m });
+A.setHijriCommittee = id => { saveHijri({ method: "committee", committee: id }); if (cloud.user) refreshHijriCommittee(id).then(ok => { if (ok && $("#hijriSheetMark")) A.hijriSheet(false); }); };
+A.setHijriAdjust = n => saveHijri({ adjust: n });
+
+/* Editors only: "Update this month's start" */
+A.hijriEditorSheet = () => {
+  const h = currentHijri(), c = committeeById(h.committee);
+  if (h.method !== "committee" || !cloud.user || !hijriEditors[h.committee]) return;
+  const t = monthToSet(hijriParts(new Date()));
+  const prev = t.m === 1 ? { y: t.y - 1, m: 12 } : { y: t.y, m: t.m - 1 }, next = t.m === 12 ? { y: t.y + 1, m: 1 } : { y: t.y, m: t.m + 1 };
+  const months = [prev, t, next], known = committeeData(h.committee).months, cur = known[monthId(t.y, t.m)];
+  openSheet(`<h3>${esc(H.edTitle)}</h3><p>${esc(c.name)}. ${esc(H.edLead)}</p>
+    <div class="field"><label for="hjMonth">${esc(H.edMonth)}</label><select id="hjMonth" onchange="A.hijriEdMonth()">${months.map(x => `<option value="${x.y}-${x.m}" ${x === t ? "selected" : ""}>${esc(HIJRI_MONTHS[x.m - 1])} ${x.y}</option>`).join("")}</select></div>
+    <div class="field"><label for="hjDate">${esc(H.edDate)}</label><input id="hjDate" type="date" value="${esc(cur?.startDate || "")}"></div>
+    <div class="field"><label for="hjNote">${esc(H.edNote)}</label><input id="hjNote" maxlength="200" value="${esc(cur?.note || "")}"></div>
+    <div class="cta"><button class="btn ghost" onclick="A.hijriSheet(false)">${esc(COMMON.cancel)}</button><button class="btn primary" onclick="A.hijriEdSave()">${esc(COMMON.save)}</button></div>`);
+};
+A.hijriEdMonth = () => {
+  const [y, m] = $("#hjMonth").value.split("-").map(Number), v = committeeData(currentHijri().committee).months[monthId(y, m)];
+  $("#hjDate").value = v?.startDate || ""; $("#hjNote").value = v?.note || "";
+};
+A.hijriEdSave = async () => {
+  const h = currentHijri(), [y, m] = $("#hjMonth").value.split("-").map(Number), date = $("#hjDate").value;
+  if (!date) { toast(H.edNeedDate); return; }
+  if (!plausibleStart(date, y, m, n => calcParts(n, CALENDARS.umalqura))) { toast(H.edBad); return; }
+  try { await saveCommitteeMonth(h.committee, y, m, date, $("#hjNote").value.trim()); closeSheet(); commit(); toast(H.edSaved); }
+  catch (e) { console.warn("hijri save", e); toast(H.edFailed); }
+};
 
 /* ---------- madhhab (sheet) ---------- */
 function madhhabList(onpick, cur) {
@@ -394,7 +492,9 @@ function mainPage() {
   const g = [];
   g.push(group(X.general, [
     navRow({ icon: "palette", title: T.appearance, value: appearanceVal, onclick: "A.appearanceSheet()" }),
+    navRow({ icon: "calendar", title: H.title, value: hijriSummary(), onclick: "A.hijriSheet()" }),
     navRow({ icon: "toggles", title: FEATURE.title, sub: FEATURE.summary, value: FEATURE.count(on, of), onclick: "A.settingsPage('features')" }),
+    navRow({ icon: "info", title: GUIDE.helpRow, sub: GUIDE.helpRowSub, tag: helpIsNew(S) ? GUIDE.newTag : "", onclick: "A.helpOpen()" }),
   ]));
   g.push(group(T.groups.prayer, [
     navRow({ icon: "book", tone: "green", title: MADHHAB_UI.title, sub: info.summary, value: info.name, onclick: "A.madhhabSheet()", gl: "" }),
@@ -424,6 +524,7 @@ function mainPage() {
   g.push(group(T.groups.account, [
     ...(cloud.available ? [navRow({ icon: "cloud", tone: "green", title: T.cloud, value: cloud.user ? COMMON.on : COMMON.off, sub: cloud.user ? "" : "", onclick: "A.cloudSheet()", id: "cloudRow" })] : []),
     ...(isNative() ? [switchRow({ icon: "lock", tone: "green", title: T.lock, sub: T.lockSub, key: "lock", on: !!st.lock })] : []),
+    ...(isNative() ? [switchRow({ icon: "shield", tone: "green", title: T.crashReports, sub: T.crashReportsSub, key: "crashReports", on: st.crashReports !== false, fn: "A.crashToggle()" })] : []),
     navRow({ icon: "download", tone: "green", title: T.exportCsv, value: "CSV", onclick: "A.exportCsv()" }),
     navRow({ icon: "upload", tone: "green", title: T.backup, onclick: "A.backup()" }),
     navRow({ icon: "history", tone: "green", title: T.restore, onclick: "A.restore()" }),
@@ -439,6 +540,7 @@ function mainPage() {
   return `${head(T.title)}${profile}${g.join("")}`;
 }
 const APP_NAME = () => APP.name;
+const HELP_PAGES = ["help", "hStatus", "hMakeups"];
 
 /* ---------- render ---------- */
 function renderSettings() {
@@ -447,7 +549,7 @@ function renderSettings() {
   // Redrawing while typing or scrolling is unnecessary: only redraw when this view is showing
   if (UI.view !== "settings") return;
   const y = $("#screen").scrollTop;
-  root.innerHTML = `<div class="settings">${page === "features" ? featuresPage() : page === "sunnah" ? sunnahPage() : mainPage()}</div>`;
+  root.innerHTML = `<div class="settings">${page === "features" ? featuresPage() : page === "sunnah" ? sunnahPage() : HELP_PAGES.includes(page) ? helpPage(page, { head, group, navRow }) : mainPage()}</div>`;
   $("#screen").scrollTop = y;
   if (exactAllowed === null) refreshExact();
 }

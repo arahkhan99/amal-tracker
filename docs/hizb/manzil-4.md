@@ -642,7 +642,7 @@ Glory be to the One who wrapped Himself in might and rules by it. Glory be to th
 
 **Transliteration:** Allahumma inna qulubana wa nawasiyana wa jawarihana bi-yadik, lam tumallikna minha shay'a; fa-idha fa'alta dhalika bina fa-kun anta waliyyana, wahdina ila sawa'i s-sabil.
 
-**Translation:** O Allah, our hearts, our forelocks and our limbs are in Your hand; You have given us control over none of them. Since You have done this with us, be our Protector and guide us to the right way.
+**Translation:** O Allah, our hearts, our forelocks and our limbs are in Your Hand; You have given us control over none of them. Since You have done this with us, be our Protector and guide us to the right way.
 
 **Source (Nomani):** Abu Nuʿaym (al-Hilya), from Jabir.
 **Nomani page:** 93

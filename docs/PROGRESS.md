@@ -375,3 +375,287 @@ The user still has to say "go" for items 1 and 2, but they intend to. Launch the
 5. Commit ONLY when the user says. All work is uncommitted on top of 6368e54.
 6. Launch checklist (user): Play Console ($25) + 12 testers × 14 days; Apple Developer ($99) for iOS + Apple sign-in; back up the signing key; 2-step sign-in on the accounts; the policy effective date.
 - **8 Nov:** a working test build (dist) was published for phone testing: https://claude.ai/artifact/QLnoY2yL9WkoZZFKNZyTtJ. It is untested on claude.ai hosting; Google sign-in won't work there (domain not authorised), so use the no-backup path. For a real install, next session: build the Android APK.
+- **8 Nov:** the user said "yes, push". Commit c897721 (plus 6368e54) pushed to main; the GitHub Actions android.yml builds the APK and sends it via Firebase App Distribution to arah.khan99. Check the run status next session if no email arrived (`gh run list`).
+
+## 10 Nov feedback (session resumed)
+All 3 GitHub runs (Android, iPhone, Pages) for c897721 succeeded.
+1. **Hijri:** currently the Umm al-Qura calculation. Wanted: follow the Central Hilal Committee (US) or the local committee, plus a manual ±1 day.
+2. **Add Manzil** to Tools. Source: `C:\Users\chito\Downloads\Manzil.pdf`.
+3. **Add adhkar after salah** as a tool, from the user's poster screenshot (`OneDrive\Pictures\Screenshots\Screenshot 2026-11-10 155825.png`).
+4. **Disable long-press text selection** and copy.
+5. **Progress:**
+   - remove or fix the stray glyph above "Where you're steady…";
+   - the chapter chips bar should float (sticky) at all times.
+6. **Content cadence:**
+   - ayah, hadith, etc. weekly (already);
+   - Sahabi of the month gets a fact per day, earlier facts stay visible, with an archive of past months.
+7. **Colours:** the jamāʿah (gold) and made-up (pale amber) colours are too similar. Propose ideas BEFORE changing.
+8. **Widgets:** plan the tiers, from a simple log-a-prayer widget to a full one (prayers, good deeds…).
+- **10 Nov, decisions:**
+  - Hijri: calculated options + manual ±2 + follow-a-committee (one update applies to all followers). OPEN: who may update — Claude proposed approved editors, not anyone.
+  - Manzil OK.
+  - Adhkar after salah: add the full Āyat al-Kursī; Quls 3× after Fajr and Maghrib.
+  - Sahabi daily fact OK.
+  - Colour option A: made up = slate blue.
+  - Widgets OK.
+- **10 Nov, ROUND 2 launched (4 agents):**
+  - Tools: Manzil + after-salah (Opus);
+  - UI polish: colour A, no text selection, Progress glyph + sticky chips, Sahabi daily facts (Sonnet);
+  - Hijri options + committees in Firestore with editors-only writes (Sonnet);
+  - widget mockups at `design-review/mockups2/widgets` (Sonnet).
+- **10 Nov:**
+  - The APK arrived on the user's phone (App Distribution works).
+  - Scholar review page being built at `design-review/scholar-review/`.
+  - QUL request drafted at `docs/permission-request-qul.md`: no email; use the QUL site "Send Access Request" or a GitHub issue; send from zadapp.team.
+  - Accounts deferred to launch.
+  - Explained the signing-key backup and the policy effective date.
+- **10 Nov:** Hijri approved-editors model APPROVED. Home 'Adhkar after Salah' link APPROVED (polish + tools agents told). The user will share the source-book PDFs; they are to go in C:\Users\chito\zad-sources\ (outside the repo, never committed).
+- **10 Nov:**
+  - **Widget mockups done** (34 PNGs in `design-review/mockups2/widgets`). Review page: https://claude.ai/artifact (widgets-review.html, published). Recommended: Small A, Medium B, Large B, tap opens a log sheet; lock-screen circular and inline first. Awaiting the user's pick.
+  - **Polish agent done:**
+    - made up is now slate blue;
+    - text selection is off;
+    - the sticky strip is safe-area aware;
+    - the Sahabi has daily facts, the earlier list and past months;
+    - Home has the after-salah chip, which calls `A.openAfterSalah`.
+  - **The Progress glyph was NOT reproduced on desktop.** Ask the user for a phone screenshot; it may be a status-bar overlap.
+  - **Leftover:** delete `scripts/_r2shoot.mjs`.
+- **10 Nov, Hijri agent done** (`docs/build/hijri.md`):
+  - Methods: Umm al-Qura default, civil, tbla, committee; adjust ±2.
+  - Committee data lives in Firestore `hijriCommittees/{id}/months/{1448-05}`. Editors are listed by uid on the committee doc and managed in the Firebase console. Rules tests pass.
+  - **OPEN for the user:**
+    - US/Canada: CHC is "Suggested" only. Should it default instead?
+    - Approve the placeholder committees (moonsighting-ww, uk-moon).
+    - Who the CHC editors are (the user's uid first).
+  - Test fix delegated to the tools agent.
+- **10 Nov:** the user is previewing the app in a phone-size Chrome window (vite on :5173, background).
+- **10 Nov:** scholar review page published at https://claude.ai/artifact/4H6ocTqYen2cH8NqB9gucM (built by `node design-review/scholar-review/build.cjs`). It holds 224 Hizb items, 21 adhkar, 40 durud, 32 glossary terms, 19 spellings and 8 sunnah items. Rebuild and republish once docs/after-salah.md and docs/manzil.md exist. The user pastes 'Copy my review' into chat.
+- **10 Nov, ROUND 2 COMPLETE (uncommitted):**
+  - Manzil and Adhkār after Salāh built. The Manzil PDF has al-Baqarah 163 ONLY (not 164); the scholar decides.
+  - After-salah poster references are mostly illegible (best guesses in the md).
+  - Tool names, subtitles and icons added.
+  - 126 tests pass and the build passes.
+  - The scholar review page was republished with 14 new-tool items.
+  - **NEXT:**
+    - the user's picks on widgets;
+    - the Hijri questions (CHC default? committees? editors);
+    - the Progress glyph screenshot;
+    - the scholar review paste;
+    - the source-book PDFs;
+    - push for a new phone build when the user says.
+
+### 13 Nov decision
+- al-Hizb al-Aʿzam: the Nomani edition is the only text, with our own English translation (Pickthall for Qurʾān passages). Mangera's translation is not being pursued, so no permission request.
+- Scholar review (13 Nov): the user approved everything on the review page. Hizb, adhkar, durud, after-salah, manzil and glossary are now status approved, VIRTUES_APPROVED = true, and the draft banners are gone from those tools. The Sahabi and Home placeholder cards keep their draft flag because they were not reviewed. Hizb edition differences: the Nomani readings stand.
+- Widget picks (13 Nov): Small A (forest ring card, countdown, Prayed button), Medium A (forest card, five tiles, next prayer outlined), Large A (hero with Prayed button, prayers, Good Deeds, make-ups). Tap opens the log sheet. Lock screen: inline + rectangular + circular set (iPhone). Not built yet.
+
+## 13 Nov: RESUME HERE (session ended on usage limit)
+All work is UNCOMMITTED, on top of Round 2. Tests: 126 passed, 18 skipped. The build passes.
+
+### Done today
+- Scholar review approved in full. The reviewed data is now status approved, VIRTUES_APPROVED=true, and the draft banners are gone. The Sahabi and Home placeholders keep their draft flag.
+- Hizb: Nomani only, with our own English. Mangera is dropped. Attribute wording follows Taqi Usmani: "in Your Hand", and "You rose over Your Throne in the way that befits Your majesty" (m6). hizb.js was regenerated and the approved status reapplied.
+- Hanafi Deobandi approach (internal only): the rules are in docs/content/BRIEF.md "Approach", and in memory as zad-hanafi-deobandi.
+- Tools: Arabic tool names removed from the hub tiles and the tool headers (English only), as the user asked.
+- Widgets: picks are Small A, Medium A, Large A; tap opens the log sheet; lock screen uses the first set. The user said BUILD THEM NOW (not started).
+- Source books are in C:\Users\chito\zad-sources (see its README). Riyāḍ and al-Iṣābah are scans; render pages with design-review/hizb-work/m1/render.cjs.
+
+### User answers (13 Nov), still to IMPLEMENT
+1. Sahabi order: the four caliphs, then the rest of the Ten (Ṭalḥah, Zubayr, ʿAbd al-Raḥmān, Saʿd, Saʿīd, Abū ʿUbaydah), then Khadījah, Fāṭimah, ʿĀʾishah, Bilāl, Muṣʿab, Muʿādh, Salmān, Abū Dharr. That's 18, cycling. Start at Abū Bakr in the month the user starts, or from a fixed epoch month. In content.js, change the rotation from calendar month to sequential.
+2. CHC = DEFAULT Hijri method for US/Canada. Still unanswered: keep or remove the placeholder committees moonsighting-ww and uk-moon, and making the user the first CHC editor.
+3. Manzil: ADD al-Baqarah 164 (src/tools/data/manzil.js plus its test).
+4. Widgets: build now (Android AppWidget plus iOS WidgetKit; Apple lock-screen widgets need the Apple Developer account).
+5. Progress "stray mark" diagnosed from the user's phone screenshot (dark mode). Two bugs:
+   a) The mark is the descender of the big "Progress" heading scrolled up just under the status-bar cover (`.phone::before` in src/styles.css:257, height = safe-area inset). Fix: make the cover a bit taller with a fade at its bottom edge (e.g. inset + 12px, gradient to transparent), using the view's own background (Progress uses --pg-bg).
+   b) In DARK mode the status-bar icons are dark on a dark background. src/platform.js setStatusBar() picks Style.Light (dark icons) for every view except home/onboard. Fix: use light icons whenever resolvedTheme()==="dark" (src/app.js), and call it again on theme change.
+6. Onboarding/tutorial: the user chose SIMPLE transliteration for everything recited, NO Qurʾān transliteration, and tips on the real screens. Plan:
+   - a setup step "Can you read Arabic?" (Yes / A little / Not yet), which sets the tools' translit/translation prefs (src/views/tools/core.js prefs(), default off);
+   - a 6-step coach-mark tour on Home;
+   - one-time tool tips;
+   - Settings "Help & tour".
+   The mockup is being made by an agent into design-review/mockups2/tour/ (tour-review.html plus PNGs). SHOW THE MOCKUP TO THE USER BEFORE BUILDING.
+
+### Content agents (output in docs/content/; check what exists)
+- hadith.md: DONE, 52 cards, no Arabic (garbled in the PDFs). H05 needs a decision on the review page (Tirmidhi or drop).
+- seerah.md: DONE, 52 cards (17 Makkah, 28 Madinah, 7 final).
+- sunnah.md: DONE, 12 cards (Hanafi-checked).
+- dua.md: an agent was transcribing Arabic from Maʿārif vol 3 page images (printed pp. 107–298), with simple transliteration, skipping anything in the adhkar or Hizb. CHECK whether it is filled; if empty, re-run.
+- sahabah-a.md (Abū Bakr, ʿUmar, ʿUthmān, ʿAlī, Khadījah, Bilāl), sahabah-b.md (ʿĀʾishah, Muṣʿab, Muʿādh, Salmān, Abū Dharr, Fāṭimah/Umm Salamah), sahabah-c.md (the other six of the Ten): agents were running, 31 facts each. CHECK completeness; re-run any that are missing.
+- Weekly āyah set: not started (Qurʾān plus Pickthall, no books needed).
+- NEXT: build a content review page (like design-review/scholar-review/build.cjs). Review is light: check the summary is faithful, with book and page shown. After approval, load the content into src/content.js (keep draft:true until approved).
+
+### Still open with the user
+- QUL request (send it from the QUL site), the Taqi Usmani reply, and "push" for a phone build (commit first, never push without asking).
+- At launch: Play $25 and 12 testers for 14 days, Apple $99, backing up the signing key, 2-step verification, and the policies' effective date.
+
+## 14 Nov: RESUME HERE (keep this section current; read it first)
+Everything is still UNCOMMITTED. Never commit or push without asking. Tests: 126 passed after my edits; the build passed.
+
+### Done 14 Nov (by me)
+- Sahabi: the 18 names in the user's order (src/content.js). Each user starts at Abū Bakr in their own first month (S.settings.sahabiStart, set once in home.js weekTiles). The facts are still placeholders: load them from docs/content/sahabah-*.md after review.
+- CHC is the DEFAULT Hijri method in US/Canada (settings.js setHijriSource falls back to hijriRegion()). The committees moonsighting-ww and uk-moon are REMOVED (user, 14 Nov).
+- Manzil: 2:164 added (80 āyāt), with its test.
+- Progress status bar: the cover is 12px taller with a fade (styles.css .phone::before), and the icons are light in dark mode (app.js syncStatusBar).
+
+### User answers (14 Nov)
+- Duʿās: option (c) CONFIRMED, read the Arabic from the scans; the user checks every line.
+- Hijri: remove the extra committees (done). The USER is the first CHC editor: add their uid to Firestore hijriCommittees/chc-na.editors (console; ask first, they need to sign in once to get the uid).
+- Tablets and iPads ARE needed (no longer phone only). Mockup first, then the layout, TARGETED_DEVICE_FAMILY=1,2, orientations, and tablet store screenshots.
+- No reply from Taqi Usmani yet; the user still has to send the other permission emails (QUL etc.).
+- The user said "the previous message was a mistake" right after "We can get started with the other things in the meantime". It's unclear which message they meant; I asked and am WAITING. If they meant "get started", they may want the agents below stopped.
+- H05: cite Tirmidhi (done in hadith.md).
+- CONFIRMED 14 Nov: duʿās option (c); CHC editor set-up in the Firebase console together with the user later; tablet/iPad work goes ahead (mockup first).
+
+### Agents started 14 Nov (all write to files progressively; on resume, check the files and re-run only what's incomplete)
+| Job | Output | Target |
+|---|---|---|
+| Sahabah A (Abū Bakr, ʿUmar, ʿUthmān, ʿAlī, Khadījah, Bilāl) | docs/content/sahabah-a.md | 6×31 = 186 |
+| Sahabah C (Ṭalḥah, Zubayr, ʿAbd al-Raḥmān, Saʿd, Saʿīd, Abū ʿUbaydah) | docs/content/sahabah-c.md | 186 (Saʿīd may be short) |
+| Sahabah B: DONE 14 Nov, 186/186. Doubts for review: B-ABUDHARR-03/-13 and B-SALMAN-12 (hard-to-read Iṣābah lines), B-ABUDHARR-19 close to B-FATIMAH-25, B-MUSAB-21 and B-SALMAN-08 tone | docs/content/sahabah-b.md | done |
+| Duʿās D01–D52, Arabic read from the Maʿārif vol 3 scans, simple translit | docs/content/dua.md | 52 |
+| Tablet/iPad mockup, 2 options + work estimate | design-review/mockups2/tablet/ (tablet-review.html, notes.md) | show the user |
+| Widgets BUILD (Android RemoteViews + iOS WidgetKit + bridge plugin) | android/…/widget/, ZadWidgetsPlugin.java, ios/, docs/build/widgets.md, tests | must compile, tests pass |
+| Tour mockup: DONE | design-review/mockups2/tour/tour-review.html + notes.md (14 screens × light/dark) | 6 questions below |
+
+Count check: `for f in docs/content/*.md; do echo "$f $(grep -c '^### ' $f)"; done`
+
+### Tour mockup: 6 questions for the user (my recommendation in brackets)
+1. "Not yet" = a new translit-first layout, or the same as "A little"? (the same, for v1)
+2. The Arabic step after Madhhab for everyone, or only when Tools is on? (everyone)
+3. Tour step 2: open the log sheet, or only point at ···? (point)
+4. A 7th step for Tracker/Make-ups? (no, Help & tour covers them)
+5. Help & tour at the end of General, or its own group? (General)
+6. Status/make-up explainers in the app, or a link to the support page? (in the app)
+PUBLISHED 14 Nov (private review page): https://claude.ai/artifact/NJWydnLXMpogjsfsWp7JPx (source copy: the session scratchpad tour-pub/; the originals stay in design-review/mockups2/tour/). WAITING for the user to answer the 6 questions.
+
+### Next after the agents
+1. Content review page (like design-review/scholar-review/build.cjs) for hadith, seerah, sunnah, sahabah, duʿās, then load into src/content.js (draft until approved).
+2. Weekly āyah set (not started).
+3. Build the tour once the user answers.
+4. Tablet layout once the user picks an option.
+
+### ▶ SAVED AT THE USAGE LIMIT (14 Nov, end of session). Resume from here.
+User answers saved: duʿās option (c) confirmed; H05 = Tirmidhi (done); CHC editor set up later with the user in the Firebase console; tablets and iPads go ahead (mockup first). Tour review page published: https://claude.ai/artifact/NJWydnLXMpogjsfsWp7JPx (waiting for answers to its 6 questions).
+
+Background agents were STILL RUNNING when the session ended. They will be cut off, but they saved as they went. Counts at save time:
+- sahabah-a.md: 124/186 items (about 4 of 6 Companions). Check which Companions are complete; re-run ONLY the missing ones with the same brief (BRIEF.md + model sahabah-b.md, IDs A-<NAME>-01..31, append).
+- sahabah-c.md: 150/186. Same: finish only the missing Companions (IDs C-<NAME>-01..31). Saʿīd ibn Zayd may legitimately be short.
+- sahabah-b.md: DONE 186/186.
+- dua.md: 13/52. Continue from D14 (Arabic read from the Maʿārif vol 3 scans, simple translit, unsure words flagged in Note, skip anything already in adhkar.js/hizb.js/after-salah.js). Re-check D01–D13 for completeness first.
+- Tablet mockup: 116 PNGs in design-review/mockups2/tablet/, but NO tablet-review.html or notes.md yet. Re-run only to write the review page + notes (2 options, pros/cons, work estimate); don't re-shoot existing PNGs.
+- Widgets build: native files exist (android/…/ZadWidgetsPlugin.java, android/…/widget/, res/drawable/zw_*, manifest/MainActivity/gradle changes) but NO docs/build/widgets.md yet, and its tests and builds are unverified. On resume: check git status, run `npx vitest run` and `npm run build`, try the Android build, then finish (iOS WidgetKit, bridge, tests, docs). Small A = the hero card per notes.md (the PNG names say "ring": a mismatch to report).
+First step on resume: run the count check above and `npx vitest run`, and only then re-launch agents (in parallel).
+
+### 14 Nov, 6:50pm: resumed after the limit
+Tests 143 passed (the widget agent added tests). The 5 agents were resumed with SendMessage (their context is kept). Counts at resume: sahabah-a 155 (Bilāl left), sahabah-c 150 (Abū ʿUbaydah left), dua 31/52, tablet: the review page and notes still to write, widgets: iOS, docs and the build check still to do.
+
+### Tablet mockup: DONE (14 Nov, evening)
+design-review/mockups2/tablet/tablet-review.html + notes.md + 116 PNGs + store/ samples. Not published yet (offered to the user).
+- Option A: a centred 560pt column, everything ~15% larger. About 3–5 days. Option B: a side rail with two panes, dialog sheets, and a Qurʾān two-page spread in landscape. About 2.5–3.5 weeks.
+- Agent's recommendation: A now, plus B's dialog sheets and Qurʾān spread; full B later.
+- Store: the App Store needs iPad 13" screenshots (2064x2752); Play tablet shots are optional but needed to count as tablet-ready.
+- Found: the .pg-top Progress header has no top safe-area padding (it may sit under the iPhone notch). Check this.
+- Questions for the user: A/B/hybrid; iPhone portrait-only?; keep the desktop phone frame?; Qurʾān spread default or toggle (and the IndoPak page pairing); the "Today" list in B; store image style/orientation/languages; 7" Android = tablet or phone layout.
+
+### Sahabah C: DONE (14 Nov, evening). 181 items (Saʿīd ibn Zayd 26: only 26 are sourced, by design; the rest have 31)
+For the review page, flag: C-ZUBAYR-30 (the debt advice, whose setting is Jamal), C-SAEED-13 (its setting involves al-Mughīrah), C-TALHAH-16 ("awjaba" wording), C-ABDURRAHMAN-23 (30 slaves vs 30 families), C-ABDURRAHMAN-12, C-ABUUBAYDAH-05/06, the dates/ages chosen per al-Wāqidī; overlap with set B: C-ABUUBAYDAH-23 ~ B-MUADH-16, C-ABUUBAYDAH-28 ~ B-MUADH-27. Ṭalḥah's death says "passed away" (al-Iṣābah doesn't say martyr); al-Zubayr "was martyred" (Ḥayāt 2:257).
+Ḥayāt page rule corrected in BRIEF.md: vol. 2 up to about pdf p. 134 is PDF + 1.
+
+### Sahabah A: DONE (14 Nov, evening). 186/186 (6 × 31). All 18 Sahabah are now written (A 186, B 186, C 181)
+For the review page, flag: ABUBAKR-11 vs BILAL-09/10 (Bilāl freed, a possible overlap); ALI-31 "died a martyr" (al-Iṣābah says qutila); UTHMAN-31; UMAR-31 (burial, no date); the disputed dates UMAR-02, KHADIJAH-27, BILAL-31; UMAR-05, ALI-26 (our own Qurʾān rendering), ALI-04 ("before me" is ʿAlī's own claim); UMAR-31 is in the vol. 2 +1 page range.
+Dropped on purpose: ʿUthmān's Qurʾān in one rakʿah (Witr version, siege setting), "Allah laughed" (an attribute), the Ghadīr material, the siege/Jamal/Ṣiffīn/Khawārij, Khadījah's father drunk, weak-chain and poison stories, repeats of set B.
+NEXT for the content: build the content review page (hadith, seerah, sunnah, sahabah A/B/C, then the duʿās when done) like design-review/scholar-review/build.cjs, showing each item with its book and page and the agents' flags.
+
+### Widgets: BUILT (14 Nov, evening). Uncommitted
+- JS: src/widgets.js (buildSnapshot, widgetModel, parseDeepLink), src/widget-bridge.js (hooked into main.js; deep links zad://log?p=&d=, zad://today, zad://open?v=). tests/widgets.test.js (17 tests). docs/build/widgets.md.
+- Android: ZadWidgetsPlugin.java + widget/ (small Hero, medium Tiles, large Hero + deeds), zw_* resources, manifest. `./gradlew assembleDebug` PASSES; widgets render in the emulator's picker. NOT yet tested on a placed widget: minute ticks, taps, dark large, tap → log sheet.
+- iOS: plugin + ZadBridgeViewController + ZadWidget/ extension sources (home 3 sizes + lock inline/rect/circular). NOT compiled (Windows). The extension target is NOT added to Xcode: manual steps in docs/build/widgets.md; needs the Apple Developer account + App Group group.com.zad.app.
+- Design notes: the PNG names "small-A-ring" really show the Hero card (built). The button reads "Log today" when nothing is due. System fonts (not Amiri/Manrope).
+- To test on the user's phone: needs a commit + push (android.yml → App Distribution). ASK FIRST.
+
+### Tour: USER ANSWERS (14 Nov): 1B 2A 3B 4A 5A 6A
+1. "Not yet" = the same as "A little" (translit on + meaning on; no new layout). 2. The Arabic step for everyone, after Madhhab. 3. Tour step 2 only POINTS at ··· (doesn't open the sheet). 4. ADD a 7th step for Tracker + Make-ups. 5. Help & tour at the end of General. 6. "How statuses work" / "How make-ups work" as short IN-APP pages.
+→ Tour BUILD agent started (src/), mockup: design-review/mockups2/tour/. Content review page agent started (design-review/content-review/).
+
+### Duʿās: DONE (14 Nov, evening). 52/52, all from Maʿārif vol 3 (printed pp. 150–263; printed = pdf + 11)
+The Arabic was read from the scans at 3.5×, in Indo-Pak spelling. NEEDS A DECISION: D03 (فَكَمْ مَنْ or مِمَّنْ?), D26 (the print حَيَاهَا vs the meaning جَنَاهَا; the translit currently says "janaha", so they disagree). Small vowel/shadda doubts are listed in each Note (D02–D52). Partial overlaps with the Hizb were kept but flagged: D12, D33, D45, D49, D52. ~45 Hizb/adhkar duplicates were skipped.
+
+### Tablet: USER ANSWERS (14 Nov): the mix; the user left the rest to me
+- Layout: Option A (a centred column) + B's centred dialog sheets + a Qurʾān two-page spread in landscape.
+- My picks: iPhone stays portrait-only; iPad allows all 4 orientations. The Qurʾān spread is AUTOMATIC on tablets in landscape (single page in portrait), with no extra setting; the page pairing follows the muṣḥaf's own page order (right page = the earlier page, as in the printed muṣḥaf), checked per muṣḥaf from its data. 7" Android tablets keep the PHONE layout (the tablet layout starts at ≥768 CSS px wide). Desktop web: drop the phone frame (the web app is coming down anyway).
+- Also fix .pg-top (Progress) missing the top safe-area padding.
+→ Tablet BUILD agent started 14 Nov.
+
+### Content review page: BUILT (14 Nov, evening). Not published yet
+design-review/content-review/build.cjs → content-review.html (~950 KB, self-contained). 721 items + 18 Companion title cards = 739 decision cards; 164 flagged (D03 and D26 first, as "Decision needed"). Approve/Change/Drop + a comment, saved in the browser (localStorage zad-content-review-v1); "Copy my review" exports text to paste into the chat. Rebuild: `node design-review/content-review/build.cjs` (keeps decisions; marks edited items).
+After the review: apply the decisions to docs/content/*.md, then load into src/content.js (draft:false only for approved items).
+- PUBLISHED 14 Nov (private): https://claude.ai/artifact/8MJ2kPdqqZCqtYDVdApjbB. To republish after a rebuild: run build.cjs, then the transform in scratchpad mk2.cjs (it strips the doctype, adds the dark-theme guards and the safe-area gutters), then publish the same path (scratchpad content-pub/content-review.html). If the scratchpad is gone, redo those 3 edits by hand.
+- Commit/push: the user said WAIT until the tour + tablet builds finish, then commit and push once for one phone test build (ask before pushing).
+
+### Tour: BUILT (14 Nov, night). Uncommitted
+New: src/guide.js, src/views/tour.js, src/views/help.js, src/views/tools/tips.js, src/css/tour.css, tests/guide.test.js. Changed: strings.js (GUIDE group), main.js, onboarding.js, settings.js, home.js, tools/adhkar.js, hizb.js, tools/index.js.
+- Flags in S.settings.help {tour, tips, opened}; the reading answer in S.settings.reading → S.tools.prefs. Existing users don't get the tour automatically (Replay in Help & tour).
+- Differences from the mockup: the "Not yet" subtitle is reworded; the steps adapt to the features (step 2 is dropped if no ··· is shown; step 6 is "Tracker" only when Make-ups is off); How make-ups work is hidden when Make-ups is off.
+- Tests 171 passed when the tour agent finished; the build passes. The tablet agent was still running.
+
+### 14 Nov, night: tablet BUILT + content decisions
+- Tablet: src/css/tablet.css (≥768 wide AND ≥540 tall), src/tools/quran-spread.js + tests, quran.js spread, the phone frame removed, the .pg-top safe area fixed, iOS family 1,2 + iPad orientations. docs/build/tablet.md. Not yet tried on a real iPad/tablet. Left alone: the vite.config.js web manifest still says portrait.
+- User content decisions: D03 = فَكَمْ مِمَّنْ with no لَهٗ at the end (done); D26 = جَنَاهَا (done).
+- User said: "since majority of it we can just drop, lets do that for now" about the flagged review items. MEANING UNCLEAR (drop the flagged ITEMS, or drop the flags and accept the items as written?). Asked; nothing removed yet.
+
+### 14 Nov, late night
+- CONTENT: the user meant (a): every flagged item is KEPT AS IS and APPROVED (the D03/D26 fixes are applied). So ALL Home content (hadith 52, seerah 52, sunnah 12, sahabah 553, duʿā 52) is approved. NEXT: load it into src/content.js with draft:false (Sahabi facts per Companion; the hadith cite collection; the duʿās with Arabic + simple translit).
+- WEEK START → SUNDAY (done): times.js WEEK_START=0; HIZB_WEEK_START=6 keeps Saturday = manzil 1 and the Hizb's saved weeks; WEEK_LETTERS_SUN on Home/Progress; content EPOCH Sun 4 Jan 2026. Tests updated, 171 pass.
+- GREETING (done): the name on its own second line under "As-salāmu ʿalaykum," (home.js greetingLine1 + .z-greetName 28px). Checked in a screenshot.
+- Still waiting: the user's OK to commit + push (one push → Android build + Pages).
+- Content-loading agent started (scripts/build-content.cjs → src/content/*.js; content.js wired; Sahabi day > facts shows the last fact; tests/content.test.js).
+
+### 14 Nov, late night: user answers
+- Push: WAIT for the approved content to load, then commit + push (the user agreed to the push after the content; still confirm in one line before pushing).
+- Sahabi days past the last fact → a short RECAP card (sent to the content agent).
+- Weekly āyāt: 52 of ENCOURAGEMENT (hope, husn al-ẓann, consistency, tawbah, patience, gratitude, dhikr, tawakkul, provision for the Ākhirah). Agent writing docs/content/ayah.md (Arabic + Pickthall from the app's own data, no translit) → the user reviews → load.
+- Crashlytics: BUILD (agent started; privacy toggle + privacy.html; then the Data safety/App Privacy labels must declare crash data).
+- Arabic UI: LATER. Apple: the user will likely get a Mac (option 1).
+- MVP: the user wants to be sure nothing else belongs in v1 before the market → I sent an MVP gap list (incl. Sign in with Apple, REQUIRED by App Store 4.8 because Google sign-in is offered; not built).
+- CHC editor: gave the user console steps (sign in once → Firebase Auth uid → Firestore hijriCommittees/chc-na {name, editors:[uid]}).
+
+### Approved content LOADED (14 Nov, late night)
+scripts/build-content.cjs → src/content/{hadith,seerah,sunnah,dua,sahabah,index}.js (draft:false, approved; no Notes; sources = book + printed page only). content.js loads it as a separate lazy chunk (~200 kB, 61 kB gzip; the main chunk is unchanged; precached). Sahabi recap on days past the last fact (facts 1, middle ×2, last). AYAH is still a placeholder (the ayah.md agent is running). tests/content.test.js (14). Tests 184 pass.
+- QUESTION for the user: the Home legend says "Gold tiles change each Hijri month", but Sahabi/Sunnah change by CALENDAR month. Change the wording, or switch the rotation to Hijri months?
+- Push: waiting for the Crashlytics agent too (it's editing gradle/settings), so as not to commit half-done files.
+
+## ▶ RESUME HERE (saved 14 Nov, end of session at the usage limit)
+FIRST, on resume: TELL THE USER these open items (they asked to hear them again):
+1. Hijri or calendar month for the gold monthly tiles (Sahabi of the Month + monthly Sunnah)? (a) switch the rotation to Hijri months, or (b) keep calendar months and fix the legend wording "Gold tiles change each Hijri month".
+2. Build Sign in with Apple now? (REQUIRED by App Store rule 4.8, since Google sign-in is offered; switched on once the Apple account exists.)
+3. Which MVP extras for v1: a feedback form (small), a Ramadan mode (fasting log, Tarawih, Laylat al-Qadr reminders; medium), a rate-the-app prompt (small), store screenshots + listing text (medium)?
+4. Push: commit + push once Crashlytics is finished and the tests pass → one Android test build (App Distribution) + Pages. Confirm with the user right before pushing.
+5. The 52 weekly āyāt for the user to review (docs/content/ayah.md) → publish to the review page or a new page → then load into src/content (AYAH is still a placeholder).
+6. CHC editor: the user follows the console steps (sign in → copy the UID → Firestore hijriCommittees/chc-na {name, editors:[uid]}).
+
+Agents RUNNING at save time (they may be cut off; check their output, then resume with SendMessage or re-run only what's missing):
+- Weekly āyāt → docs/content/ayah.md (target 52; count with `grep -c '^### A' docs/content/ayah.md`).
+- Crashlytics → @capacitor-firebase/crashlytics, gradle, src/crash.js, Settings toggle, public/privacy.html, docs/build/crashlytics.md, tests. Check `git status`, `npx vitest run`, `npm run build`, `./gradlew assembleDebug`.
+
+State: everything since c897721 is UNCOMMITTED (widgets, tour, tablet, Sunday weeks, greeting, Sahabi order, CHC default, Manzil 2:164, the approved content loaded, the content .md files). Tests were 184 passing before Crashlytics.
+Review pages: tour https://claude.ai/artifact/NJWydnLXMpogjsfsWp7JPx · content https://claude.ai/artifact/8MJ2kPdqqZCqtYDVdApjbB · āyāt https://claude.ai/artifact/2Z3FhPR5cxzfrah9Ekfm4J
+
+### 14 Nov, 11:50pm: resumed after the limit
+ayah.md had 52 items (the agent was resuming its final re-check). Crashlytics: the package + src/crash.js + tests/crash.test.js exist; the agent resumed for the tests, docs and builds. The 6 open items above were re-shown to the user.
+- Weekly āyāt DONE: docs/content/ayah.md, 52 items (71 āyāt), verified by script against public/quran data; IndoPak DigitalKhatt text (must render in the DigitalKhatt IndoPak font), Pickthall. Flags: 24 use the edited Tanzil Pickthall (surahs 6–38); A01 starts with Hajj rulings (could start from وَتَزَوَّدُوْا); A07/A43/A18 mention punishment; several start or end mid-sentence; A29 "Spirit of Allah"; ﷺ-addressed items.
+- Āyāt review page PUBLISHED (private): https://claude.ai/artifact/2Z3FhPR5cxzfrah9Ekfm4J (design-review/ayah-review/build.cjs → ayah-review.html; the font is published as fonts/DigitalKhattIndoPak.ttf; decisions in localStorage zad-ayah-review-v1; "Copy my review"). After the review → load into src/content (AYAH) via scripts/build-content.cjs.
+
+### Crashlytics DONE (15 Nov, ~12:30am)
+@capacitor-firebase/crashlytics 8.6.0; gradle plugin 3.0.8 (inside the google-services check); src/crash.js (native only; allowed keys app_version/view/platform/theme; scrubbed messages; ≤10 per launch); Settings → Account "Send crash reports" (S.settings.crashReports, default on); privacy.html updated (the "no crash reporting" line replaced); docs/build/crashlytics.md; tests/crash.test.js. docs/privacy-answers.md updated (Play: Crash logs, Diagnostics, Device IDs; Apple: Crash Data + Other Diagnostic Data, not linked).
+USER TO DO: enable Crashlytics in the Firebase console (Android + iOS); a test crash. ON THE MAC: npm install + npx cap sync ios (Package.swift also lacks @capacitor/haptics), dSYM setting + run script, PrivacyInfo.xcprivacy crash types.
+Checks: 194 tests pass, the build passes, assembleDebug passes (agent). Secrets are gitignored (google-services.json, GoogleService-Info.plist). READY TO PUSH; asked the user.
+
+## ▶ RESUME HERE (15 Nov 2026) — CURRENT
+User's big message (soft launch Dec, public launch end Jan before Ramadan; premium: mentor/admin, family profiles, anonymous leaderboard + private circles with totals only; free opt-in levels, retroactive; strong privacy policy; feedback form; āyāt approved; gold tiles "do what's best"; CHC how-to). **Everything is organised in `docs/plan/launch-and-premium.md`** (decisions, timeline, Ramadan list, premium design, points proposal, levels, nav, changes-to-make-now, questions, CHC steps). Read it first.
+- Done: gold-tile legend → "Gold tiles change each month" (calendar month kept; src/strings.js).
+- Agents launched 15 Nov: (1) load approved āyāt → src/content/ayah.js via scripts/build-content.cjs; (2) privacy/legal audit → public/privacy.html, terms.html, docs/privacy-answers.md, docs/legal/privacy-audit.md; (3) feedback form mockups → design-review/mockups2/feedback/ (review page feedback-review.html, to publish). Check outputs; re-run any incomplete.
+- Still NOT pushed (needs user OK). Firestore rules with hijriCommittees are NOT deployed yet (needs user firebase login + OK).
+- 15 Nov: ✅ āyāt loaded (agent 1 done): src/content/ayah.js (52, generated by scripts/build-content.cjs), weekly card uses pickD("AYAH"), DigitalKhatt IndoPak font in the sheet, tests 197 passed / 18 skipped, build OK. Screenshots design-review/mockups2/ayah-live/. Web PWA doesn't precache the font (moot once web app comes down).
+- 15 Nov: ✅ feedback mockups (agent 3): design-review/mockups2/feedback/, published https://claude.ai/artifact/FBDqQsCLuN3wRNMUXLFy1e. Recommend A+B, Firestore create-only for signed-in + mailto signed-out. 10 open questions on the page.
+- 15 Nov: ✅ privacy audit (agent 2): docs/legal/privacy-audit.md; public/privacy.html, terms.html, delete-account.html rewritten; docs/privacy-answers.md updated. KEY: hayd/nifās = health data (GDPR Art.9, Washington MHMDA). Must-fix before Dec (A1–A8): explicit unticked consent before first sync (settings.js A.cloudSheet, onboarding A.obRestore, A.consentSheet; cloud.js signIn must recordConsent before sync; profile.dataConsent), bump TERMS_VERSION, declare health data in store forms/xcprivacy, fix false strings (calcNote, permLocBody, cloudPrivate, privateNote), fill {{DEVELOPER_NAME}}/{{DEVELOPER_COUNTRY}}/{{GOVERNING_LAW}}, accept Firebase data processing terms, deploy pages. Before Jan: crash reports off by default (ask in onboarding), Sign in with Apple, WA health policy, self-host fonts on policy pages, etc. Needs user answers: legal name, country, governing law; OK to build A1 consent (mockup first).
+- 15 Nov late: helpers launched for provisions mockups, gender mockups, Ramadan spec+duas. Consent mockups published https://claude.ai/artifact/X6ChmGvQ6Htr4gUGeiiVuu. See plan doc §13.

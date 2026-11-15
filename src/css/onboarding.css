@@ -4,7 +4,7 @@
   background-image:radial-gradient(circle at 50% 28%,#2a6a4c 0%,#165038 38%,#0F3D2E 75%)}
 .onb .pattern,.lock .pattern{position:absolute;inset:0;opacity:.13;pointer-events:none;width:100%;height:100%}
 .onb-inner{position:relative;flex:1;display:flex;flex-direction:column;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 28px) 26px max(30px,calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 20px));min-height:100%}
-@media (min-width:821px){.onb-inner{padding-top:56px}}
+/* (the desktop phone frame and its 56px top padding are gone; see src/css/tablet.css) */
 .onb .grow{flex:1;min-height:16px}
 .onb h1{font-family:var(--serif);font-size:36px;font-weight:400;line-height:1.1;color:var(--parchment);margin-top:6px}
 .onb .eyebrow{font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#E5C55C;margin-top:34px}

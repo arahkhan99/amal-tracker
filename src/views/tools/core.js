@@ -108,7 +108,7 @@ export const wordCount = s => (s || "").split(/\s+/).filter(Boolean).length;
 /** Page header used by the light sub-screens (back button, title, optional Arabic, sub line, right action). */
 export function head({ title, ar = "", sub = "", right = "", back = "A.tlBack()" }) {
   return `<div class="tl-ph"><button type="button" class="tl-back" aria-label="${COMMON.back}" onclick="${back}">${I.back}</button>
-    <div class="tl-pt"><h1>${esc(title)}${ar ? ` <span class="tl-ar-h" lang="ar" dir="rtl">${esc(ar)}</span>` : ""}</h1>${sub ? `<p>${esc(sub)}</p>` : ""}</div>${right}</div>`;
+    <div class="tl-pt"><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ""}</div>${right}</div>`;
 }
 
 export { dkey, addDays, weekKey, store };

@@ -7,14 +7,14 @@ import { PRAYERS, DOW, MON, fmt12, dkey, parseKey, addDays, esc } from "../util.
 import { timesFor, currentWindow, nextPrayer, windowEnd, ishaBestBefore, madeUpDeadline, canStillMakeUp, startedPrayers, weekIndex, METHOD_SHORT, FALLBACK_LOCATION } from "../times.js";
 import { hijriLabel } from "../hijri.js";
 import * as st from "../stats.js";
-import { isOn } from "../features.js";
+import { isOn, toolVisible } from "../features.js";
 import { madhhabOf, tierLabel, TIERS } from "../rules/madhhab.js";
-import { thisWeek } from "../content.js";
+import { thisWeek, pastSahabi, setSahabiStart, monthIndex, contentReady, loadContent } from "../content.js";
 import { gloss } from "../glossary.js";
 import * as T from "../strings.js";
 import { HOME_X } from "../strings.js";
 
-const { APP, COMMON, STATUS, STATUS_EXTRA, HOME, TIMES, LOG, DEEDS, DEED_NAME, EXCUSED, SUNNAH_UI, TIER, MEASURE, NOTIFY, WEEK_UI, WEEK_LETTERS_SAT, prayerName } = T;
+const { APP, COMMON, STATUS, STATUS_EXTRA, HOME, TIMES, LOG, DEEDS, DEED_NAME, EXCUSED, SUNNAH_UI, TIER, MEASURE, NOTIFY, WEEK_UI, WEEK_LETTERS_SUN, prayerName } = T;
 export { STATUS };
 
 /* Home-only labels (strings.js HOME_X). */
@@ -343,7 +343,7 @@ function weekBlock(now) {
   let prayed = 0, due = 0;
   const cols = series.map((d, i) => {
     prayed += d.prayed; due += d.due;
-    return `<div class="d ${i === ti ? "t" : ""}"><div class="bars">${PRAYERS.map(p => `<i class="${d.statuses[p] === null ? "n" : WSK[d.statuses[p]] || "f"}"></i>`).join("")}</div><span>${WEEK_LETTERS_SAT[i]}</span></div>`;
+    return `<div class="d ${i === ti ? "t" : ""}"><div class="bars">${PRAYERS.map(p => `<i class="${d.statuses[p] === null ? "n" : WSK[d.statuses[p]] || "f"}"></i>`).join("")}</div><span>${WEEK_LETTERS_SUN[i]}</span></div>`;
   }).join("");
   const inner = `<div class="week"><span class="lbl">${HOME.thisWeek}</span><div class="stk">${cols}</div><strong>${HOME.prayedOf(prayed, due)}<small>${HOME.prayedWord}</small></strong></div>`;
   const label = `${HOME.thisWeek}: ${prayed} of ${due} ${HOME.prayedWord}`;
@@ -353,20 +353,26 @@ function weekBlock(now) {
 }
 A.openWeek = () => { UI.range = "week"; go("progress"); };
 
+/** "Adhkar after Salah" link, shown once the current prayer is logged as prayed (needs the Adhkar tool visible). */
+function afterSalahLink(p, k, status) {
+  if (!p || !status || !["congregation", "ontime", "madeup"].includes(status) || !toolVisible(S, "afterSalah")) return "";
+  return `<button class="asl" onclick="A.openAfterSalah?.('${p}')">${esc(WEEK_UI.afterSalah)}${ic("chev", "")}</button>`;
+}
 function heroBlock(now, key, day) {
   const st0 = S.settings, T0 = timesFor(now, st0);
   const cur = currentWindow(now, st0);
   const curKey = cur ? dkey(cur.date) : null;
   const curStatus = cur ? store.prayerStatus(S, curKey, cur.p) : null;
   const allFive = PRAYERS.every(p => store.isPrayed(store.prayerStatus(S, key, p)));
-  const greet = S.profile.name ? HOME.greetingName(esc(S.profile.name)) : HOME.greeting;
+  // The name goes on its own second line under the salām (user, 14 Nov 2026)
+  const greet = S.profile.name ? `${HOME.greetingLine1}<span class="greetName">${esc(S.profile.name)}</span>` : HOME.greeting;
   let card = "";
   if (day.excused) {
     const mode = S.excusedMode;
     card = `<div class="exchip"><span class="mo">${ic("moon")}</span><div class="tx">${mode ? EXCUSED.modeOn : EXCUSED.today}<small>${mode ? EXCUSED.modeOnSub : EXCUSED.foot}</small></div>${mode ? `<button class="obtn sm" onclick="A.endExcusedMode()">${EXCUSED.end}</button>` : ""}</div>`;
   } else if (allFive) {
     const n = st.streaks(S, now).all.cur;
-    card = `<div class="celebA"><span class="st">${starSvg(30)}</span><div><b>${X.celebTitle}</b><small>${n > 1 ? X.celebSub(n) : COMMON.alhamdulillah}</small></div></div>`;
+    card = `<div class="celebA"><span class="st">${starSvg(30)}</span><div><b>${X.celebTitle}</b><small>${n > 1 ? X.celebSub(n) : COMMON.alhamdulillah}</small></div></div>${afterSalahLink(cur?.p, curKey, curStatus)}`;
   } else if (cur && !curStatus) {
     const p = cur.p, name = pName(p, curKey);
     const start = timesFor(cur.date, st0)[p];
@@ -386,7 +392,7 @@ function heroBlock(now, key, day) {
     const chips = cur && curStatus ? chipsFor(cur.p, curKey, { hero: true }) : [];
     card = `<div class="nowB"><div class="nbTop"><span class="tag ok">${X.next}</span><span></span></div>
       <div class="nbMain"><div><div class="pn">${esc(name)}</div><div class="pt"><b>${fmt12(nx.time)}</b>${nx.tomorrow ? " " + COMMON.tomorrow : ""}</div></div><div class="cd"><b>${fmtHM(nx.time - now)}</b><small>${X.untilStarts}</small></div></div>
-      ${chips.length ? `<div class="nbsn"><span class="lb">${X.withP(esc(pName(cur.p, curKey)))}</span><div class="scs">${chips.join("")}</div></div>` : ""}</div>`;
+      ${chips.length ? `<div class="nbsn"><span class="lb">${X.withP(esc(pName(cur.p, curKey)))}</span><div class="scs">${chips.join("")}</div></div>` : ""}${afterSalahLink(cur?.p, curKey, curStatus)}</div>`;
   }
   return `<div class="hero">${PATTERN}<div class="topbar"><div class="brand"><img class="logo" src="logo/zad-symbol.png" srcset="logo/zad-symbol.png 1x, logo/zad-symbol@2x.png 2x" width="37" height="46" alt="${APP.name}"><div><div class="date">${DOW[now.getDay()]}, ${now.getDate()} ${MON[now.getMonth()]}</div><div class="hijri">${hijriLabel(now)}</div></div></div>
     <button class="ibtn" aria-label="${T.NAV.settings}" onclick="A.go('settings')">${ic("gear")}</button></div>
@@ -496,7 +502,7 @@ A.cuSave = () => {
 function deedsBlock(key) {
   const list = store.amalForDay(S, key), day = store.getDay(S, key);
   const done = list.filter(a => day.amal[a.id]?.done).length;
-  return `<section class="sec"><h2>${DEEDS.title} <span>${DEEDS.nOfMDone(done, list.length)}</span></h2><div class="card">${deedsCard(key, { read: true })}</div></section>`;
+  return `<section class="sec" data-tour="deeds"><h2>${DEEDS.title} <span>${DEEDS.nOfMDone(done, list.length)}</span></h2><div class="card">${deedsCard(key, { read: true })}</div></section>`;
 }
 
 /* ----- This week tiles (W3) ----- */
@@ -504,26 +510,68 @@ const OPENED = "zad-wk-opened";
 const readOpened = () => { try { return JSON.parse(localStorage.getItem(OPENED) || "{}"); } catch (e) { return {}; } };
 function markOpened(k) { try { const o = readOpened(); o[k] = 1; localStorage.setItem(OPENED, JSON.stringify(o)); } catch (e) { /* private mode */ } }
 function weekTiles(now) {
+  // The first month a user sees is Abū Bakr: remember that month once.
+  if (!Number.isInteger(S.settings.sahabiStart)) { S.settings.sahabiStart = monthIndex(now); commit(); }
+  setSahabiStart(S.settings.sahabiStart);
+  // The approved sets are a separate chunk (content.js starts loading it at once); draw again when it lands.
+  if (!contentReady()) loadContent().then(() => render()).catch(e => console.warn("content", e));
   const c = thisWeek(now), opened = readOpened(), mk = `${now.getFullYear()}-${now.getMonth()}`;
   const tiles = [
-    ["ayah", c.ayah.en, 0], ["hadith", c.hadith.en, 0], ["dua", c.dua.en, 0],
-    ["seerah", c.seerah.title, 0], ["sahabi", c.sahabi.name, 1], ["sunnah", c.sunnah.title, 1],
+    ["ayah", c.ayah.title || c.ayah.en, 0], ["hadith", c.hadith.title || c.hadith.en, 0], ["dua", c.dua.title || c.dua.en, 0],
+    ["seerah", c.seerah.title, 0], ["sahabi", c.sahabi.name, 2], ["sunnah", c.sunnah.title, 1],
   ];
   const names = { ...WEEK_UI.tabs, sahabi: WEEK_UI.sahabi("").replace(/ · $/, ""), sunnah: WEEK_UI.sunnah("").replace(/ · $/, "") };
   const html = tiles.map(([id, title, monthly]) => {
-    const ok = !!opened[(monthly ? mk : c.weekKey) + id];
-    return `<button class="wt ${monthly ? "mo" : ""}" onclick="A.weekItem('${id}')"><div class="k"><b>${names[id]}</b><span>${X.arLabel[id]}</span></div><div class="ti">${esc(title)}</div><span class="dt ${ok ? "" : "new"}">${ok ? ic("check", "") : ""}</span></button>`;
+    const ok = !!opened[(monthly === 2 ? mk + "-" + now.getDate() : monthly ? mk : c.weekKey) + id];
+    const fact = id === "sahabi" ? `<div class="fx">${esc(c.sahabi.recap ? WEEK_UI.recapTile : c.sahabi.fact)}</div>` : "";
+    return `<button class="wt ${monthly ? "mo" : ""} ${fact ? "hasfx" : ""}" onclick="A.weekItem('${id}')"><div class="k"><b>${names[id]}</b><span>${X.arLabel[id]}</span></div><div class="ti">${esc(title)}</div>${fact}<span class="dt ${ok ? "" : "new"}">${ok ? ic("check", "") : ""}</span></button>`;
   }).join("");
   return `<section class="sec"><h2>${HOME.thisWeek}</h2><p class="wsub">${esc(c.rangeLabel)} · ${X.afterJumuah}</p><div class="wgrid">${html}</div><div class="wleg"><span><i></i>${X.notOpened}</span><span>${X.goldChange}</span></div></section>`;
 }
+const sahabiKick = () => WEEK_UI.sahabi("").replace(/ · $/, "");
+/** Sahabi of the month: today's fact, then the earlier facts of this month (newest first), then Past months. */
+function sahabiSheet(now) {
+  const sb = thisWeek(now).sahabi, mon = MON[now.getMonth()].slice(0, 3);
+  markOpened(`${now.getFullYear()}-${now.getMonth()}-${now.getDate()}sahabi`);
+  const earlier = sb.earlier.length ? `<h4 class="fh">${esc(sb.recap ? WEEK_UI.recapAll : WEEK_UI.earlierThisMonth)}</h4><ul class="fl">${sb.earlier.map(e => `<li><b>${esc(WEEK_UI.factDay(e.day, mon))}</b><span>${esc(e.text)}</span></li>`).join("")}</ul>` : "";
+  openSheet(zz(`<div class="sh wd"><div class="lhd"><span class="kick">${esc(sahabiKick())}</span><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
+    <h3 style="margin-top:8px">${esc(sb.name)}</h3><div class="src">${esc(sb.title)}</div>
+    ${sb.recap ? `<div class="rc"><h4>${esc(WEEK_UI.recapTitle(sb.name))}</h4><p>${esc(WEEK_UI.recapLead(sb.name))}</p>
+      <ul>${sb.recap.highlights.map(h => `<li><span>${esc(h.text)}</span><small>${esc(WEEK_UI.factDay(h.day, mon))} · ${esc(h.src)}</small></li>`).join("")}</ul></div>`
+    : `<h4 class="fh">${esc(WEEK_UI.todaysFact)} <small>${esc(WEEK_UI.factDay(sb.day, mon))}</small></h4><div class="en">${esc(sb.fact)}</div>${sb.src ? `<div class="src">${esc(sb.src)}</div>` : ""}`}
+    ${earlier}
+    <button class="pastbtn" onclick="A.pastMonths()"><span><b>${esc(WEEK_UI.pastMonths)}</b><small>${esc(WEEK_UI.pastMonthsSub)}</small></span>${ic("chev")}</button>
+    <div class="shfoot"><button class="pbtn" onclick="A.closeSheet()">${COMMON.done}</button></div></div>`));
+}
+A.pastMonths = () => {
+  const list = pastSahabi(NOW());
+  openSheet(zz(`<div class="sh wd"><div class="lhd"><span class="kick">${esc(WEEK_UI.pastMonths)}</span><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
+    ${list.length ? `<div class="pml">${list.map((m, i) => `<button class="pm" onclick="A.pastMonth(${i})"><span><b>${esc(m.name)}</b><small>${esc(m.label)} · ${esc(WEEK_UI.factsCount(m.facts.length))}</small></span>${ic("chev")}</button>`).join("")}</div>` : `<div class="en">${esc(WEEK_UI.pastNone)}</div>`}
+    <div class="shfoot"><button class="pbtn" onclick="A.sahabiBack()">${COMMON.back || "Back"}</button></div></div>`));
+};
+A.sahabiBack = () => sahabiSheet(NOW());
+A.pastMonth = i => {
+  const m = pastSahabi(NOW())[i]; if (!m) return;
+  openSheet(zz(`<div class="sh wd"><div class="lhd"><span class="kick">${esc(m.label)}</span><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
+    <h3 style="margin-top:8px">${esc(m.name)}</h3><div class="src">${esc(m.title)}</div>
+    <ul class="fl">${m.facts.map((t, d) => `<li><b>${d + 1}</b><span>${esc(t)}</span></li>`).reverse().join("")}</ul>
+    <div class="shfoot"><button class="pbtn" onclick="A.pastMonths()">${COMMON.back || "Back"}</button></div></div>`));
+};
+/** Narrator, collection (as the book gives it) and source (book + printed page) under a card. */
+const weekMeta = it => {
+  const rows = [[WEEK_UI.narrator, it.narrator], [WEEK_UI.collection, it.collection], [WEEK_UI.source, it.src]].filter(r => r[1]);
+  return rows.length ? `<dl class="wm">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>` : "";
+};
 A.weekItem = id => {
+  if (!contentReady()) { loadContent().then(() => A.weekItem(id)).catch(() => {}); return; }
   const now = NOW(), c = thisWeek(now), it = c[id];
-  const monthly = id === "sahabi" || id === "sunnah";
+  if (id === "sahabi") { sahabiSheet(now); render(); return; }
+  const monthly = id === "sunnah";
   markOpened((monthly ? `${now.getFullYear()}-${now.getMonth()}` : c.weekKey) + id);
   const kicker = { ayah: WEEK_UI.ayah, hadith: WEEK_UI.hadith, dua: WEEK_UI.dua, seerah: WEEK_UI.seerah, sahabi: WEEK_UI.sahabi("").replace(/ · $/, ""), sunnah: WEEK_UI.sunnah("").replace(/ · $/, "") }[id];
   const en = it.en || it.text, title = it.title || it.name;
   openSheet(zz(`<div class="sh wd"><div class="lhd"><span class="kick">${esc(kicker)}</span><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
-    ${title ? `<h3 style="margin-top:8px">${esc(title)}</h3>` : ""}${it.ar ? `<div class="ar">${it.ar}</div>` : ""}<div class="en">${esc(en)}</div>${it.src ? `<div class="src">${esc(it.src)}</div>` : ""}${it.draft ? `<div class="dr">${APP.draftFlag}</div>` : ""}
+    ${title ? `<h3 style="margin-top:8px">${esc(title)}</h3>` : ""}${it.ar ? `<div class="ar${id === "ayah" ? " q" : ""}${it.ar.length > 160 ? " long" : ""}" lang="ar" dir="rtl">${esc(it.ar)}</div>` : ""}${it.tr ? `<div class="tr">${esc(it.tr)}</div>` : ""}<div class="en${it.ar ? " mn" : ""}">${esc(en)}</div>${weekMeta(it)}
     <div class="shfoot"><button class="pbtn" onclick="A.closeSheet()">${COMMON.done}</button></div></div>`));
   render();
 };

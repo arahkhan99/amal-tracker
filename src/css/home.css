@@ -12,7 +12,7 @@
   --z-chip:#EFE9DA; --z-primary:#0F3D2E; --z-primaryInk:#E5C55C; --z-ar:#0F3D2E;
   --z-sans:'Manrope',system-ui,sans-serif; --z-serif:'Amiri',Georgia,serif;
   --z-okHero:#7ACCA2;
-  --z-amber:#D4883A; --z-amberBg:#FBEBD8; --z-amberT:#8F4F12; --z-amberLine:#EFC796; --z-exBg:#ECE8DF; --z-exT:#6F7772;
+  --z-slate:#4F6D8A; --z-slateBg:#E4EBF2; --z-slateT:#365270; --z-slateLine:#B3C5D8; --z-exBg:#ECE8DF; --z-exT:#6F7772;
   --z-exDay:#7F7FA8; --z-exDayBg:#ECECF4; --z-exDayT:#55557A;
   --z-check:#0F3D2E; --z-checkInk:#E5C55C;
 }
@@ -36,6 +36,7 @@ svg.z-i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;st
 .z-ibtn{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.10);color:var(--z-parchment)}
 .z-ibtn svg{width:19px;height:19px}
 .z-greetB{font-family:var(--z-serif);font-size:24px;margin-top:14px;color:var(--z-parchment)}
+.z-greetName{display:block;font-size:28px;line-height:1.2;overflow-wrap:anywhere}
 .z-nowB{margin-top:10px;padding:14px 16px 16px;border-radius:22px;background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.03));border:1px solid rgba(229,197,92,.38);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
 .z-nbTop{display:flex;justify-content:space-between;align-items:center}
 .z-tag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;background:var(--z-honey);color:var(--z-forest);padding:4px 9px;border-radius:999px}
@@ -82,7 +83,7 @@ svg.z-i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;st
 .z-stk .z-bars i{height:4px;border-radius:2px;background:rgba(255,255,255,.12)}
 .z-stk .z-bars i.z-o{background:var(--z-okHero)}
 .z-stk .z-bars i.z-c{background:var(--z-honey)}
-.z-stk .z-bars i.z-r{background:#F0A860}
+.z-stk .z-bars i.z-r{background:#9DBBD8}
 .z-stk .z-bars i.z-m{background:#E07A62}
 .z-stk .z-bars i.z-x{background:rgba(244,233,200,.26)}
 .z-stk .z-bars i.z-u{background:transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
@@ -119,7 +120,7 @@ svg.z-i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;st
 .z-mk.z-c{background:var(--z-gold);border-color:var(--z-gold)}
 .z-mk.z-c svg{width:17px;height:17px;stroke-width:2.6}
 .z-mk.z-m{background:var(--z-miss);border-color:var(--z-miss)}
-.z-mk.z-r{background:var(--z-amber);border-color:var(--z-amber)}
+.z-mk.z-r{background:var(--z-slate);border-color:var(--z-slate)}
 .z-mk.z-x{background:var(--z-exBg);border-color:var(--z-exBg)}
 .z-mk.z-x svg{stroke:var(--z-exT);stroke-width:2;width:14px;height:14px}
 .z-mk.z-now{border:2.5px solid var(--z-gold);box-shadow:0 0 0 5px rgba(201,162,39,.16)}
@@ -131,7 +132,7 @@ svg.z-i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;st
 .z-pill.z-c{background:var(--z-congBg);color:var(--z-goldT)}
 .z-pill.z-o{background:var(--z-okBg);color:var(--z-leafT)}
 .z-pill.z-m{background:var(--z-missBg);color:var(--z-missT)}
-.z-pill.z-r{background:var(--z-amberBg);color:var(--z-amberT)}
+.z-pill.z-r{background:var(--z-slateBg);color:var(--z-slateT)}
 .z-pill.z-x{background:var(--z-exBg);color:var(--z-exT);font-weight:600}
 .z-pill.z-nowp{background:var(--z-congBg);color:var(--z-goldT)}
 .z-pbtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--z-primary);color:var(--z-primaryInk);font-weight:800;font-size:13.5px;padding:9px 14px;border-radius:12px;white-space:nowrap}
@@ -171,7 +172,7 @@ svg.z-i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;st
 /* make-up bar */
 .z-mkup{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
 .z-mkup span{font-size:12px;color:var(--z-ink2);font-weight:600}
-.z-ubtn{display:inline-flex;align-items:center;gap:6px;background:var(--z-amberBg);color:var(--z-amberT);font-weight:800;font-size:13px;padding:8px 12px;border-radius:11px;border:1px solid var(--z-amberLine);white-space:nowrap}
+.z-ubtn{display:inline-flex;align-items:center;gap:6px;background:var(--z-slateBg);color:var(--z-slateT);font-weight:800;font-size:13px;padding:8px 12px;border-radius:11px;border:1px solid var(--z-slateLine);white-space:nowrap}
 .z-ubtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .z-attn{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;padding:12px 12px 12px 14px;border-radius:18px;background:var(--z-card);border:1px solid var(--z-line);box-shadow:var(--z-shadow)}
 .z-attn + .z-attn{margin-top:8px}
@@ -190,7 +191,7 @@ button.z-mt small{display:flex;align-items:center;justify-content:space-between;
 .z-seg i{flex:1;height:5px;border-radius:3px;background:var(--z-chip)}
 .z-seg.z-s i.z-on{background:var(--z-leaf);opacity:.75}
 .z-seg.z-a i.z-on{background:var(--z-leaf)}
-.z-seg i.z-o{background:var(--z-leaf)}.z-seg i.z-c{background:var(--z-gold)}.z-seg i.z-r{background:var(--z-amber)}.z-seg i.z-m{background:var(--z-miss)}.z-seg i.z-x{background:var(--z-exT);opacity:.5}
+.z-seg i.z-o{background:var(--z-leaf)}.z-seg i.z-c{background:var(--z-gold)}.z-seg i.z-r{background:var(--z-slate)}.z-seg i.z-m{background:var(--z-miss)}.z-seg i.z-x{background:var(--z-exT);opacity:.5}
 
 /* catch-up card */
 .z-catch{display:flex;gap:12px;align-items:center;padding:14px 14px 14px 16px;border-radius:18px;background:var(--z-card);border:1px solid var(--z-line);box-shadow:var(--z-shadow);width:100%;text-align:left}
@@ -286,10 +287,10 @@ button.z-mt small{display:flex;align-items:center;justify-content:space-between;
 .z-segc button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 2px;border-radius:11px;background:var(--z-chip);font-size:12px;font-weight:700;color:var(--z-ink2);border:1.5px solid transparent;text-align:center}
 .z-segc button svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .z-segc button.z-sel{background:var(--z-okBg);color:var(--z-leafT);border-color:var(--z-leaf)}
-.z-segc button.z-kr{color:var(--z-amberT)}
+.z-segc button.z-kr{color:var(--z-slateT)}
 .z-segc button.z-km{color:var(--z-missT)}
 .z-segc button.z-sel.z-kc{background:var(--z-congBg);color:var(--z-goldT);border-color:var(--z-gold)}
-.z-segc button.z-sel.z-kr{background:var(--z-amberBg);border-color:var(--z-amber)}
+.z-segc button.z-sel.z-kr{background:var(--z-slateBg);border-color:var(--z-slate)}
 .z-segc button.z-sel.z-km{background:var(--z-missBg);border-color:var(--z-miss)}
 
 /* this week tiles (W3) */
@@ -311,6 +312,27 @@ button.z-mt small{display:flex;align-items:center;justify-content:space-between;
 .z-wd .z-ar{font-family:var(--z-serif);direction:rtl;text-align:right;font-size:28px;line-height:1.7;color:var(--z-ar);margin-top:12px}
 .z-wd .z-en{font-family:var(--z-serif);font-size:20px;line-height:1.4;color:var(--z-ink);margin-top:8px}
 .z-wd .z-src{font-size:12.5px;font-weight:700;color:var(--z-ink2);margin-top:8px}
+.z-wd .z-ar{overflow-wrap:anywhere}
+.z-wd .z-rc{margin-top:16px;padding:14px 16px;border-radius:16px;background:color-mix(in srgb,var(--z-honey) 14%,var(--z-card));border:1px solid color-mix(in srgb,var(--z-gold) 35%,var(--z-line))}
+.z-wd .z-rc h4{font-family:var(--z-serif);font-weight:400;font-size:21px;line-height:1.2;color:var(--z-ink)}
+.z-wd .z-rc p{font-size:13.5px;line-height:1.45;color:var(--z-ink2);margin-top:4px}
+.z-wd .z-rc ul{list-style:none;margin-top:6px}
+.z-wd .z-rc li{padding:10px 0 2px;border-top:1px solid color-mix(in srgb,var(--z-gold) 30%,var(--z-line));margin-top:8px}
+.z-wd .z-rc li span{display:block;font-family:var(--z-serif);font-size:17px;line-height:1.4;color:var(--z-ink)}
+.z-wd .z-rc li small{display:block;font-family:'Manrope','Amiri',system-ui,sans-serif;font-size:11.5px;font-weight:700;color:var(--z-ink3);margin-top:4px}
+.z-wd .z-ar.z-long{font-size:24px;line-height:1.8}
+/* Āyah of the week: DigitalKhatt-encoded IndoPak text, so the Qurʾān reader's font (its @font-face is in tools.css,
+   bundled with the app under quran/fonts/, so it works offline in the native build). Never break inside a word. */
+.z-wd .z-ar.z-q{font-family:"DigitalKhatt IndoPak","Amiri Quran",var(--z-serif);font-size:26px;line-height:2.2;overflow-wrap:normal;word-break:normal;margin-top:14px}
+.z-wd .z-ar.z-q.z-long{font-size:22px;line-height:2.3}
+/* ﷺ: Manrope has no glyph, so take Amiri's instead of the system's colour/emoji fallback */
+.z-wd .z-fl li,.z-wd .z-src,.z-wd .z-wm dd,.z-wt .z-fx{font-family:'Manrope','Amiri',system-ui,sans-serif}
+.z-wd .z-tr{font-size:14.5px;line-height:1.5;font-style:italic;color:var(--z-ink2);margin-top:6px}
+.z-wd .z-en.z-mn{font-size:18px;margin-top:12px}
+.z-wd .z-wm{margin-top:14px;padding-top:10px;border-top:1px solid var(--z-line);display:grid;gap:6px}
+.z-wd .z-wm div{display:grid;grid-template-columns:96px 1fr;gap:8px;align-items:baseline}
+.z-wd .z-wm dt{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--z-ink3)}
+.z-wd .z-wm dd{margin:0;font-size:13px;line-height:1.4;font-weight:600;color:var(--z-ink2);overflow-wrap:anywhere}
 .z-wd .z-dr{font-size:11px;font-weight:700;color:var(--z-ink3);margin-top:12px}
 
 /* tracker */
@@ -323,14 +345,14 @@ button.z-mt small{display:flex;align-items:center;justify-content:space-between;
 .z-strip button b{display:block;font-family:var(--z-serif);font-weight:400;font-size:20px;color:var(--z-ink);line-height:1.2;margin-top:1px}
 .z-strip .z-pr{display:flex;gap:2px;justify-content:center;margin-top:5px;height:4px}
 .z-strip .z-pr i{width:4px;height:4px;border-radius:50%;background:var(--z-empty)}
-.z-strip .z-pr i.z-c{background:var(--z-gold)}.z-strip .z-pr i.z-o{background:var(--z-leaf)}.z-strip .z-pr i.z-r{background:var(--z-amber)}.z-strip .z-pr i.z-m{background:var(--z-miss)}
+.z-strip .z-pr i.z-c{background:var(--z-gold)}.z-strip .z-pr i.z-o{background:var(--z-leaf)}.z-strip .z-pr i.z-r{background:var(--z-slate)}.z-strip .z-pr i.z-m{background:var(--z-miss)}
 .z-strip .z-exm{display:flex;justify-content:center;margin-top:5px;color:var(--z-exDay);height:4px;align-items:center}
 .z-strip .z-exm svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round}
 .z-strip button.z-ex b{color:var(--z-ink3)}
 .z-strip button.z-on{background:var(--z-primary);color:var(--z-primaryInk)}
 .z-strip button.z-on b{color:#fff}
 .z-strip button.z-on .z-pr i{background:rgba(255,255,255,.3)}
-.z-strip button.z-on .z-pr i.z-c{background:var(--z-honey)}.z-strip button.z-on .z-pr i.z-o{background:#8FD3AE}.z-strip button.z-on .z-pr i.z-r{background:#F2B470}.z-strip button.z-on .z-pr i.z-m{background:#EE9C86}
+.z-strip button.z-on .z-pr i.z-c{background:var(--z-honey)}.z-strip button.z-on .z-pr i.z-o{background:#8FD3AE}.z-strip button.z-on .z-pr i.z-r{background:#A9C6E2}.z-strip button.z-on .z-pr i.z-m{background:#EE9C86}
 .z-strip button.z-on.z-ex{background:var(--z-exDayBg);color:var(--z-exDayT)}
 .z-strip button.z-on.z-ex b{color:var(--z-exDayT)}
 .z-daysum{margin:14px 20px 0;padding:14px 16px;border-radius:18px;background:var(--z-card);border:1px solid var(--z-line);display:flex;align-items:center;gap:14px;box-shadow:var(--z-shadow)}
@@ -349,7 +371,7 @@ button.z-mt small{display:flex;align-items:center;justify-content:space-between;
 .z-trow .z-l1 > b{margin-right:5px;font-weight:700;font-size:15.5px;color:var(--z-ink)}
 .z-trow small.z-sb{display:block;font-size:12.5px;margin-top:5px;color:var(--z-ink2)}
 .z-trow small.z-sb em{font-style:normal;font-weight:700}
-.z-trow small.z-sb .z-c{color:var(--z-goldT)}.z-trow small.z-sb .z-o{color:var(--z-leafT)}.z-trow small.z-sb .z-r{color:var(--z-amberT)}.z-trow small.z-sb .z-m{color:var(--z-missT)}.z-trow small.z-sb .z-x{color:var(--z-exT)}
+.z-trow small.z-sb .z-c{color:var(--z-goldT)}.z-trow small.z-sb .z-o{color:var(--z-leafT)}.z-trow small.z-sb .z-r{color:var(--z-slateT)}.z-trow small.z-sb .z-m{color:var(--z-missT)}.z-trow small.z-sb .z-x{color:var(--z-exT)}
 .z-trow .z-rt{align-self:center}
 .z-trow.z-now{background:var(--z-nowTint)}
 .z-trow.z-now::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--z-gold)}
@@ -404,7 +426,7 @@ button.z-mt small{display:flex;align-items:center;justify-content:space-between;
   --z-empty:#3A4E45; --z-nowTint:linear-gradient(90deg,rgba(229,197,92,.16),rgba(229,197,92,.02) 70%);
   --z-shadow:none; --z-chip:#1B2B25; --z-primary:#E5C55C; --z-primaryInk:#0F3D2E; --z-ar:#E5C55C;
   --z-mint:#1E3A2E; --z-leaf:#5DBB8A; --z-gold:#D9B23A; --z-miss:#E58C76;
-  --z-amber:#E9A25A; --z-amberBg:rgba(233,162,90,.15); --z-amberT:#F2B67A; --z-amberLine:rgba(233,162,90,.45); --z-exBg:#1C2722; --z-exT:#97A39C;
+  --z-slate:#8FB0CF; --z-slateBg:rgba(143,176,207,.16); --z-slateT:#A9C6E2; --z-slateLine:rgba(143,176,207,.45); --z-exBg:#1C2722; --z-exT:#97A39C;
   --z-exDay:#9A9AC4; --z-exDayBg:#242638; --z-exDayT:#B9B9DC;
   --z-check:#E5C55C; --z-checkInk:#0F3D2E;}
 :root[data-theme="dark"] .z-strip button.z-on b{color:#0F3D2E}
@@ -416,7 +438,7 @@ button.z-mt small{display:flex;align-items:center;justify-content:space-between;
   --z-empty:#3A4E45; --z-nowTint:linear-gradient(90deg,rgba(229,197,92,.16),rgba(229,197,92,.02) 70%);
   --z-shadow:none; --z-chip:#1B2B25; --z-primary:#E5C55C; --z-primaryInk:#0F3D2E; --z-ar:#E5C55C;
   --z-mint:#1E3A2E; --z-leaf:#5DBB8A; --z-gold:#D9B23A; --z-miss:#E58C76;
-  --z-amber:#E9A25A; --z-amberBg:rgba(233,162,90,.15); --z-amberT:#F2B67A; --z-amberLine:rgba(233,162,90,.45); --z-exBg:#1C2722; --z-exT:#97A39C;
+  --z-slate:#8FB0CF; --z-slateBg:rgba(143,176,207,.16); --z-slateT:#A9C6E2; --z-slateLine:rgba(143,176,207,.45); --z-exBg:#1C2722; --z-exT:#97A39C;
   --z-exDay:#9A9AC4; --z-exDayBg:#242638; --z-exDayT:#B9B9DC;
   --z-check:#E5C55C; --z-checkInk:#0F3D2E;}
 :root:not([data-theme="light"]) .z-strip button.z-on b{color:#0F3D2E}
@@ -432,3 +454,24 @@ button.z-mt small{display:flex;align-items:center;justify-content:space-between;
 .z-more .z-pl{width:34px;height:34px;border-radius:10px;background:var(--z-chip);display:grid;place-items:center;flex:none;color:var(--z-ink2)}
 .z-more b{display:block;font-size:14.5px;font-weight:700}
 .z-more small{display:block;font-size:12.5px;color:var(--z-ink2);margin-top:2px;line-height:1.4}
+/* Made up = slate blue: dark theme needs a dark glyph on the lighter slate dot */
+:root[data-theme="dark"] .z-mk.z-r svg{stroke:#0C1613}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .z-mk.z-r svg{stroke:#0C1613}}
+/* Sahabi of the month: daily fact tile, facts list and past months */
+.z-wt.z-hasfx .z-ti{-webkit-line-clamp:2}
+.z-wt .z-fx{font-size:11.5px;line-height:1.3;color:var(--z-ink2);margin-top:4px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;padding-right:22px}
+.z-wd .z-fh{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--z-ink2);margin-top:18px}
+.z-wd .z-fh small{font-weight:700;letter-spacing:0;text-transform:none;color:var(--z-ink3);margin-left:6px}
+.z-wd .z-fl{list-style:none;margin-top:8px;display:grid;gap:0}
+.z-wd .z-fl li{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--z-line);font-size:14px;line-height:1.4;color:var(--z-ink)}
+.z-wd .z-fl li b{flex:none;min-width:44px;font-size:12px;font-weight:800;color:var(--z-goldT)}
+.z-wd .z-pastbtn,.z-wd .z-pm{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;margin-top:16px;padding:12px 14px;border-radius:14px;background:var(--z-chip);color:var(--z-ink)}
+.z-wd .z-pm{margin-top:8px}
+.z-wd .z-pml{margin-top:12px}
+.z-wd .z-pastbtn b,.z-wd .z-pm b{display:block;font-size:14px;font-weight:700}
+.z-wd .z-pastbtn small,.z-wd .z-pm small{display:block;font-size:12px;color:var(--z-ink2);margin-top:2px}
+.z-wd .z-pastbtn svg,.z-wd .z-pm svg{width:16px;height:16px;flex:none;stroke:var(--z-ink3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* "Adhkar after Salah" link under a logged prayer */
+.z-asl{display:inline-flex;align-items:center;gap:4px;margin-top:12px;padding:7px 8px 7px 12px;border-radius:999px;background:rgba(229,197,92,.16);color:var(--z-honey);font-size:12.5px;font-weight:700}
+.z-asl svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.z-celebA+.z-asl{margin-left:4px}

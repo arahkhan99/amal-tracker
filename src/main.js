@@ -10,6 +10,7 @@ import "./css/onboarding.css";
 import "./css/home.css";
 import "./css/progress.css";
 import "./css/settings.css";
+import "./css/tour.css";
 
 import { S, UI, A, $, go, render, tick, closeSheet, commit, todayKey } from "./app.js";
 import { syncExcusedMode } from "./store.js";
@@ -22,8 +23,16 @@ import "./views/progress.js";
 import "./views/settings.js";
 // Tools: registers the #v-tools renderer and the Home cards
 import "./views/tools/index.js";
+// Home tour (coach marks), after Home so its overlay finds the drawn cards
+import "./views/tour.js";
 import { startOnboarding } from "./views/onboarding.js";
 import { initCloud } from "./cloud.js";
+import { initWidgets } from "./widget-bridge.js";
+import { initCrash, crashView, crashTheme } from "./crash.js";
+import { onRender } from "./app.js";
+import { APP_VERSION } from "./views/settings.js";
+// Tablet and iPad layout (768px+); imported last so it comes after every view's CSS, tools.css included
+import "./css/tablet.css";
 
 // The bottom bar is built by app.js (renderNav, from features.navTabs); its buttons call A.go themselves.
 $("#scrim").onclick = e => { if (e.target.id === "scrim") closeSheet(); };
@@ -38,6 +47,7 @@ document.addEventListener("keydown", e => {
 });
 
 onBackButton(() => {
+  if (A.tourActive?.()) { A.tourEnd(); return true; } // back skips the tour
   if (UI.view === "tools" && A.toolsBack?.()) return true; // closes a sheet, or steps back inside Tools
   if ($("#scrim").classList.contains("on")) { closeSheet(); return true; }
   if (UI.view === "settings" && A.settingsBack) { A.settingsBack(); return true; } // sub-page → Settings (or back to Tools)
@@ -69,12 +79,17 @@ document.addEventListener("visibilitychange", () => {
 });
 
 /* ---------- start ---------- */
+// Crash reports (native only; Settings → Send crash reports). Keys: app version, view, platform, theme. Nothing personal.
+initCrash({ enabled: S.settings.crashReports !== false, app_version: APP_VERSION, view: UI.view, theme: S.settings.appearance || "system" });
+onRender(() => { crashView(UI.view); crashTheme(S.settings.appearance || "system"); });
 // If excused mode is on, flag every day from its start to today
 if (syncExcusedMode(S, todayKey())) commit();
 if (S.profile.onboarded) go("home"); else startOnboarding();
 lockIfNeeded();
 reschedule(S);
 initCloud().then(render).catch(e => console.warn("cloud", e));
+// Home-screen widgets: keep their snapshot current and open the log sheet from a widget tap
+initWidgets();
 // Capacitor injects the safe-area insets shortly after load; re-pick the status bar icon colour then
 setTimeout(() => setStatusBar(UI.view === "home" || UI.view === "onboard"), 1500);
 

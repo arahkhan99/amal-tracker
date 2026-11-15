@@ -564,7 +564,7 @@ status: draft
 
 *Allahumma inni as'aluka min kulli khayrin khaza'inuhu bi-yadik, wa a'udhu bika min kulli sharrin khaza'inuhu bi-yadik, wa a'udhu bika min sharri ma anta akhidhun bi-nasiyatih.*
 
-O Allah, I ask You for every good whose treasuries are in Your hand. I seek refuge in You from every evil whose treasuries are in Your hand, and from the evil of every creature You hold by the forelock.
+O Allah, I ask You for every good whose treasuries are in Your Hand. I seek refuge in You from every evil whose treasuries are in Your Hand, and from the evil of every creature You hold by the forelock.
 
 Source (Nomani): Ḥiṣn; Ibn Ḥibbān. Nomani traces the clause «وَأَعُوذُ بِكَ مِنْ كُلِّ شَرٍّ خَزَائِنُهُ بِيَدِكَ» through al-Suyūṭī's al-Jāmiʿ al-Ṣaghīr (al-Ḥākim).
 

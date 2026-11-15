@@ -20,6 +20,11 @@
     "ios": {
       "spm": {
         "swiftToolsVersion": "6.1",
+        "packageOptions": {
+          "@capacitor-firebase/crashlytics": {
+            "symlink": true
+          }
+        },
         "packageTraits": {
           "@capacitor-firebase/authentication": [
             "Google"

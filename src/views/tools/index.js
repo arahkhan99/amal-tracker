@@ -4,23 +4,32 @@ import "../../css/tools.css";
 import { onRender, UI, commit } from "../../app.js";
 import { A, S, $, NOW, todayKey, esc, I, T, open, setDraw, redraw, prefs, persist, head, info, openSheet, closeSheet, COMMON, APP, dkey, addDays, store } from "./core.js";
 import { toolVisible, visibleTools, isOn } from "../../features.js";
-import { TOOLS_UI, TOOL_NAME } from "../../strings.js";
+import { TOOLS_UI, TOOL_NAME, TOOL_SUB } from "../../strings.js";
 import { hijriLabel } from "../../hijri.js";
 import { timesFor, weekDates } from "../../times.js";
 import { fmt12, MON3, DOW } from "../../util.js";
 import { TT } from "./strings-tools.js";
+import { syncFloatTip } from "./tips.js";
 import { adhkarView, adhkarAfter, autoSet, setState, progress as adhkarProgress, eveningOpen } from "./adhkar.js";
 import { durudView, durudReadView, durudKey, readCount, durudDone, isFridayish, minutes as durudMinutes } from "./durud.js";
 import { hizbView, hizbReadView, hizbReadAfter, hizbReadLeave, manzilToday, manzilRead, readCountWeek, loadHizb, resumePos, hizbReady } from "./hizb.js";
 import { pickerView, quranView, quranAfter, quranLeave, loadQuranMeta, quranPage, quranMushaf, quranHasStarted, pagesToday, surahName, mushafName } from "./quran.js";
 import { ADHKAR } from "../../tools/data/adhkar.js";
+import { manzilView, manzilAfter, manzilSlot, manzilDone } from "./manzil.js";
+import { afterSalahView, afterSalahAfter, lastPrayer, asProgress, asState } from "./after-salah.js";
+import { AFTER_SALAH, PRAYERS5 } from "../../tools/data/after-salah.js";
+import { PRAYER_NAME } from "../../strings.js";
 
-const TOOLS = ["adhkar", "hizb", "durud", "quran"];
-const TOOL_OF = { adhkar: "adhkar", durud: "durud", durudRead: "durud", hizb: "hizb", hizbRead: "hizb", quran: "quran", picker: "quran" };
-const PARENT = { adhkar: "hub", durud: "hub", hizb: "hub", quran: "hub", durudRead: "durud", hizbRead: "hizb", picker: "quran", hub: null };
+// Names of the Round 2 tools for the Settings rows (features.toolRows) until strings.js carries them; never overrides.
+for (const [k, v] of Object.entries(TT.toolName)) if (!TOOL_NAME[k]) TOOL_NAME[k] = v;
+for (const [k, v] of Object.entries(TT.toolSub)) if (!TOOL_SUB[k]) TOOL_SUB[k] = v;
+
+const TOOLS = ["adhkar", "afterSalah", "hizb", "durud", "manzil", "quran"];
+const TOOL_OF = { adhkar: "adhkar", durud: "durud", durudRead: "durud", hizb: "hizb", hizbRead: "hizb", quran: "quran", picker: "quran", manzil: "manzil", afterSalah: "afterSalah" };
+const PARENT = { adhkar: "hub", durud: "hub", hizb: "hub", quran: "hub", durudRead: "durud", hizbRead: "hizb", picker: "quran", manzil: "hub", afterSalah: "hub", hub: null };
 
 /* ---------- hub ---------- */
-const icon = { adhkar: I.sunmoon, hizb: I.shield, durud: I.flower, quran: I.book };
+const icon = { adhkar: I.sunmoon, hizb: I.shield, durud: I.flower, quran: I.book, manzil: I.layers, afterSalah: I.beads };
 const SOON_ICON = { ramadan: I.lantern, tasbih: I.beads, qibla: I.qibla };
 
 function adhkarTile(now) {
@@ -55,13 +64,30 @@ function quranTile() {
   return { tag: ["daily", TT.tag.daily], body: `<div class="tl-ss ${n ? "ok" : "later"}"><i>${n ? I.check : ""}</i><span>${esc(line)}</span></div>${last ? `<small class="tl-last">${esc(mushafName(quranMushaf()))} · page ${quranPage()}</small>` : ""}` };
 }
 
+function manzilTile(now) {
+  const slot = manzilSlot(now), m = manzilDone("morning"), e = manzilDone("evening");
+  const t = timesFor(now, S.settings);
+  const row = (ok, due, label) => `<div class="tl-ss ${ok ? "ok" : due ? "due" : "later"}"><i>${ok ? I.check : ""}</i><span>${esc(label)}</span></div>`;
+  const evOpen = now >= t.Asr || now < t.Fajr;
+  return { tag: ["daily", TT.tag.daily], body: `${row(m, !m && slot === "morning", `${TT.morning}${m ? " · " + fmt12(new Date(m)) : slot === "morning" ? " · due" : ""}`)}${row(e, !e && evOpen, `${TT.evening}${e ? " · " + fmt12(new Date(e)) : evOpen ? " · due" : " · after ʿAsr"}`)}` };
+}
+function afterSalahTile(now) {
+  const lp = lastPrayer(now);
+  const pg = asProgress(lp.prayer, lp.key);
+  const name = PRAYER_NAME[lp.prayer] || lp.prayer;
+  const today = todayKey();
+  const done = PRAYERS5.filter(p => asState(p, today).done).length;
+  const pips = PRAYERS5.map(p => `<i class="${asState(p, today).done ? "d" : p === lp.prayer && lp.key === today ? "n" : ""}"></i>`).join("");
+  return { tag: ["daily", TT.tag.today], body: `<div class="tl-ss ${pg.complete ? "ok" : "due"}"><i>${pg.complete ? I.check : ""}</i><span>${esc(TT.asTileLine(name))}${pg.complete || !pg.said ? "" : ` · ${pg.said}/${pg.total}`}</span></div><div class="tl-pips7" aria-label="${done} of 5">${pips}</div>` };
+}
+
 function hubView() {
   const now = NOW();
   const vis = visibleTools(S);
-  const tiles = TOOLS.filter(t => vis.includes(t)).map(t => ({ t, ...({ adhkar: adhkarTile, hizb: hizbTile, durud: durudTile, quran: quranTile })[t](now) }));
+  const tiles = TOOLS.filter(t => vis.includes(t)).map(t => ({ t, ...({ adhkar: adhkarTile, hizb: hizbTile, durud: durudTile, quran: quranTile, manzil: manzilTile, afterSalah: afterSalahTile })[t](now) }));
   const grid = tiles.map((x, i) => `<button type="button" class="tl-tile${tiles.length % 2 && i === tiles.length - 1 ? " wide" : ""}" onclick="A.toolsOpen('${x.t}')" aria-label="${esc(TOOL_NAME[x.t])}">
       <div class="tl-top"><span class="tl-tic${x.t === "hizb" ? " g" : ""}">${icon[x.t]}</span><span class="tl-tag ${x.tag[0]}">${esc(x.tag[1])}</span></div>
-      <span class="tl-arn" lang="ar" dir="rtl">${esc(TT.arName[x.t])}</span><b class="tl-ten">${esc(x.t === "adhkar" ? TT.adhkarTitle : x.t === "hizb" ? "Al-Hizb al-Aʿzam" : x.t === "durud" ? TT.durudTitle : TT.quranTitle)}</b>
+      <b class="tl-ten">${esc(x.t === "adhkar" ? TT.adhkarTitle : x.t === "hizb" ? "Al-Hizb al-Aʿzam" : x.t === "durud" ? TT.durudTitle : x.t === "manzil" ? TT.toolName.manzil : x.t === "afterSalah" ? TT.asTitle : TT.quranTitle)}</b>
       <div class="tl-tst">${x.body}</div></button>`).join("");
   const excused = store.isExcusedDay?.(S, todayKey());
   return `<div class="tl-ph hub"><div class="tl-pt"><h1>${TT.title}</h1><p>${DOW_LONG[now.getDay()]} ${now.getDate()} ${MON_LONG[now.getMonth()]} · <span class="tl-hij">${esc(hijriLabel(now))}</span></p></div>
@@ -86,6 +112,8 @@ function screenHtml(screen) {
     case "hizbRead": return hizbReadView();
     case "picker": return pickerView();
     case "quran": return quranView();
+    case "manzil": return manzilView();
+    case "afterSalah": return afterSalahView();
     default: return hubView();
   }
 }
@@ -119,15 +147,19 @@ function draw() {
   if (screen === "adhkar") adhkarAfter();
   if (screen === "hizbRead") hizbReadAfter();
   if (screen === "quran") quranAfter();
+  syncFloatTip(screen === "quran");
+  if (screen === "manzil") manzilAfter();
+  if (screen === "afterSalah") afterSalahAfter();
 }
-function leave() { hizbReadLeave(); quranLeave(); last = { screen: null }; }
+function leave() { hizbReadLeave(); quranLeave(); syncFloatTip(false); last = { screen: null }; }
 setDraw(draw);
 onRender(draw);
 
 /* ---------- navigation ---------- */
-A.toolsOpen = tool => {
+A.toolsOpen = (tool, opts = {}) => {
   if (!toolVisible(S, tool)) return;
   T.set = null; T.resumed = false;
+  if (!opts.keepPrayer) { T.asPrayer = null; T.asKey = null; }
   if (tool === "quran") open("quran", { page: quranPage(), bars: false });
   else if (tool === "hizb") { loadHizb(); open("hizb", { manzil: null }); }
   else open(tool);
@@ -136,7 +168,7 @@ A.toolsRead = A.toolsOpen;
 A.tlBack = () => {
   const up = PARENT[T.screen];
   if (!up) { A.go("home"); return; }
-  T.set = null;
+  T.set = null; T.asPrayer = null; T.asKey = null;
   open(up);
 };
 /** For the Android back button (main.js): true when it handled the press inside Tools. */
@@ -153,7 +185,7 @@ A.tlAa = tool => {
   const sw = (key, label, sub) => `<div class="tl-aarow"><div class="t"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</div><button type="button" class="switch${p[key] ? " on" : ""}" role="switch" aria-checked="${!!p[key]}" aria-label="${label}" onclick="A.tlPref('${key}','${tool}')"></button></div>`;
   openSheet(`<h3>${TT.aa}</h3>
     <div class="tl-aarow col"><div class="t"><b>${TT.size}</b></div><div class="tl-sizes" role="radiogroup">${TT.sizes.map((l, i) => `<button type="button" role="radio" aria-checked="${p.size === i}" class="${p.size === i ? "on" : ""}" style="font-size:${13 + i * 2}px" onclick="A.tlSize(${i},'${tool}')">${l}</button>`).join("")}</div></div>
-    ${sw("translit", TT.showTranslit, TT.draftSub)}${sw("translation", TT.showTranslation, TT.draftSub)}
+    ${tool === "manzil" ? sw("manzilTr", TT.showTranslation, TT.pickthallFrom) : sw("translit", TT.showTranslit, TT.draftSub) + sw("translation", TT.showTranslation, TT.draftSub)}
     ${tool === "adhkar" ? sw("evWords", TT.eveningWords, TT.eveningWordsSub) : ""}
     <div class="cta"><button class="btn primary" onclick="A.closeSheet()">${COMMON.done}</button></div>`);
 };
@@ -169,7 +201,7 @@ export function toolsHomeCards(key = todayKey()) {
   const t = timesFor(now, S.settings);
   const rows = [];
   const later = [];
-  const btn = (cls, label, tool, icn) => `<button type="button" class="tl-sbtn ${cls}" onclick="A.toolsOpen('${tool}')">${icn || ""}${label}</button>`;
+  const btn = (cls, label, tool, icn, act) => `<button type="button" class="tl-sbtn ${cls}" onclick="${act || `A.toolsOpen('${tool}')`}">${icn || ""}${label}</button>`;
   const mins = n => `about ${n} min`;
   const afterFajr = now >= t.Fajr && now < t.Asr, afterAsr = now >= t.Asr || now < t.Fajr;
   if (toolVisible(S, "adhkar")) {
@@ -186,13 +218,29 @@ export function toolsHomeCards(key = todayKey()) {
     const k = durudKey(now);
     if (!durudDone(k)) rows.push({ tool: "durud", icon: I.flower, title: `${TT.durudTitle} · ${readCount(k)}/40`, sub: `Jumuʿah: send abundant durūd · about ${durudMinutes()} min`, started: readCount(k) > 0 });
   }
+  let asRow = null;
+  if (toolVisible(S, "afterSalah")) {
+    // After a fard is logged as prayed (or in the first 40 minutes of its time), while its time is still in, offer its adhkār.
+    const lp = lastPrayer(now);
+    const st = store.prayerStatus(S, lp.key, lp.prayer);
+    const prayed = st === "congregation" || st === "ontime" || st === "madeup";
+    const next = { Fajr: t.Sunrise, Dhuhr: t.Asr, Asr: t.Maghrib, Maghrib: t.Isha, Isha: null }[lp.prayer];
+    const inTime = !next || now < next;
+    const pg = asProgress(lp.prayer, lp.key);
+    if (inTime && (prayed || now - lp.at < 40 * 60000) && !pg.complete) {
+      const nm = PRAYER_NAME[lp.prayer] || lp.prayer;
+      asRow = { prayer: lp.prayer, name: nm, next };
+      rows.unshift({ tool: "afterSalah", icon: I.beads, title: TT.asHomeTitle(nm), sub: TT.asHomeSub(AFTER_SALAH.length, 5), started: pg.said > 0, act: `A.openAfterSalah('${lp.prayer}','${lp.key}')` });
+    }
+  }
+  if (toolVisible(S, "manzil") && (afterFajr || afterAsr) && !manzilDone(manzilSlot(now))) later.push("Manzil");
   if (toolVisible(S, "quran")) { const n = pagesToday(); later.push(n ? TT.pagesToday(n) : "Qurʾān"); }
   if (!rows.length) return "";
-  const kick = isFridayish(now) && rows.some(r => r.tool === "durud") ? (now.getDay() === 4 ? "JUMUʿAH NIGHT" : TT.tag.friday.toUpperCase()) : afterFajr ? "AFTER FAJR" : "AFTER ʿASR";
-  const right = afterFajr ? `Sunrise ${fmt12(t.Sunrise)}` : `Maghrib ${fmt12(t.Maghrib)}`;
+  const kick = isFridayish(now) && rows.some(r => r.tool === "durud") ? (now.getDay() === 4 ? "JUMUʿAH NIGHT" : TT.tag.friday.toUpperCase()) : asRow ? `AFTER ${asRow.name.toUpperCase()}` : afterFajr ? "AFTER FAJR" : "AFTER ʿASR";
+  const right = asRow && asRow.prayer !== "Fajr" && asRow.prayer !== "Asr" ? (asRow.next ? `Until ${fmt12(asRow.next)}` : "") : afterFajr ? `Sunrise ${fmt12(t.Sunrise)}` : `Maghrib ${fmt12(t.Maghrib)}`;
   const ls = later.filter(Boolean);
   return `<div class="tl-sm${isFridayish(now) && rows.some(r => r.tool === "durud") ? " fri" : ""}"><div class="tl-smh"><span class="tl-smk">${afterFajr ? I.sun : I.moon}${esc(kick)}</span><span>${esc(right)}</span></div>
-    ${rows.map((r, i) => `<div class="tl-wr${i === 0 ? " now" : ""}"><span class="tl-tic sm${r.tool === "hizb" ? "" : ""}">${r.icon}</span><div class="t"><b>${esc(r.title)}</b><small>${esc(r.sub)}</small></div>${btn(i === 0 ? "" : "ghost", r.started ? "Resume" : i === 0 ? "Start" : "Read", r.tool, i === 0 ? I.play : "")}</div>`).join("")}
+    ${rows.map((r, i) => `<div class="tl-wr${i === 0 ? " now" : ""}"><span class="tl-tic sm${r.tool === "hizb" ? "" : ""}">${r.icon}</span><div class="t"><b>${esc(r.title)}</b><small>${esc(r.sub)}</small></div>${btn(i === 0 ? "" : "ghost", r.started ? "Resume" : i === 0 ? "Start" : "Read", r.tool, i === 0 ? I.play : "", r.act)}</div>`).join("")}
     <div class="tl-smf"><span>${ls.length ? "Later: " + esc(ls.join(" · ")) : ""}</span><button type="button" onclick="A.go('tools')">All ›</button></div></div>`;
 }
 

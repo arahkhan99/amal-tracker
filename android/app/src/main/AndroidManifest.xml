@@ -23,7 +23,44 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- zad://log?p=Asr&d=2026-11-05 and friends: opened by the home-screen widgets
+                 (src/widget-bridge.js handles them through @capacitor/app appUrlOpen). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="zad" />
+            </intent-filter>
+
         </activity>
+
+        <!-- Home-screen widgets (docs/build/widgets.md). They read the snapshot the app writes
+             through the ZadWidgets plugin. -->
+        <receiver android:name=".widget.ZadSmallWidgetProvider" android:exported="false" android:label="Zad · Next prayer">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/zw_widget_small_info" />
+        </receiver>
+        <receiver android:name=".widget.ZadMediumWidgetProvider" android:exported="false" android:label="Zad · Today">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/zw_widget_medium_info" />
+        </receiver>
+        <receiver android:name=".widget.ZadLargeWidgetProvider" android:exported="false" android:label="Zad · Today and Good Deeds">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/zw_widget_large_info" />
+        </receiver>
+        <!-- Minute tick for the countdown, and redraws when the clock or time zone changes -->
+        <receiver android:name=".widget.WidgetTickReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+            </intent-filter>
+        </receiver>
 
         <provider
             android:name="androidx.core.content.FileProvider"

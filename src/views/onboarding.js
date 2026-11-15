@@ -10,7 +10,9 @@ import { hijriLabel } from "../hijri.js";
 import { madhhabOptions, madhhabOf } from "../rules/madhhab.js";
 import { consentLine } from "./settings.js";
 import { SETUP, SETTINGS as T, COMMON, MADHHAB_UI, ASR_UI, FEATURE, TIMES, EXCUSED, MAKEUPS as M, APP, prayerName, STATUS } from "../strings.js";
-import { SETUP_X } from "../strings.js";
+import { SETUP_X, GUIDE as G } from "../strings.js";
+import { applyReading, readingOf, queueTour } from "../guide.js";
+import { readPreview, readCards } from "./help.js";
 import "../css/onboarding.css";
 
 /* Setup-only labels (strings.js SETUP_X). */
@@ -33,10 +35,10 @@ const FEAT_ICON = { prayers: "mosque", sunnah: "layers", deeds: "heart", makeups
 const google = `<svg viewBox="0 0 24 24" class="gg" aria-hidden="true"><path fill="#4285F4" d="M22 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.6a4.8 4.8 0 0 1-2.1 3.1v2.6h3.4c2-1.8 3.1-4.5 3.1-7.5z"/><path fill="#34A853" d="M12 22.5c2.8 0 5.2-.9 6.9-2.5l-3.4-2.6c-.9.6-2.1 1-3.5 1a6.1 6.1 0 0 1-5.8-4.2H2.7v2.7A10.5 10.5 0 0 0 12 22.5z"/><path fill="#FBBC05" d="M6.2 14.2a6.2 6.2 0 0 1 0-4V7.5H2.7a10.5 10.5 0 0 0 0 9.4z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.9.5 4 1.6l3-3A10.5 10.5 0 0 0 2.7 7.5l3.5 2.7A6.2 6.2 0 0 1 12 5.9z"/></svg>`;
 
 /* ---------- flow state ---------- */
-// screen: welcome | login | restored | nobackup | name | where | madhhab | features | owe
+// screen: welcome | login | restored | nobackup | name | where | madhhab | read | features | owe
 let screen = "welcome";
 let owe = { mode: "", span: "", goalPerDay: 2, exact: false };
-const stepList = () => ["name", "where", "madhhab", "features", ...(feat.isOn(S, "makeups") ? ["owe"] : [])];
+const stepList = () => ["name", "where", "madhhab", "read", "features", ...(feat.isOn(S, "makeups") ? ["owe"] : [])];
 const SPANS = { none: 0, under: 177, oneTwo: 531, threeFive: 1416 }; // days (a lunar year is ~354 days)
 
 const fmtT = d => `${(d.getHours() % 12) || 12}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -108,6 +110,13 @@ function sMadhhab() {
   return stepFrame("madhhab", `<div class="mlist" role="radiogroup">${opts}</div><p class="note-i">${svg("info")}<span>${esc(X.madhhabNote)}</span></p>`,
     primary(X.continueWith(madhhabOptions().find(o => o.id === cur).name), "A.obNext()"), X.madhhabEyebrow, X.madhhabTitle);
 }
+/* "Can you read Arabic?": sets transliteration and meaning in the tools (guide.applyReading). */
+function sRead() {
+  const cur = readingOf(S);
+  return stepFrame("read", `<div class="mlist rd" role="radiogroup" aria-label="${esc(G.readTitle)}">${readCards(cur, "A.obRead")}</div>
+    <div class="rdprev" aria-hidden="true"><div class="rp-lab">${esc(G.preview)}</div>${readPreview(cur)}</div><p class="note-i">${svg("info")}<span>${esc(G.readNote)}</span></p>`,
+    primary(COMMON.continue, "A.obNext()"), G.readEyebrow, G.readTitle);
+}
 function sFeatures() {
   const rows = feat.featureRows(S), { on } = feat.featureCount(S);
   const tiles = rows.map(r => `<button class="ftile ${r.locked ? "locked" : r.on ? "on" : ""}" ${r.locked ? 'aria-disabled="true"' : `role="switch" aria-checked="${r.on}" onclick="A.obFeat('${r.id}')"`}><span class="fi">${svg(FEAT_ICON[r.id])}</span><span class="fk">${r.locked ? svg("lock") : r.on ? svg("check") : ""}</span><b>${esc(r.name)}</b><small>${esc(r.locked ? X.alwaysOn : r.sub)}</small></button>`).join("");
@@ -141,10 +150,10 @@ function sOwe() {
 let notifOK = false;
 function draw() {
   const root = $("#v-onboard");
-  const sig = `${screen}|${JSON.stringify(S.settings.location)}|${S.settings.asr}|${S.settings.method}|${JSON.stringify(S.settings.features)}|${cloud.available}|${cloud.user?.email || ""}|${notifOK}|${JSON.stringify(owe)}`;
+  const sig = `${screen}|${JSON.stringify(S.settings.location)}|${S.settings.asr}|${S.settings.method}|${JSON.stringify(S.settings.features)}|${cloud.available}|${cloud.user?.email || ""}|${notifOK}|${JSON.stringify(owe)}|${readingOf(S)}`;
   if (sig === drawn && root.firstChild) return;
   drawn = sig;
-  const f = { welcome: sWelcome, login: sLogin, restored: sRestored, nobackup: sNoBackup, name: sName, where: sWhere, madhhab: sMadhhab, features: sFeatures, owe: sOwe }[screen];
+  const f = { welcome: sWelcome, login: sLogin, restored: sRestored, nobackup: sNoBackup, name: sName, where: sWhere, madhhab: sMadhhab, read: sRead, features: sFeatures, owe: sOwe }[screen];
   const keep = root.querySelector("input")?.value;
   root.innerHTML = f();
   void keep;
@@ -163,10 +172,12 @@ A.obBack = () => {
 A.obNext = () => {
   const list = stepList(), i = list.indexOf(screen);
   if (screen === "name") S.profile.name = ($("#obName")?.value || "").trim();
+  if (screen === "read") applyReading(S, readingOf(S)); // keep the answer shown, even if untouched
   if (screen === "features" && !list.includes("owe")) return A.obFinish();
   if (i < list.length - 1) A.obGo(list[i + 1]);
 };
 A.obMadhhab = m => { store.setMadhhab(S, m); commit(); };
+A.obRead = k => { applyReading(S, k); commit(); };
 A.obFeat = f => { feat.setFeature(S, f, !feat.isOn(S, f)); commit(); };
 A.obPreset = p => { feat.applyPreset(S, p); commit(); };
 A.obOwe = k => { owe.mode = k; if (k === "yes" && !owe.span) owe.span = "oneTwo"; drawn = ""; commit(); };
@@ -226,6 +237,7 @@ const isNativeAsk = () => true; // always show our pre-ask; the system prompt fo
 function completeSetup() {
   S.profile.onboarded = true;
   S.createdKey = todayKey();
+  queueTour(S); // the Home tour shows once, now
   screen = "welcome"; drawn = "";
   commit();
   go("home");

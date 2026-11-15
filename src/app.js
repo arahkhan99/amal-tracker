@@ -66,6 +66,14 @@ export function applyTheme() {
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", t === "dark" ? "#0C1613" : "#0F3D2E");
 }
 darkQuery?.addEventListener?.("change", () => { applyTheme(); render(); });
+/** Light status-bar icons on dark backdrops: Home, onboarding, and every view in dark mode. */
+let sbSig = "";
+function syncStatusBar() {
+  const dark = UI.view === "home" || UI.view === "onboard" || resolvedTheme() === "dark";
+  if (String(dark) === sbSig) return;
+  sbSig = String(dark);
+  setStatusBar(dark);
+}
 
 /* ---------- bottom bar N2 (tabs come from features.navTabs) ---------- */
 // Outline icons (IC-O). The active tab fills in (see theme.css).
@@ -84,14 +92,14 @@ function renderNav() {
   navSig = sig;
   $("#nav").innerHTML = tabs.map(t => `<button type="button" data-v="${t.id}" class="${t.id === UI.view ? "on" : ""}"${t.id === UI.view ? ' aria-current="page"' : ""} onclick="A.go('${t.id}')"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_ICON[t.id]}</svg>${NAV[t.id] || t.label}</button>`).join("");
 }
-onRender(() => { applyTheme(); renderNav(); });
+onRender(() => { applyTheme(); syncStatusBar(); renderNav(); });
 
 export function go(v) {
   UI.view = v;
   $$(".view").forEach(e => e.classList.toggle("on", e.id === "v-" + v));
   $("#nav").hidden = v === "onboard";
   $("#phone").dataset.view = v;
-  setStatusBar(v === "home" || v === "onboard");
+  syncStatusBar();
   $("#screen").scrollTop = 0;
   render();
 }

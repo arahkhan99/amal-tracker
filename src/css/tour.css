@@ -1,0 +1,78 @@
+/* Setup "Can you read Arabic?", the Home tour (coach marks), one-time tool tips and Help & tour.
+   From the approved mockup (design-review/mockups2/tour/tour.css). Colours are theme tokens, so light and dark follow. */
+
+/* ---- setup step: Can you read Arabic? (forest screen, same in light and dark) ---- */
+.mlist.rd{gap:10px;margin-top:20px}
+.mlist.rd .mcard{padding:14px 16px}
+.mlist.rd .mcard .mt b{font-size:18px}
+.mlist.rd .mcard .mt small{font-size:13.5px;line-height:1.35}
+.rdprev{background:var(--paper);color:var(--ink);border-radius:22px;padding:14px 18px 16px;margin-top:16px;box-shadow:0 10px 26px rgba(0,0,0,.18)}
+.rdprev .rp-lab{font-size:11.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
+.rdprev .rp-ar{font-family:var(--serif);direction:rtl;text-align:center;font-size:32px;line-height:1.8;color:var(--ink);margin-top:2px;font-weight:400}
+.rdprev .rp-tr{font-size:14px;line-height:1.5;font-style:italic;color:var(--ink2);text-align:center;margin-top:0}
+.rdprev .rp-mn{font-size:14.5px;line-height:1.45;color:var(--ink);text-align:center;margin-top:4px}
+.rp-more{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:2px;font-size:13px;font-weight:600;color:var(--ink2)}
+.rp-more svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
+.sheet .rdprev{box-shadow:none;border:1px solid var(--line);margin-top:14px}
+
+/* ---- tour (coach marks) ---- */
+.tour{position:absolute;inset:0;z-index:60;overflow:hidden}
+.tour-dim{position:absolute;inset:0;width:100%;height:100%;display:block}
+.tour-dim path{fill:rgba(5,14,10,.76)}
+.tour-hole{position:absolute;box-shadow:0 0 0 3px var(--honey,#E5C55C);pointer-events:none;transition:left .25s ease,top .25s ease,width .25s ease,height .25s ease}
+.tour-tip{position:absolute;left:18px;right:18px;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:22px;padding:18px 18px 14px;box-shadow:0 18px 44px rgba(0,0,0,.4);animation:tourIn .2s ease}
+.tour-tip:focus,.tour-card:focus{outline:none}
+.tour-arrow{position:absolute;width:14px;height:14px;background:var(--paper);transform:rotate(45deg);border:0 solid var(--line)}
+.tour-tip.below .tour-arrow{top:-8px;border-width:1px 0 0 1px}
+.tour-tip.above .tour-arrow{bottom:-8px;border-width:0 1px 1px 0}
+.tour-tip.flat .tour-arrow{display:none}
+.tour-tip h3,.tour-card h3{font-family:var(--serif);font-weight:400;font-size:24px;line-height:1.15;color:var(--ink)}
+.tour-tip p,.tour-card p{font-size:14.5px;line-height:1.5;color:var(--ink2);margin-top:6px}
+.tour-ft{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}
+.tour-skip{font-size:14px;font-weight:600;color:var(--ink2);padding:10px 4px 10px 0;min-height:44px}
+.tour-next{background:var(--btn-bg);color:var(--btn-fg);font-weight:700;font-size:15px;padding:11px 24px;border-radius:14px;min-height:44px}
+.tour-dots{display:flex;gap:6px;align-items:center}
+.tour-dots i{display:block;width:7px;height:7px;border-radius:50%;background:var(--ring)}
+.tour-dots i.past{background:var(--mint2)}
+.tour-dots i.on{width:20px;border-radius:4px;background:var(--link)}
+.tour.fin{display:grid;place-items:center;background:rgba(5,14,10,.76);padding:0 28px}
+.tour-card{width:100%;max-width:322px;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:28px;padding:26px 24px 22px;text-align:center;box-shadow:0 22px 50px rgba(0,0,0,.45);display:flex;flex-direction:column;align-items:center;animation:tourIn .2s ease}
+.tour-logo{display:block;margin-bottom:10px;object-fit:contain}
+.tour-card h3{font-size:32px}
+.tour-card p{font-size:16px;margin-top:8px;max-width:250px}
+.tour-card .tour-dots{margin-top:20px}
+.tour-start{margin-top:20px;width:100%;height:52px;border-radius:16px;background:var(--btn-bg);color:var(--btn-fg);font-weight:700;font-size:16px}
+.tour-tip b{color:var(--ink);font-weight:700}
+.tour button:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+@keyframes tourIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---- one-time tool tips ---- */
+.tl-tip{display:flex;gap:12px;align-items:flex-start;background:var(--gold-bg);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);border-radius:20px;padding:14px 14px 12px;text-align:left}
+.tl-tip-ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;background:var(--paper);color:var(--gold-fg)}
+.tl-tip-ic svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tl-tip-b{flex:1;min-width:0}
+.tl-tip-b p{font-size:14px;line-height:1.5;color:var(--ink);margin:0;font-family:var(--sans,inherit)}
+.tl-tip b{font-weight:700}
+.tl-aa-chip{display:inline-block;font-family:var(--serif);font-weight:700;font-size:14px;line-height:1.3;padding:0 8px;border-radius:999px;background:var(--btn-bg);color:var(--btn-fg);vertical-align:1px}
+.tl-tip-btn{display:block;margin:10px 0 0 auto;background:var(--btn-bg);color:var(--btn-fg);font-weight:700;font-size:14px;padding:9px 20px;border-radius:12px;min-height:40px}
+.tl-tip.float{position:absolute;left:16px;right:16px;bottom:30px;z-index:40;box-shadow:0 14px 34px rgba(0,0,0,.22);background:color-mix(in srgb,var(--gold-bg) 96%,transparent)}
+.tl-tip.hz{margin:14px 0 6px}
+
+/* ---- Help & tour pages ---- */
+.hp-list{padding:4px 0}
+.hp-item{display:flex;gap:14px;align-items:flex-start;padding:13px 16px;border-top:1px solid var(--line)}
+.hp-item:first-child{border-top:0}
+.hp-item .z-mk{margin-top:1px}
+.hp-item .t{flex:1;min-width:0}
+.hp-item .t b{display:block;font-size:15.5px;font-weight:700;color:var(--ink);line-height:1.3}
+.hp-item .t p{font-size:14px;line-height:1.5;color:var(--ink2);margin-top:3px}
+.hp-item .z-mk.z-u{background:transparent}
+.hp-text{padding:14px 16px}
+.hp-text p{font-size:14.5px;line-height:1.55;color:var(--ink)}
+.hp-text p+p{margin-top:8px}
+.hp-text p.mute{color:var(--ink2)}
+
+@media (prefers-reduced-motion:reduce){
+  .tour-hole{transition:none}
+  .tour-tip,.tour-card{animation:none}
+}

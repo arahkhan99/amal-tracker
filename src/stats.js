@@ -40,7 +40,7 @@ export function dayPct(S, date, now = new Date()) {
 
 /**
  * Seven completion values for the week containing `now` (shifted by weekOffset); null for future or untracked
- * days. Legacy default is Monday-first (start = 1); pass start = times.WEEK_START (6) for Zad's Saturday week.
+ * days. Legacy default is Monday-first (start = 1); pass start = times.WEEK_START (0) for Zad's Sunday week.
  */
 export function weekPcts(S, now = new Date(), weekOffset = 0, start = 1) {
   const first = start === 1 ? addDays(now, -monIdx(now) + weekOffset * 7) : weekDates(now, weekOffset, start)[0];
@@ -51,7 +51,7 @@ export function weekPcts(S, now = new Date(), weekOffset = 0, start = 1) {
 }
 
 /**
- * The Saturday-first week (This week on Home, Progress Week): one entry per day,
+ * The Sunday-first week (This week on Home, Progress Week): one entry per day,
  * { date, key, future, tracked, excused, pct, statuses: { Fajr: status|"unlogged"|"future"|null, ... }, prayed, due }.
  * Status per prayer: a STATUS, "unlogged" (past, nothing logged), "future" (not started yet),
  * or null (today, started, not logged yet — "now"). Pass opts.settings to tell started from not started today.

@@ -1,6 +1,6 @@
 # Tools content data
 
-Generated from `docs/adhkar-20.md` and `docs/durud-40.md`. The Arabic matches the md files character for character, and `tests/tools-data.test.js` checks it. If the md changes, update the JS to match. Never "fix" the Arabic in the JS alone. Every item has `status: 'draft-pending-review'`.
+Generated from `docs/adhkar-20.md` and `docs/durud-40.md`. The Arabic matches the md files character for character, and `tests/tools-data.test.js` checks it. If the md changes, update the JS to match. Never "fix" the Arabic in the JS alone. Every item has `status: 'approved'` (scholar review, 13 Nov 2026).
 
 ## adhkar.js
 

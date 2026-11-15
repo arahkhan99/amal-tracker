@@ -2,7 +2,7 @@
 // it must stay character-for-character identical to the md (checked by tests/tools-data.test.js).
 // Shapes are documented in src/tools/data/README.md.
 
-export const VIRTUES_APPROVED = false;
+export const VIRTUES_APPROVED = true;
 
 export const ADHKAR_META = {
   "titleAr": "النور والضياء لأذكار الصبح والمساء",
@@ -13,7 +13,7 @@ export const ADHKAR_META = {
   "eveningRule": "The morning set runs from Fajr; the evening set opens after ʿAsr. Items with a variant (#10, #16) switch to their evening wording then.",
   "eveningOpensAfter": "Asr",
   "source": "docs/adhkar-20.md",
-  "status": "draft-pending-review"
+  "status": "approved"
 };
 
 export const ADHKAR = [
@@ -32,7 +32,7 @@ export const ADHKAR = [
     "virtueUr": "تمام گناہوں کا کفارہ اگرچہ سمندر کے جھاگ کے برابر ہوں",
     "virtueEn": "All sins are expiated, even if they are as much as the foam of the sea.",
     "ref": "مجمع الزوائد",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 2,
@@ -49,7 +49,7 @@ export const ADHKAR = [
     "virtueUr": "چار بیماریوں سے موت تک حفاظت، جذام، جنون، اندھا ہونا، فالج",
     "virtueEn": "Protection until death from four illnesses: leprosy, insanity, blindness and paralysis.",
     "ref": "مجمع الزوائد",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 3,
@@ -66,7 +66,7 @@ export const ADHKAR = [
     "virtueUr": "جہنم سے حفاظت",
     "virtueEn": "Protection from Hell.",
     "ref": "ابوداود",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 4,
@@ -83,7 +83,7 @@ export const ADHKAR = [
     "virtueUr": "دس نیکیاں، دس گناہوں کا مٹنا، دس درجات بلند ہونا، دس غلام آزاد کرنے کا ثواب ملنا، شیطان اور ہر مکروہ چیز سے حفاظت",
     "virtueEn": "Ten good deeds are recorded, ten sins are erased and one is raised ten ranks. One gets the reward of freeing ten slaves, and is protected from Shaytan and from everything disliked.",
     "ref": "ترمذی",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 5,
@@ -100,7 +100,7 @@ export const ADHKAR = [
     "virtueUr": "ناگہانی آفتوں سے حفاظت",
     "virtueEn": "Protection from sudden calamities.",
     "ref": "ابوداود، ترمذی",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 6,
@@ -117,7 +117,7 @@ export const ADHKAR = [
     "virtueUr": "ہر موذی چیز سے حفاظت",
     "virtueEn": "Protection from every harmful thing.",
     "ref": "مسلم، ابوداود، ترمذی",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 7,
@@ -134,7 +134,7 @@ export const ADHKAR = [
     "virtueUr": "روزِ قیامت اللہ تعالیٰ کا بندے کو راضی کرنا",
     "virtueEn": "Allah will make the servant pleased on the Day of Resurrection.",
     "ref": "ابوداود، ترمذی",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 8,
@@ -152,7 +152,7 @@ export const ADHKAR = [
     "virtueUr": "دنیا اور آخرت کے مسائل کے حل کیلئے اللہ کا کافی ہونا",
     "virtueEn": "Allah suffices for resolving one's concerns of this world and the Hereafter.",
     "ref": "ابوداود، کنز العمال، جمع الجوامع",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 9,
@@ -169,7 +169,7 @@ export const ADHKAR = [
     "virtueUr": "سیّد الاستغفار، جنت کا پروانہ ملنا",
     "virtueEn": "The \"master of seeking forgiveness\". It earns a pass to Paradise.",
     "ref": "بخاری، ابوداود، ترمذی، نسائی",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 10,
@@ -193,7 +193,7 @@ export const ADHKAR = [
     "virtueUr": "دن رات کی نعمتوں کا شکرانہ",
     "virtueEn": "It fulfils the thanks owed for the blessings of the day and the night.",
     "ref": "ابوداود",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 11,
@@ -229,7 +229,7 @@ export const ADHKAR = [
     "virtueUr": "جن بھوت وغیرہ سے حفاظت",
     "virtueEn": "Protection from jinn, ghosts and the like.",
     "ref": "ترمذی",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 12,
@@ -276,7 +276,7 @@ export const ADHKAR = [
     "virtueUr": "ہر کام کے لئے کافی ہونا",
     "virtueEn": "They suffice for every matter.",
     "ref": "ابوداود، ترمذی، نسائی",
-    "status": "draft-pending-review",
+    "status": "approved",
     "labelAr": "سُوْرَةُ الْإِخْلَاصِ ۝ سُوْرَةُ الْفَلَقِ ۝ سُوْرَةُ النَّاسِ ۝"
   },
   {
@@ -294,7 +294,7 @@ export const ADHKAR = [
     "virtueUr": "ادائیگی قرض اور ہر پریشانی سے نجات کے لئے",
     "virtueEn": "For the paying off of debt and relief from every distress.",
     "ref": "ابوداود",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 14,
@@ -311,7 +311,7 @@ export const ADHKAR = [
     "virtueUr": "تمام آفتوں سے حفاظت کے لئے",
     "virtueEn": "For protection from all calamities.",
     "ref": "ابوداود",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 15,
@@ -343,7 +343,7 @@ export const ADHKAR = [
     "virtueUr": "ستر ہزار فرشتوں کی دُعاء اور شہادت کی موت کے لئے",
     "virtueEn": "Seventy thousand angels pray for the reciter, and if he dies, he dies as a martyr.",
     "ref": "ترمذی",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 16,
@@ -367,7 +367,7 @@ export const ADHKAR = [
     "virtueUr": "پورے جسم کی آگ سے آزادی اور مغفرت کے لئے",
     "virtueEn": "For the whole body to be freed from the Fire, and for forgiveness.",
     "ref": "ترمذی",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 17,
@@ -404,7 +404,7 @@ export const ADHKAR = [
     "virtueUr": "دُعاء سیّدنا انسؓ، جان، مال، دین، اہل و عیال کی ہر نقصان سے حفاظت کیلئے",
     "virtueEn": "The supplication of Sayyiduna Anas (may Allah be pleased with him), for the protection of one's life, wealth, religion, family and dependants from every harm.",
     "ref": "کنز العمال، جمع الجوامع",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 18,
@@ -422,7 +422,7 @@ export const ADHKAR = [
     "virtueUr": "دُعاء سیّدنا ابو درداءؓ، حادثات سے بچنے کے لئے",
     "virtueEn": "The supplication of Sayyiduna Abu ad-Darda' (may Allah be pleased with him), for safety from accidents.",
     "ref": "کنز العمال، جمع الجوامع",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 19,
@@ -444,7 +444,7 @@ export const ADHKAR = [
     "virtueUr": "اوراد و اذکار میں تقصیر کی تلافی کے لئے",
     "virtueEn": "It makes up for any shortfall in one's daily litanies and remembrance.",
     "ref": "ابوداود",
-    "status": "draft-pending-review"
+    "status": "approved"
   },
   {
     "n": 20,
@@ -462,7 +462,7 @@ export const ADHKAR = [
     "virtueUr": "حضورِ اقدس صلی اللہ علیہ وسلم کی شفاعت کے لئے",
     "virtueEn": "To receive the intercession of the Noble Prophet (peace and blessings be upon him).",
     "ref": "طبرانی، جمع المسانید والسنن",
-    "status": "draft-pending-review"
+    "status": "approved"
   }
 ];
 

@@ -10,7 +10,39 @@ export const TT = {
   noToolsHint: "Turn them on in Settings, Tools.",
   settings: "Tools settings",
   tag: { daily: "Daily", today: "Today", friday: "Friday" },
-  arName: { adhkar: "أذكار الصباح والمساء", hizb: "الحزب الأعظم", durud: "چہل درود شریف", quran: "القرآن الكريم" },
+  arName: { adhkar: "أذكار الصباح والمساء", hizb: "الحزب الأعظم", durud: "چہل درود شریف", quran: "القرآن الكريم", manzil: "منزل", afterSalah: "أذكار بعد الصلاة" },
+  /* names for the hub, Settings rows and aria labels of the two Round 2 tools (until strings.js has them) */
+  toolName: { manzil: "Manzil", afterSalah: "After Salāh" },
+  toolSub: { manzil: "Protective āyāt · morning and evening", afterSalah: "Adhkār after each fard, with a tasbīh counter" },
+
+  /* manzil */
+  mzArabic: "Arabic",
+  mzWithPickthall: "Pickthall",
+  mzSub: (n, a) => `${n} passages · ${a} āyāt · IndoPak text`,
+  mzOtherDone: set => `${set} read`,
+  mzReadAt: (set, at) => `${set} read at ${at}`,
+  mzMarkRead: set => `Mark ${set.toLowerCase()} Manzil read`,
+  mzMarkUnread: "Read · tap to undo",
+  mzReadToast: set => `${set} Manzil read`,
+  mzCredit: "Qurʾān text: DigitalKhatt IndoPak. Translation: Pickthall. Passage list from the Manzil PDF, pending scholar review.",
+  mzTile: { due: "due", read: "read" },
+
+  /* adhkar after salah */
+  asTitle: "After Salāh",
+  asWhich: "Which prayer",
+  asShort: { Fajr: "Fajr", Dhuhr: "Zuhr", Asr: "ʿAsr", Maghrib: "Maghrib", Isha: "ʿIshāʾ" },
+  asAuto: (p, at) => `After ${p} · ${at}`,
+  asChosen: p => `After ${p} · chosen by you`,
+  asDone: p => `Adhkār after ${p} done`,
+  asEach: " EACH",
+  asQulsRule: (p, n) => (n === 3 ? `After ${p}: each surah 3 times.` : `After ${p}: each surah once (3 times after Fajr and Maghrib).`),
+  asTasbihHead: "33 · 33 · 33 · 1",
+  asTo100: "To make the count 100, once",
+  asUndo: "Undo one",
+  asSource: "From the poster “Supplications after Prayers”, with Āyat al-Kursī added. Draft, pending scholar review.",
+  asHomeTitle: p => `Adhkār after ${p}`,
+  asHomeSub: (n, min) => `${n} adhkār · tasbīh 33·33·33 · about ${min} min`,
+  asTileLine: p => `After ${p}`,
   excusedNote: "Tools stay available on excused days.",
 
   /* adhkar */
@@ -130,6 +162,7 @@ export const TT = {
   goTo: "Go to", bookmarks: "Bookmarks", night: "Night", translationBtn: "Translation",
   mushafBtn: "Mushaf",
   pageOf: (n, m) => `Page ${n} of ${m}`,
+  pagesOf: (a, b, m) => `Pages ${a}–${b} of ${m}`, // two-page spread (tablet, landscape)
   paraN: n => `Para ${n}`, juzN: n => `Juz ${n}`,
   tabSurah: "Surah", tabPara: "Para", tabJuz: "Juz", tabPage: "Page",
   searchSurah: "Search a surah",

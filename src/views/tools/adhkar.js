@@ -5,6 +5,7 @@ import { timesFor } from "../../times.js";
 import { fmt12 } from "../../util.js";
 import { commit } from "../../app.js";
 import { TT } from "./strings-tools.js";
+import { toolTip } from "./tips.js";
 import { quranBlock, quranFont, refLabel } from "./qtext.js";
 
 /* ---------- which set is open ---------- */
@@ -138,14 +139,13 @@ export function adhkarView() {
   return `<div class="tl-hero tl-rd">
       <svg class="pattern" viewBox="0 0 390 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="100%" height="100%" fill="url(#st)"/></svg>
       <div class="tl-hrow"><button type="button" class="tl-hbtn" aria-label="${COMMON.back}" onclick="A.tlBack()">${I.back}</button>
-        <div class="tl-ht"><h1>${esc(title)}</h1><span class="tl-har" lang="ar" dir="rtl">${set === "morning" ? TT.morningAr : TT.eveningAr}</span></div>
+        <div class="tl-ht"><h1>${esc(title)}</h1></div>
         <button type="button" class="tl-hbtn aa" aria-label="${TT.aa}" onclick="A.tlAa('adhkar')">Aa</button></div>
       <div class="tl-segw" role="tablist"><button role="tab" aria-selected="${set === "morning"}" class="${set === "morning" ? "on" : ""}" onclick="A.tlSet('morning')">${I.sun} ${TT.morning}</button><button role="tab" aria-selected="${set === "evening"}" class="${set === "evening" ? "on" : ""}" onclick="A.tlSet('evening')">${I.moon} ${TT.evening}</button></div>
       <div class="tl-auto"><span class="tl-autob">${isAuto ? TT.auto : "•"}</span> ${isAuto ? esc(auto) : esc(auto)}</div>
       <div class="tl-prog"><div class="tl-bar"><i style="width:${Math.round(100 * pg.said / pg.total)}%"></i></div><span><b>${pg.complete ? pg.n : first + 1} of ${pg.n}</b> · ${pg.said}/${pg.total} said</span></div>
     </div>
-    ${(pr.translit || pr.translation) ? `<div class="tl-draft">${I.info}<span>${esc(APP.draftFlag)}</span></div>` : ""}
-    <div class="tl-list">${doneCard}${cards}</div><div class="space"></div>`;
+    <div class="tl-list">${toolTip("adhkar")}${doneCard}${cards}</div><div class="space"></div>`;
 }
 
 export function adhkarAfter() {
@@ -200,7 +200,7 @@ A.tlUntick = set => {
 A.tlVirtue = n => {
   if (!VIRTUES_APPROVED) return;
   const it = ADHKAR.find(x => x.n === n);
-  openSheet(`<h3>${TT.virtueHead}</h3><p class="tl-vu" lang="ur" dir="rtl">${esc(it.virtueUr)}</p><p>${esc(it.virtueEn)}</p><p class="note">${esc(APP.draftFlag)}</p><div class="cta"><button class="btn primary" onclick="A.closeSheet()">${COMMON.done}</button></div>`);
+  openSheet(`<h3>${TT.virtueHead}</h3><p class="tl-vu" lang="ur" dir="rtl">${esc(it.virtueUr)}</p><p>${esc(it.virtueEn)}</p><div class="cta"><button class="btn primary" onclick="A.closeSheet()">${COMMON.done}</button></div>`);
 };
 
 export { info };

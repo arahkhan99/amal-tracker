@@ -1,0 +1,56 @@
+/*
+ * Tablets and iPad (decided 14 Nov 2026; design-review/mockups2/tablet, docs/build/tablet.md).
+ * Option A: the phone screens in a centred 560px column, scaled 115% with CSS zoom, with the forest Home hero
+ * and the bottom bar running edge to edge. From option B: sheets become centred dialogs, and the Qurʾān shows a
+ * two-page spread in landscape (views/tools/quran.js; pairing in src/tools/quran-spread.js).
+ *
+ * Only at 768+ CSS px wide AND 540+ tall, so phones (portrait or an Android phone turned sideways), 7" Android
+ * tablets and narrow iPad Split View windows keep the phone layout exactly as it is.
+ * Keep this query in step with TABLET_QUERY in src/tools/quran-spread.js. Tokens only (theme.css), so dark mode follows.
+ */
+@media (min-width:768px) and (min-height:540px){
+  :root{--tb-col:560px}
+
+  /* ---------- the column ---------- */
+  /* zoom the views, not the scroller: #screen stays at zoom 1, so its scrollTop and getBoundingClientRect()
+     share units (Progress chapter jumps, Settings scroll-to, the tour's coach marks) */
+  .screen > .view{zoom:1.15}
+  .view{padding-inline:max(0px,calc((100% - var(--tb-col)) / 2))}
+
+  /* Home: the forest hero runs edge to edge; everything else sits in the column */
+  #v-home{padding-inline:0}
+  #v-home > :not(.z-hero){padding-left:max(20px,calc((100% - var(--tb-col)) / 2 + 20px));padding-right:max(20px,calc((100% - var(--tb-col)) / 2 + 20px))}
+  #v-home > .tl-sm,#v-home > div:not(.z-hero):not(.z-sec):not(.z-spacer){padding-left:max(0px,calc((100% - var(--tb-col)) / 2));padding-right:max(0px,calc((100% - var(--tb-col)) / 2))}
+  #v-home > .z-hero{padding-left:max(20px,calc((100% - var(--tb-col)) / 2 + 20px));padding-right:max(20px,calc((100% - var(--tb-col)) / 2 + 20px));border-radius:0 0 40px 40px}
+
+  /* onboarding: the same forest screen, content in a centred column */
+  #v-onboard{padding-inline:0}
+  .onb-inner{max-width:600px;margin:0 auto;width:100%}
+
+  /* ---------- bottom bar: edge to edge, the five tabs centred ---------- */
+  .nav{zoom:1.12;justify-content:center;gap:28px;padding-bottom:max(14px,calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 8px))}
+  .nav button{flex:0 0 80px}
+
+  /* ---------- sheets become centred dialogs ---------- */
+  .scrim{align-items:center;justify-content:center;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 16px) 16px calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 16px)}
+  .sheet{zoom:1.12;width:min(540px,100%);max-height:calc(86vh / 1.12);border-radius:28px;padding-bottom:26px;animation:tb-pop .2s cubic-bezier(.2,.8,.2,1);box-shadow:0 24px 60px rgba(0,0,0,.25)}
+  .sheet .grab{display:none}
+
+  /* ---------- Qurʾān reader ---------- */
+  /* the reader uses the full width (the spread needs it); tools/index.js sets data-screen on #v-tools */
+  #v-tools[data-screen=quran]{padding-inline:0}
+  .tl-qtop{padding-left:max(14px,var(--safe-area-inset-left,env(safe-area-inset-left,0px)));padding-right:max(14px,var(--safe-area-inset-right,env(safe-area-inset-right,0px)))}
+  /* the page is measured and fitted in JS (fit() in quran.js), so it is laid out at zoom 1 (1 / 1.15) */
+  .tl-qpagewrap{zoom:.8696;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 28px) max(24px,var(--safe-area-inset-right,env(safe-area-inset-right,0px))) 28px max(24px,var(--safe-area-inset-left,env(safe-area-inset-left,0px)))}
+  .tl-qr.bars .tl-qpagewrap{padding-top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 28px)}
+  .tl-qpage{max-width:760px}
+  .tl-qtrans{max-width:var(--tb-col);margin-inline:auto;width:100%}
+}
+
+/* two pages side by side, right to left: the first (earlier) page is on the right, as in a printed muṣḥaf */
+.tl-qspread{display:flex;direction:rtl;justify-content:center;align-items:flex-start}
+.tl-qspread .tl-qpage{margin:0;flex:1 1 0;max-width:none;min-width:0}
+.tl-qspread .tl-qpage + .tl-qpage{border-inline-start:0}
+
+@keyframes tb-pop{from{transform:scale(.96);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}

@@ -113,13 +113,15 @@ export function startedPrayers(date, now, settings) {
   return PRAYERS.filter(p => t[p] <= now);
 }
 
-/* ---------- weeks (Saturday first) ----------
- * Zad's "This week" and the Hizb al-Aʿzam both start on Saturday (Saturday = manzil 1).
- * Day index within the week: Sat 0, Sun 1, Mon 2, Tue 3, Wed 4, Thu 5, Fri 6.
+/* ---------- weeks (Sunday first) ----------
+ * Zad's weeks (This week on Home, Progress, the weekly content rotation) start on Sunday (user, 14 Nov 2026).
+ * Day index within the week: Sun 0, Mon 1, … Sat 6.
+ * The Hizb al-Aʿzam keeps its own traditional week: Saturday = manzil 1 (HIZB_WEEK_START).
  */
-export const WEEK_START = 6; // Date.getDay() of Saturday
+export const WEEK_START = 0; // Date.getDay() of Sunday
+export const HIZB_WEEK_START = 6; // Date.getDay() of Saturday
 
-/** 0..6 position of a date in its week (Saturday = 0 by default; pass start = 1 for Monday-first). */
+/** 0..6 position of a date in its week (Sunday = 0 by default; pass start = 1 for Monday-first). */
 export function weekIndex(date, start = WEEK_START) { return (date.getDay() - start + 7) % 7; }
 
 /** Local midnight of the first day of the week containing `date`, shifted by `offset` weeks. */
@@ -131,7 +133,7 @@ export function weekDates(date, offset = 0, start = WEEK_START) {
   return Array.from({ length: 7 }, (_, i) => addDays(first, i));
 }
 
-/** Stable key of a week: the dkey of its first day (e.g. "2026-11-07" for Sat 7 Nov). */
+/** Stable key of a week: the dkey of its first day (e.g. "2026-11-08" for Sun 8 Nov). */
 export function weekKey(date, start = WEEK_START) { return dkey(weekStartDate(date, 0, start)); }
 
 /** Whole weeks between the week of `a` and the week of `b` (b later → positive). Useful for weekly rotation. */
@@ -139,7 +141,7 @@ export function weeksBetween(a, b, start = WEEK_START) {
   return Math.round((weekStartDate(b, 0, start) - weekStartDate(a, 0, start)) / (7 * 864e5));
 }
 
-/** Short label of a week, e.g. "Sat 7 – Fri 13 Nov" or "Sat 28 Nov – Fri 4 Dec". */
+/** Short label of a week, e.g. "Sun 8 – Sat 14 Nov" or "Sun 29 Nov – Sat 5 Dec". */
 export function weekRangeLabel(date, offset = 0, start = WEEK_START) {
   const DOW3 = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const d = weekDates(date, offset, start), a = d[0], b = d[6];
@@ -150,4 +152,4 @@ export function weekRangeLabel(date, offset = 0, start = WEEK_START) {
 }
 
 /** Hizb al-Aʿzam manzil (1..7) for a date: Saturday = 1 … Friday = 7. */
-export function manzilFor(date) { return weekIndex(date, WEEK_START) + 1; }
+export function manzilFor(date) { return weekIndex(date, HIZB_WEEK_START) + 1; }

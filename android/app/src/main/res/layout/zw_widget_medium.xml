@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget layout (RemoteViews). Filled in by WidgetRenderer.java; sample text shows in the widget picker preview. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/zw_root" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/zw_bg_forest" android:orientation="vertical" android:padding="12dp">
+    <LinearLayout android:id="@+id/zw_header" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+        <TextView android:id="@+id/zw_tag" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:background="@drawable/zw_bg_pill_gold" android:paddingStart="9dp" android:paddingEnd="9dp" android:paddingTop="2dp" android:paddingBottom="2dp"
+            android:text="Next" android:textAllCaps="true" android:letterSpacing="0.12" android:textColor="@color/zw_forest" android:textSize="10sp" android:textStyle="bold" />
+        <TextView android:id="@+id/zw_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp"
+            android:fontFamily="serif" android:text="ʿAsr" android:textColor="@color/zw_on_forest" android:textSize="21sp" android:maxLines="1" />
+        <TextView android:id="@+id/zw_time" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+            android:text="3:42 PM" android:textColor="@color/zw_on_forest_dim" android:textSize="12sp" android:maxLines="1" />
+        <TextView android:id="@+id/zw_countdown" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end"
+            android:fontFamily="serif" android:text="1h 24m" android:textColor="@color/zw_gold_text" android:textSize="21sp" android:textStyle="bold" android:maxLines="1" />
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:layout_marginTop="10dp" android:orientation="horizontal">
+        <LinearLayout android:id="@+id/zw_p0" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:layout_marginStart="0dp" android:layout_marginEnd="3dp" android:orientation="vertical" android:gravity="center"
+            android:background="@drawable/zw_bg_tile" android:paddingTop="4dp" android:paddingBottom="4dp">
+            <ImageView android:id="@+id/zw_p0_icon" android:layout_width="26dp" android:layout_height="26dp" android:src="@drawable/zw_st_ontime" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_p0_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp"
+                android:text="Fajr" android:textColor="@color/zw_on_forest" android:textSize="12sp" android:textStyle="bold" android:maxLines="1" />
+            <TextView android:id="@+id/zw_p0_time" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="5:12 AM" android:textColor="@color/zw_on_forest_dim" android:textSize="10sp" android:maxLines="1" />
+            <ImageView android:id="@+id/zw_p0_dot" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="3dp" android:src="@drawable/zw_dot_on" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/zw_p1" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:layout_marginStart="3dp" android:layout_marginEnd="3dp" android:orientation="vertical" android:gravity="center"
+            android:background="@drawable/zw_bg_tile" android:paddingTop="4dp" android:paddingBottom="4dp">
+            <ImageView android:id="@+id/zw_p1_icon" android:layout_width="26dp" android:layout_height="26dp" android:src="@drawable/zw_st_congregation" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_p1_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp"
+                android:text="Zuhr" android:textColor="@color/zw_on_forest" android:textSize="12sp" android:textStyle="bold" android:maxLines="1" />
+            <TextView android:id="@+id/zw_p1_time" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="12:31 PM" android:textColor="@color/zw_on_forest_dim" android:textSize="10sp" android:maxLines="1" />
+            <ImageView android:id="@+id/zw_p1_dot" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="3dp" android:src="@drawable/zw_dot_on" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/zw_p2" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:layout_marginStart="3dp" android:layout_marginEnd="3dp" android:orientation="vertical" android:gravity="center"
+            android:background="@drawable/zw_bg_tile_focus" android:paddingTop="4dp" android:paddingBottom="4dp">
+            <ImageView android:id="@+id/zw_p2_icon" android:layout_width="26dp" android:layout_height="26dp" android:src="@drawable/zw_st_next" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_p2_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp"
+                android:text="ʿAsr" android:textColor="@color/zw_gold_text" android:textSize="12sp" android:textStyle="bold" android:maxLines="1" />
+            <TextView android:id="@+id/zw_p2_time" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="3:42 PM" android:textColor="@color/zw_on_forest_dim" android:textSize="10sp" android:maxLines="1" />
+            <ImageView android:id="@+id/zw_p2_dot" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="3dp" android:src="@drawable/zw_dot_off_forest" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/zw_p3" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:layout_marginStart="3dp" android:layout_marginEnd="3dp" android:orientation="vertical" android:gravity="center"
+            android:background="@drawable/zw_bg_tile" android:paddingTop="4dp" android:paddingBottom="4dp">
+            <ImageView android:id="@+id/zw_p3_icon" android:layout_width="26dp" android:layout_height="26dp" android:src="@drawable/zw_ring_upcoming_forest" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_p3_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp"
+                android:text="Maghrib" android:textColor="@color/zw_on_forest" android:textSize="12sp" android:textStyle="bold" android:maxLines="1" />
+            <TextView android:id="@+id/zw_p3_time" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="5:54 PM" android:textColor="@color/zw_on_forest_dim" android:textSize="10sp" android:maxLines="1" />
+            <ImageView android:id="@+id/zw_p3_dot" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="3dp" android:src="@drawable/zw_dot_off_forest" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/zw_p4" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:layout_marginStart="3dp" android:layout_marginEnd="0dp" android:orientation="vertical" android:gravity="center"
+            android:background="@drawable/zw_bg_tile" android:paddingTop="4dp" android:paddingBottom="4dp">
+            <ImageView android:id="@+id/zw_p4_icon" android:layout_width="26dp" android:layout_height="26dp" android:src="@drawable/zw_ring_upcoming_forest" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_p4_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp"
+                android:text="ʿIshāʾ" android:textColor="@color/zw_on_forest" android:textSize="12sp" android:textStyle="bold" android:maxLines="1" />
+            <TextView android:id="@+id/zw_p4_time" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="7:15 PM" android:textColor="@color/zw_on_forest_dim" android:textSize="10sp" android:maxLines="1" />
+            <ImageView android:id="@+id/zw_p4_dot" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="3dp" android:src="@drawable/zw_dot_off_forest" android:importantForAccessibility="no" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

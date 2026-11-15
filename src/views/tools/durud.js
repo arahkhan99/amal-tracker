@@ -34,7 +34,6 @@ export function durudView() {
   return `${head({ title: TT.durudTitle, ar: TT.durudAr, sub: DURUD_META.compiler.replace(" Kandhlawi", "") })}
     <div class="tl-card tl-dtop"><div class="tl-kick"><span>${TT.durudToday}</span><b>${TT.durudOf(n)}</b></div><div class="tl-bar g"><i style="width:${Math.round(100 * n / DURUD.length)}%"></i></div>${cta}</div>
     <div class="tl-fri${fri ? " on" : ""}"><span class="tl-frib">${I.flower}</span><div><b>${esc(DURUD_META.recommendation.replace(/\.$/, ""))}</b><small>${fri ? "Jumuʿah: send abundant durūd" : TT.durudSub}</small></div>${info("durud")}</div>
-    ${prefs().translation || prefs().translit ? `<div class="tl-draft">${I.info}<span>${esc(APP.draftFlag)}</span></div>` : ""}
     <div class="tl-card tl-dlist">${rows}</div><div class="space"></div>`;
 }
 
@@ -49,7 +48,6 @@ export function durudReadView() {
       <p class="tl-ar big" lang="ar" dir="rtl">${esc(d.ar)}</p>
       ${pr.translit ? `<p class="tl-tr">${esc(d.transliteration)}</p>` : ""}
       ${pr.translation ? `<p class="tl-en">${esc(d.translation)}</p>` : ""}
-      ${(pr.translit || pr.translation) ? `<p class="tl-src">${esc(APP.draftFlag)}</p>` : ""}
       ${d.isTashahhud ? `<p class="tl-note">${TT.tashahhud}</p>` : ""}
       ${d.note ? `<p class="tl-note">${esc(d.note)}</p>` : ""}
     </div>

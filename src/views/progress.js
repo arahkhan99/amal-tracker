@@ -12,7 +12,7 @@ import { reflectionFor } from "../reflections.js";
 import { gloss } from "../glossary.js";
 import {
   APP, COMMON, PROGRESS, EXCUSED, STATUS, MEASURE, MAKEUPS, DEEDS, TIER, WITR_UI, SUNNAH_NAME, SUNNAH_UI,
-  WEEK_LETTERS_SAT, prayerName,
+  WEEK_LETTERS_SUN, prayerName,
 } from "../strings.js";
 import { PROGRESS_L } from "../strings.js";
 
@@ -29,7 +29,7 @@ A.pgGo = id => {
   const el = document.getElementById("pg-" + id);
   if (!el) return;
   const scr = $("#screen"), chips = document.querySelector(".pg-jump");
-  const top = el.getBoundingClientRect().top - scr.getBoundingClientRect().top + scr.scrollTop - ((chips?.offsetHeight || 44) + 6);
+  const top = el.getBoundingClientRect().top - scr.getBoundingClientRect().top + scr.scrollTop - ((chips?.offsetHeight || 44) + (parseFloat(chips && getComputedStyle(chips).top) || 0) + 6);
   scr.scrollTo({ top, behavior: "smooth" });
 };
 A.pgExplain = id => {
@@ -44,7 +44,7 @@ A.pgQada = () => A.go("qada");
 /** Prefix class names and CSS variables so the view is isolated from the shell styles. */
 const cls = h => h.replace(/class="([^"]*)"/g, (_, c) => `class="${c.split(/\s+/).filter(Boolean).map(x => "pg-" + x).join(" ")}"`).replace(/var\(--(?!pg-)/g, "var(--pg-");
 const info = id => `<button class="info" onclick="A.pgExplain('${id}')" aria-label="${esc(L.whatMeans)}">ⓘ</button>`;
-const DL = WEEK_LETTERS_SAT; // S S M T W T F
+const DL = WEEK_LETTERS_SUN; // S M T W T F S
 const pc = (n, d) => d ? Math.round(n / d * 100) : 0;
 const SHORT = { congregation: "j", ontime: "o", madeup: "r", missed: "m", excused: "x", unlogged: "u", future: "f" };
 const nowFor = to => dkey(to) >= todayKey() ? NOW() : addDays(to, 1);
@@ -569,7 +569,7 @@ function markChapter() {
   const scr = $("#screen"), sec = $("#v-progress"); if (!scr || !sec || UI.view !== "progress") return;
   const chs = [...sec.querySelectorAll("section[data-ch]")], jump = sec.querySelector(".pg-jump");
   if (!chs.length) return;
-  const line = scr.getBoundingClientRect().top + (jump?.offsetHeight || 44) + 40;
+  const line = scr.getBoundingClientRect().top + (jump?.offsetHeight || 44) + (parseFloat(jump && getComputedStyle(jump).top) || 0) + 40;
   let cur = chs[0].dataset.ch;
   for (const c of chs) if (c.getBoundingClientRect().top <= line) cur = c.dataset.ch;
   if (scr.scrollTop + scr.clientHeight >= scr.scrollHeight - 4) cur = chs[chs.length - 1].dataset.ch;

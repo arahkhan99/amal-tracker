@@ -70,6 +70,11 @@ try {
     def servicesJSON = file('google-services.json')
     if (servicesJSON.text) {
         apply plugin: 'com.google.gms.google-services'
+        // Crashlytics needs the google_app_id from google-services.json, so it is applied alongside it.
+        // Release builds upload their R8 mapping file when minifyEnabled is turned on; debug builds never upload.
+        apply plugin: 'com.google.firebase.crashlytics'
+        android.buildTypes.release.firebaseCrashlytics.mappingFileUploadEnabled = true
+        android.buildTypes.debug.firebaseCrashlytics.mappingFileUploadEnabled = false
     }
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")

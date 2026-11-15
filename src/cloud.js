@@ -10,6 +10,8 @@ import { S, A, onCommit, applyState, render, commit } from "./app.js";
 import * as store from "./store.js";
 import { isNative } from "./platform.js";
 import { firebaseConfig } from "./firebase-config.js";
+import { currentHijri, calcParts, CALENDARS } from "./hijri.js";
+import { storeCommittee, putMonth, monthId } from "./hijri-committees.js";
 
 /** Version (date) of the Terms of use and Privacy policy. Bump it when either changes; signed-in users are asked to agree again. */
 export const TERMS_VERSION = "2026-11-03";
@@ -57,9 +59,10 @@ export async function initCloud() {
     cloud.user = u ? { uid: u.uid, email: u.email } : null;
     render();
     if (u) sync().then(checkConsent);
+    if (u) refreshHijri();
   });
   onCommit(() => { if (cloud.user) { clearTimeout(syncTimer); syncTimer = setTimeout(sync, 3000); } });
-  window.addEventListener("online", () => cloud.user && sync());
+  window.addEventListener("online", () => { if (cloud.user) { sync(); refreshHijri(); } });
   document.addEventListener("visibilitychange", () => { if (!document.hidden && cloud.user) sync(); });
 }
 
@@ -252,4 +255,37 @@ async function doSync() {
     cloud.syncing = false;
     render();
   }
+}
+
+/* ---------- Hijri moon-sighting committees ----------
+ *   hijriCommittees/{id}                   { name, editors: [uid] }   read by anyone signed in, written in the Firebase console only
+ *   hijriCommittees/{id}/months/{YYYY-MM}  { startDate, updatedBy, updatedAt, note }   written by the committee's editors
+ * Everything fetched is cached (hijri-committees.js) so the date works offline and when signed out. */
+export const hijriEditors = {}; // committee id -> true when the signed-in user is one of its editors
+
+/** Fetch a committee's months (and whether this user can edit them) and cache them. Quiet on failure: the cache stays. */
+export async function refreshHijriCommittee(id) {
+  if (!id || !cloud.user) return false;
+  try {
+    const { fs, db } = await firebase();
+    const [top, months] = await Promise.all([fs.getDoc(fs.doc(db, "hijriCommittees", id)), fs.getDocs(fs.collection(db, "hijriCommittees", id, "months"))]);
+    const calc = n => calcParts(n, CALENDARS.umalqura);
+    storeCommittee(id, months.docs.map(d => { const v = d.data(); return { id: d.id, startDate: v.startDate, note: v.note, updatedAt: v.updatedAt?.toMillis?.() || 0 }; }), calc);
+    hijriEditors[id] = !!(top.exists() && Array.isArray(top.data().editors) && top.data().editors.includes(cloud.user.uid));
+    render();
+    return true;
+  } catch (e) { console.warn("hijri committee", e); return false; }
+}
+/** Refresh the committee the user follows (called after sign-in and when the phone comes back online). */
+export function refreshHijri() {
+  const h = currentHijri();
+  return h.method === "committee" ? refreshHijriCommittee(h.committee) : Promise.resolve(false);
+}
+/** Editors only: set the Gregorian date of the 1st of a Hijri month. Throws if the rules refuse it or there is no network. */
+export async function saveCommitteeMonth(id, hy, hm, startDate, note = "") {
+  if (!cloud.user) throw new Error("not signed in");
+  const { fs, db } = await firebase();
+  await fs.setDoc(fs.doc(db, "hijriCommittees", id, "months", monthId(hy, hm)), { startDate, updatedBy: cloud.user.uid, updatedAt: fs.serverTimestamp(), note: String(note).slice(0, 200) });
+  putMonth(id, hy, hm, startDate, n => calcParts(n, CALENDARS.umalqura), note);
+  render();
 }

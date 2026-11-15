@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget layout (RemoteViews). Filled in by WidgetRenderer.java; sample text shows in the widget picker preview. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/zw_root" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/zw_bg_card" android:orientation="vertical" android:padding="10dp">
+    <LinearLayout android:id="@+id/zw_hero" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+        android:background="@drawable/zw_bg_hero" android:paddingStart="14dp" android:paddingEnd="14dp" android:paddingTop="10dp" android:paddingBottom="10dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:id="@+id/zw_tag" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:background="@drawable/zw_bg_pill_gold" android:paddingStart="9dp" android:paddingEnd="9dp" android:paddingTop="2dp" android:paddingBottom="2dp"
+            android:text="Next" android:textAllCaps="true" android:letterSpacing="0.12" android:textColor="@color/zw_forest" android:textSize="10sp" android:textStyle="bold" />
+            <TextView android:id="@+id/zw_hijri" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end"
+                android:fontFamily="serif" android:text="25 Jumada al-Ula 1448" android:textColor="@color/zw_on_forest_dim" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:id="@+id/zw_name" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:fontFamily="serif" android:text="ʿAsr" android:textColor="@color/zw_on_forest" android:textSize="28sp" android:maxLines="1" />
+            <TextView android:id="@+id/zw_countdown" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end"
+                android:fontFamily="serif" android:text="1h 24m" android:textColor="@color/zw_gold_text" android:textSize="27sp" android:textStyle="bold" android:maxLines="1" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+            <TextView android:id="@+id/zw_time" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="3:42 PM" android:textColor="@color/zw_on_forest_dim" android:textSize="12sp" android:maxLines="1" />
+            <TextView android:id="@+id/zw_countdown_label" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end"
+                android:text="until ʿAsr" android:textColor="@color/zw_on_forest_dim" android:textSize="11sp" android:maxLines="1" />
+        </LinearLayout>
+        <FrameLayout android:layout_width="match_parent" android:layout_height="8dp" />
+        <TextView android:id="@+id/zw_button" android:layout_width="match_parent" android:layout_height="34dp"
+        android:background="@drawable/zw_bg_pill_gold" android:gravity="center" android:text="✓  Prayed"
+        android:textColor="@color/zw_forest" android:textSize="15sp" android:textStyle="bold" android:maxLines="1" />
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:orientation="horizontal">
+        <LinearLayout android:id="@+id/zw_p0" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:orientation="vertical" android:gravity="center_horizontal"
+            android:background="@drawable/zw_bg_clear" android:paddingTop="5dp" android:paddingBottom="5dp">
+            <ImageView android:id="@+id/zw_p0_icon" android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/zw_st_missed" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_p0_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp"
+                android:text="Fajr" android:textColor="@color/zw_card_ink" android:textSize="11sp" android:textStyle="bold" android:maxLines="1" />
+            <ImageView android:id="@+id/zw_p0_dot" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="2dp" android:src="@drawable/zw_dot_on" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/zw_p1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:orientation="vertical" android:gravity="center_horizontal"
+            android:background="@drawable/zw_bg_clear" android:paddingTop="5dp" android:paddingBottom="5dp">
+            <ImageView android:id="@+id/zw_p1_icon" android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/zw_st_congregation" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_p1_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp"
+                android:text="Zuhr" android:textColor="@color/zw_card_ink" android:textSize="11sp" android:textStyle="bold" android:maxLines="1" />
+            <ImageView android:id="@+id/zw_p1_dot" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="2dp" android:src="@drawable/zw_dot_on" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/zw_p2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:orientation="vertical" android:gravity="center_horizontal"
+            android:background="@drawable/zw_bg_focus_card" android:paddingTop="5dp" android:paddingBottom="5dp">
+            <ImageView android:id="@+id/zw_p2_icon" android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/zw_st_next" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_p2_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp"
+                android:text="ʿAsr" android:textColor="@color/zw_card_focus_ink" android:textSize="11sp" android:textStyle="bold" android:maxLines="1" />
+            <ImageView android:id="@+id/zw_p2_dot" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="2dp" android:src="@drawable/zw_dot_off_card" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/zw_p3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:orientation="vertical" android:gravity="center_horizontal"
+            android:background="@drawable/zw_bg_clear" android:paddingTop="5dp" android:paddingBottom="5dp">
+            <ImageView android:id="@+id/zw_p3_icon" android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/zw_ring_upcoming_card" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_p3_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp"
+                android:text="Maghrib" android:textColor="@color/zw_card_ink" android:textSize="11sp" android:textStyle="bold" android:maxLines="1" />
+            <ImageView android:id="@+id/zw_p3_dot" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="2dp" android:src="@drawable/zw_dot_off_card" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/zw_p4" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:orientation="vertical" android:gravity="center_horizontal"
+            android:background="@drawable/zw_bg_clear" android:paddingTop="5dp" android:paddingBottom="5dp">
+            <ImageView android:id="@+id/zw_p4_icon" android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/zw_ring_upcoming_card" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_p4_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp"
+                android:text="ʿIshāʾ" android:textColor="@color/zw_card_ink" android:textSize="11sp" android:textStyle="bold" android:maxLines="1" />
+            <ImageView android:id="@+id/zw_p4_dot" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="2dp" android:src="@drawable/zw_dot_off_card" android:importantForAccessibility="no" />
+        </LinearLayout>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/zw_deeds" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:id="@+id/zw_deeds_title" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:fontFamily="serif" android:text="Good Deeds" android:textColor="@color/zw_card_ink" android:textSize="15sp" android:textStyle="bold" android:maxLines="1" />
+            <TextView android:id="@+id/zw_deeds_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                android:text="2/5" android:textColor="@color/zw_card_ink2" android:textSize="12sp" android:textStyle="bold" android:maxLines="1" />
+            <FrameLayout android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+            <LinearLayout android:id="@+id/zw_makeups" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical"
+                android:background="@drawable/zw_bg_chip" android:paddingStart="8dp" android:paddingEnd="10dp" android:paddingTop="3dp" android:paddingBottom="3dp">
+                <ImageView android:layout_width="12dp" android:layout_height="12dp" android:src="@drawable/zw_ic_madeup_chip" android:importantForAccessibility="no" />
+                <TextView android:id="@+id/zw_makeups_text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp"
+                    android:text="3 make-ups left" android:textColor="@color/zw_card_chip_ink" android:textSize="11sp" android:textStyle="bold" android:maxLines="1" />
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout android:id="@+id/zw_drow0" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:layout_marginTop="5dp" android:orientation="horizontal">
+            <LinearLayout android:id="@+id/zw_d0" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                android:layout_marginStart="0dp" android:layout_marginEnd="3dp" android:orientation="horizontal" android:gravity="center_vertical"
+                android:background="@drawable/zw_bg_deed" android:paddingStart="8dp" android:paddingEnd="8dp">
+                <ImageView android:id="@+id/zw_d0_icon" android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/zw_deed_done" android:importantForAccessibility="no" />
+                <TextView android:id="@+id/zw_d0_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                    android:text="Qurʾān · 1 page" android:textColor="@color/zw_card_ink" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+            </LinearLayout>
+            <LinearLayout android:id="@+id/zw_d1" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                android:layout_marginStart="3dp" android:layout_marginEnd="0dp" android:orientation="horizontal" android:gravity="center_vertical"
+                android:background="@drawable/zw_bg_deed" android:paddingStart="8dp" android:paddingEnd="8dp">
+                <ImageView android:id="@+id/zw_d1_icon" android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/zw_deed_done" android:importantForAccessibility="no" />
+                <TextView android:id="@+id/zw_d1_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                    android:text="Morning adhkār" android:textColor="@color/zw_card_ink" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout android:id="@+id/zw_drow1" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:layout_marginTop="5dp" android:orientation="horizontal">
+            <LinearLayout android:id="@+id/zw_d2" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                android:layout_marginStart="0dp" android:layout_marginEnd="3dp" android:orientation="horizontal" android:gravity="center_vertical"
+                android:background="@drawable/zw_bg_deed" android:paddingStart="8dp" android:paddingEnd="8dp">
+                <ImageView android:id="@+id/zw_d2_icon" android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/zw_deed_todo" android:importantForAccessibility="no" />
+                <TextView android:id="@+id/zw_d2_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                    android:text="Ṣadaqah" android:textColor="@color/zw_card_ink" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+            </LinearLayout>
+            <LinearLayout android:id="@+id/zw_d3" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                android:layout_marginStart="3dp" android:layout_marginEnd="0dp" android:orientation="horizontal" android:gravity="center_vertical"
+                android:background="@drawable/zw_bg_deed" android:paddingStart="8dp" android:paddingEnd="8dp">
+                <ImageView android:id="@+id/zw_d3_icon" android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/zw_deed_todo" android:importantForAccessibility="no" />
+                <TextView android:id="@+id/zw_d3_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                    android:text="Evening adhkār" android:textColor="@color/zw_card_ink" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout android:id="@+id/zw_drow2" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:layout_marginTop="5dp" android:orientation="horizontal">
+            <LinearLayout android:id="@+id/zw_d4" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                android:layout_marginStart="0dp" android:layout_marginEnd="3dp" android:orientation="horizontal" android:gravity="center_vertical"
+                android:background="@drawable/zw_bg_deed" android:paddingStart="8dp" android:paddingEnd="8dp">
+                <ImageView android:id="@+id/zw_d4_icon" android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/zw_deed_todo" android:importantForAccessibility="no" />
+                <TextView android:id="@+id/zw_d4_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                    android:text="Call family" android:textColor="@color/zw_card_ink" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+            </LinearLayout>
+            <LinearLayout android:id="@+id/zw_d5" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                android:layout_marginStart="3dp" android:layout_marginEnd="0dp" android:orientation="horizontal" android:gravity="center_vertical"
+                android:background="@drawable/zw_bg_deed" android:paddingStart="8dp" android:paddingEnd="8dp">
+                <ImageView android:id="@+id/zw_d5_icon" android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/zw_deed_todo" android:importantForAccessibility="no" />
+                <TextView android:id="@+id/zw_d5_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                    android:text="" android:textColor="@color/zw_card_ink" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+            </LinearLayout>
+            <TextView android:id="@+id/zw_add_deed" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginStart="3dp"
+                android:background="@drawable/zw_bg_add_deed" android:gravity="center" android:text="+ Add deed" android:textColor="@color/zw_card_ink2" android:textSize="12sp" android:maxLines="1" android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

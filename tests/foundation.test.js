@@ -1,12 +1,14 @@
 // Foundation: madhhab rules, statuses and make-ups, Witr, sunnah logging, excused days, migration,
-// feature modules, Saturday weeks, stats, strings and glossary.
-import { describe, it, expect } from "vitest";
+// feature modules, Sunday weeks, stats, strings and glossary.
+import { describe, it, expect, beforeAll } from "vitest";
 import * as store from "../src/store.js";
 import * as st from "../src/stats.js";
 import * as M from "../src/rules/madhhab.js";
 import * as F from "../src/features.js";
-import { timesFor, ishaBestBefore, madeUpDeadline, canStillMakeUp, startedPrayers, windowEnd, weekIndex, weekDates, weekKey, weekRangeLabel, weeksBetween, manzilFor, WEEK_START } from "../src/times.js";
-import { thisWeek } from "../src/content.js";
+import { timesFor, ishaBestBefore, madeUpDeadline, canStillMakeUp, startedPrayers, windowEnd, weekIndex, weekDates, weekKey, weekRangeLabel, weeksBetween, manzilFor, WEEK_START, HIZB_WEEK_START } from "../src/times.js";
+import { thisWeek, pastSahabi, loadContent } from "../src/content.js";
+
+beforeAll(() => loadContent());
 import { PRAYER_NAME, prayerName, STATUS, MADHHAB_SUMMARY, NAV } from "../src/strings.js";
 import { GLOSSARY, glossaryFor } from "../src/glossary.js";
 import { dkey, addDays, PRAYERS } from "../src/util.js";
@@ -331,7 +333,7 @@ describe("feature modules", () => {
     F.setFeature(S, "makeups", false);
     expect(F.navTabs(S).map(t => t.id)).toEqual(["home", "tracker", "tools", "progress"]);
     F.setToolHidden(S, "hizb", true);
-    expect(F.visibleTools(S)).toEqual(["adhkar", "durud", "quran"]);
+    expect(F.visibleTools(S)).toEqual(["adhkar", "durud", "quran", "manzil", "afterSalah"]);
     expect(F.toolVisible(S, "hizb")).toBe(false);
     F.setToolHidden(S, "hizb", false);
     expect(F.visibleTools(S)).toEqual(F.TOOLS);
@@ -342,39 +344,73 @@ describe("feature modules", () => {
   });
 });
 
-describe("Saturday weeks", () => {
-  it("weeks start on Saturday; Saturday is manzil 1", () => {
-    expect(WEEK_START).toBe(6);
-    const sat = new Date(2026, 10, 7), fri = new Date(2026, 10, 13), thu = new Date(2026, 10, 5);
-    expect(weekIndex(sat)).toBe(0);
-    expect(weekIndex(fri)).toBe(6);
-    expect(manzilFor(sat)).toBe(1);
+describe("Sunday weeks (the Hizb keeps Saturday = manzil 1)", () => {
+  it("weeks start on Sunday; the Hizb still starts on Saturday", () => {
+    expect(WEEK_START).toBe(0);
+    const sun = new Date(2026, 10, 8), sat = new Date(2026, 10, 14), thu = new Date(2026, 10, 5), fri = new Date(2026, 10, 13);
+    expect(weekIndex(sun)).toBe(0);
+    expect(weekIndex(sat)).toBe(6);
+    expect(manzilFor(new Date(2026, 10, 7))).toBe(1); // Saturday
     expect(manzilFor(fri)).toBe(7);
     expect(manzilFor(thu)).toBe(6);
-    expect(weekDates(fri).map(dkey)[0]).toBe("2026-11-07");
-    expect(weekKey(thu)).toBe("2026-10-31");
-    expect(weekRangeLabel(sat)).toBe("Sat 7 – Fri 13 Nov");
-    expect(weekRangeLabel(thu)).toBe("Sat 31 Oct – Fri 6 Nov");
-    expect(weeksBetween(thu, sat)).toBe(1);
+    expect(weekDates(sat).map(dkey)[0]).toBe("2026-11-08");
+    expect(weekKey(thu)).toBe("2026-11-01");
+    expect(weekKey(thu, HIZB_WEEK_START)).toBe("2026-10-31");
+    expect(weekRangeLabel(sun)).toBe("Sun 8 – Sat 14 Nov");
+    expect(weekRangeLabel(new Date(2026, 10, 30))).toBe("Sun 29 Nov – Sat 5 Dec");
+    expect(weeksBetween(thu, sun)).toBe(1);
     expect(weekIndex(new Date(2026, 10, 9), 1)).toBe(0); // Monday-first still available
   });
 
-  it("thisWeek() and weekSeries() use the Saturday week", () => {
+  it("thisWeek() and weekSeries() use the Sunday week", () => {
     const w = thisWeek(new Date(2026, 10, 10));
-    expect(w.weekKey).toBe("2026-11-07");
-    expect(dkey(w.weekEnd)).toBe("2026-11-13");
-    expect(w.weekIndex).toBe(3);
+    expect(w.weekKey).toBe("2026-11-08");
+    expect(dkey(w.weekEnd)).toBe("2026-11-14");
+    expect(w.weekIndex).toBe(2);
     expect(w.ayah.src).toBeTruthy();
-    expect(thisWeek(new Date(2026, 10, 13)).weekKey).toBe(thisWeek(new Date(2026, 10, 7)).weekKey);
+    expect(thisWeek(new Date(2026, 10, 14)).weekKey).toBe(thisWeek(new Date(2026, 10, 8)).weekKey);
     const S = fresh();
     store.setPrayer(S, "2026-11-03", "Fajr", "madeup", NOW);
     store.setPrayer(S, "2026-11-03", "Asr", "missed", NOW);
     const ws = st.weekSeries(S, NOW);
-    expect(ws.map(d => d.key)).toEqual(["2026-10-31", "2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06"]);
-    expect(ws[3].statuses).toMatchObject({ Fajr: "madeup", Asr: "missed", Dhuhr: "unlogged" });
-    expect(ws[3]).toMatchObject({ prayed: 1, due: 5 });
+    expect(ws.map(d => d.key)).toEqual(["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07"]);
+    expect(ws[2].statuses).toMatchObject({ Fajr: "madeup", Asr: "missed", Dhuhr: "unlogged" });
+    expect(ws[2]).toMatchObject({ prayed: 1, due: 5 });
     expect(ws[6].future).toBe(true);
-    expect(st.weekPcts(S, NOW, 0, 6).length).toBe(7);
+    expect(st.weekPcts(S, NOW, 0, 0).length).toBe(7);
+  });
+});
+
+describe("Sahabi of the month: a fact a day", () => {
+  it("shows today's fact with the earlier facts of the month, newest first", () => {
+    const d1 = thisWeek(new Date(2026, 10, 1)).sahabi, d3 = thisWeek(new Date(2026, 10, 3)).sahabi;
+    expect(d1.earlier).toEqual([]);
+    expect(d1.fact).toBe(d1.facts[0]);
+    expect(d3.fact).toBe(d3.facts[2]);
+    expect(d3.earlier.map(e => e.day)).toEqual([2, 1]);
+    expect(d3.earlier[0].text).toBe(d3.facts[1]);
+    expect(d3.name).toBe(d1.name);
+  });
+  it("keeps the same Sahabi all month, changes it next month, and is the approved set", () => {
+    const a = thisWeek(new Date(2026, 10, 2)).sahabi, b = thisWeek(new Date(2026, 10, 30)).sahabi, c = thisWeek(new Date(2026, 11, 2)).sahabi;
+    expect(b.name).toBe(a.name);
+    expect(c.name).not.toBe(a.name);
+    expect(a.draft).toBe(false);
+    expect(a.facts.length).toBeGreaterThanOrEqual(26);
+    if (b.facts.length >= 30) expect(b.fact).toBe(b.facts[29]); // day 30: fact 30
+    else expect(b.recap.highlights.length).toBeGreaterThanOrEqual(3); // past the last fact: a recap
+  });
+  it("lists past months newest first, never the current month, back to January 2026", () => {
+    const past = pastSahabi(new Date(2026, 10, 10));
+    expect(past.length).toBe(10);
+    expect(past[0].monthKey).toBe("2026-9");
+    expect(past[past.length - 1].monthKey).toBe("2026-0");
+    expect(past.every(m => m.facts.length >= 26 && m.draft === false)).toBe(true);
+    expect(pastSahabi(new Date(2026, 0, 15))).toEqual([]);
+  });
+  it("keeps ayah, hadith, dua and seerah weekly", () => {
+    const a = thisWeek(new Date(2026, 10, 8)), b = thisWeek(new Date(2026, 10, 14)); // Sunday and Saturday of one week
+    expect([b.ayah, b.hadith, b.dua, b.seerah]).toEqual([a.ayah, a.hadith, a.dua, a.seerah]);
   });
 });
 
@@ -431,10 +467,10 @@ describe("strings and glossary", () => {
     expect(NAV.qada).toBe("Make-ups");
   });
 
-  it("every required term has a draft meaning", () => {
+  it("every required term has an approved meaning", () => {
     const need = ["Salāh", "Sunnah", "Sunnah muʾakkadah", "Ghayr muʾakkadah", "Nafl", "Witr", "Wājib", "Fard", "Jamāʿah", "Jumuʿah", "Awwābīn", "Ishrāq", "Duhā", "Tahajjud", "Qadāʾ", "Madhhab", "Hayd", "Nifās", "Adhkār", "Durūd", "Hizb al-Aʿzam", "Manzil", "Para", "Juz", "Mushaf", "Raghībah", "Ākhirah"];
     for (const t of need) expect(glossaryFor(t), t).toBeTruthy();
-    for (const g of Object.values(GLOSSARY)) { expect(g.draft).toBe(true); expect(g.meaning.length).toBeLessThan(220); }
+    for (const g of Object.values(GLOSSARY)) { expect(g.draft).toBe(false); expect(g.meaning.length).toBeLessThan(220); }
     expect(glossaryFor("jamaah")).toBe(GLOSSARY.jamaah); // plain spelling finds it too
   });
 });

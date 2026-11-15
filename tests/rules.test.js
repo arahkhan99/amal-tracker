@@ -4,7 +4,7 @@
 import { describe, it, beforeAll, afterAll, beforeEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { initializeTestEnvironment, assertSucceeds, assertFails } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, serverTimestamp } from "firebase/firestore";
 
 const emulator = process.env.FIRESTORE_EMULATOR_HOST;
 
@@ -33,6 +33,8 @@ describe.skipIf(!emulator)("firestore.rules", () => {
       await setDoc(doc(db, "users/alice"), main);
       await setDoc(doc(db, "users/alice/years/2026"), year);
       await setDoc(doc(db, "other/thing"), { x: 1 });
+      await setDoc(doc(db, "hijriCommittees/chc-na"), { name: "CHC", editors: ["alice"] });
+      await setDoc(doc(db, "hijriCommittees/chc-na/months/1448-05"), { startDate: "2026-10-12", updatedBy: "alice", updatedAt: 1, note: "" });
     });
   });
 
@@ -88,6 +90,44 @@ describe.skipIf(!emulator)("firestore.rules", () => {
       await assertFails(setDoc(doc(anon(), "users/alice"), main));
       await assertFails(setDoc(doc(anon(), "users/alice/years/2027"), year));
       await assertFails(setDoc(doc(anon(), "users/nobody"), main));
+    });
+  });
+
+  describe("hijriCommittees", () => {
+    const month = (uid, extra = {}) => ({ startDate: "2026-11-11", updatedBy: uid, updatedAt: serverTimestamp(), note: "sighted", ...extra });
+    it("any signed-in user can read a committee and its months", async () => {
+      await assertSucceeds(getDoc(doc(bob(), "hijriCommittees/chc-na")));
+      await assertSucceeds(getDoc(doc(bob(), "hijriCommittees/chc-na/months/1448-05")));
+      await assertSucceeds(getDocs(collection(bob(), "hijriCommittees/chc-na/months")));
+    });
+    it("signed-out users cannot read (they use the offline cache)", async () => {
+      await assertFails(getDoc(doc(anon(), "hijriCommittees/chc-na")));
+      await assertFails(getDocs(collection(anon(), "hijriCommittees/chc-na/months")));
+    });
+    it("an editor can add and change a month", async () => {
+      await assertSucceeds(setDoc(doc(alice(), "hijriCommittees/chc-na/months/1448-06"), month("alice")));
+      await assertSucceeds(setDoc(doc(alice(), "hijriCommittees/chc-na/months/1448-05"), month("alice", { startDate: "2026-10-13" })));
+    });
+    it("a non-editor cannot write a month", async () => {
+      await assertFails(setDoc(doc(bob(), "hijriCommittees/chc-na/months/1448-06"), month("bob")));
+      await assertFails(setDoc(doc(bob(), "hijriCommittees/chc-na/months/1448-05"), month("bob")));
+      await assertFails(deleteDoc(doc(bob(), "hijriCommittees/chc-na/months/1448-05")));
+    });
+    it("signed-out users cannot write a month", async () => {
+      await assertFails(setDoc(doc(anon(), "hijriCommittees/chc-na/months/1448-06"), month("alice")));
+    });
+    it("nobody can edit the committee document or its editors list from the app", async () => {
+      await assertFails(setDoc(doc(alice(), "hijriCommittees/chc-na"), { name: "CHC", editors: ["alice", "bob"] }));
+      await assertFails(setDoc(doc(bob(), "hijriCommittees/chc-na"), { name: "CHC", editors: ["bob"] }));
+    });
+    it("a committee with no editors list, or that does not exist, accepts no writes", async () => {
+      await assertFails(setDoc(doc(alice(), "hijriCommittees/ghost/months/1448-06"), month("alice")));
+    });
+    it("rejects malformed months even from an editor", async () => {
+      await assertFails(setDoc(doc(alice(), "hijriCommittees/chc-na/months/1448-13"), month("alice")));
+      await assertFails(setDoc(doc(alice(), "hijriCommittees/chc-na/months/1448-06"), month("alice", { startDate: "tomorrow" })));
+      await assertFails(setDoc(doc(alice(), "hijriCommittees/chc-na/months/1448-06"), month("alice", { updatedBy: "bob" })));
+      await assertFails(setDoc(doc(alice(), "hijriCommittees/chc-na/months/1448-06"), month("alice", { extra: 1 })));
     });
   });
 

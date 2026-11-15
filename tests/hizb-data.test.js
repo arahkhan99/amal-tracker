@@ -17,12 +17,12 @@ describe("hizb data", () => {
       m.duas.forEach((d, k) => expect(d.n).toBe(k + 1));
     });
   });
-  it("every dua has Arabic, transliteration, English and a draft status", () => {
+  it("every dua has Arabic, transliteration, English and an approved status", () => {
     for (const m of HIZB) for (const d of m.duas) {
       expect(d.ar, `${m.manzil}.${d.n} ar`).toMatch(/[؀-ۿ]/);
       expect(d.tr.length, `${m.manzil}.${d.n} tr`).toBeGreaterThan(3);
       expect(d.en.length, `${m.manzil}.${d.n} en`).toBeGreaterThan(3);
-      expect(d.status).toBe("draft");
+      expect(d.status).toBe("approved");
     }
   });
   it("every Arabic string appears verbatim in its md file", () => {

@@ -1,8 +1,9 @@
 /* Al-Hizb al-Aʿzam: weekly overview (HZ1) and the continuous reader (HR1). Saturday = manzil 1. */
 import { A, S, $, NOW, esc, I, T, open, redraw, part, persist, prune, prefs, toast, openSheet, head, info, COMMON, APP, arNum, dayName, minutesFor, wordCount, weekKey, dkey } from "./core.js";
-import { manzilFor, weekDates, weekRangeLabel } from "../../times.js";
+import { manzilFor, weekDates, weekRangeLabel, HIZB_WEEK_START } from "../../times.js";
 import { commit } from "../../app.js";
 import { TT } from "./strings-tools.js";
+import { toolTip } from "./tips.js";
 import { getTranslation } from "../../tools/quran-data.js";
 
 /* ---------- data (loaded on demand: it is large) ---------- */
@@ -20,7 +21,7 @@ const mins = m => (DATA ? minutesFor(words(m), 85) : 0);
 const root = () => part("hizb", { weeks: {}, khatms: 0 });
 const weekState = (date = NOW(), make = false) => {
   const h = make ? root() : (S.tools?.hizb || { weeks: {} });
-  const wk = weekKey(date);
+  const wk = weekKey(date, HIZB_WEEK_START);
   if (make) return (h.weeks[wk] ||= { read: {} });
   return h.weeks[wk] || { read: {} };
 };
@@ -35,7 +36,7 @@ const DAY3 = ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
 /* ---------- overview ---------- */
 export function hizbView() {
   if (!DATA) { loadHizb(); return `${head({ title: "Hizb al-Aʿzam", ar: TT.arName.hizb, sub: TT.hizbSub })}<p class="tl-note pad">…</p>`; }
-  const now = NOW(), m = manzilToday(now), dates = weekDates(now), ws = weekState(now);
+  const now = NOW(), m = manzilToday(now), dates = weekDates(now, 0, HIZB_WEEK_START), ws = weekState(now);
   const nRead = readCountWeek(now);
   const tmw = m < 7 ? TT.tomorrowLine(DAYS[m - 1], m + 1, mins(m + 1)) : TT.lastLine(DAYS[m - 1], mins(m));
   const days = dates.map((d, i) => {
@@ -58,7 +59,7 @@ export function hizbView() {
   }).join("");
   return `${head({ title: "Hizb al-Aʿzam", ar: TT.arName.hizb, sub: TT.hizbSub })}
     <div class="tl-hero tl-week"><svg class="pattern" viewBox="0 0 390 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="100%" height="100%" fill="url(#st)"/></svg>
-      <div class="tl-wk1"><span>${esc(TT.weekHd(weekRangeLabel(now)))}</span><em>${TT.satStart}</em></div>
+      <div class="tl-wk1"><span>${esc(TT.weekHd(weekRangeLabel(now, 0, HIZB_WEEK_START)))}</span><em>${TT.satStart}</em></div>
       <h2>${TT.todayManzil(m)}</h2><p>${esc(tmw)}</p>
       <div class="tl-wdays">${days}</div>
       <div class="tl-wfoot"><span><b>${nRead} of 7</b> manzils read this week</span><span>${TT.khatmOnDone}</span></div></div>
@@ -67,7 +68,7 @@ export function hizbView() {
     <div class="tl-card tl-mlist">${rows}</div>
     <p class="tl-cap">${TT.manzilNote}</p>
     <div class="tl-card tl-khatm"><span class="tl-ktick">${I.check}</span><div><b>${TT.khatms}</b><small>${TT.khatmsSub}</small></div><span class="tl-kn">${khatms()}</span></div>
-    <div class="tl-draftline">${esc(APP.draftFlag)}</div><div class="space"></div>`;
+    <div class="space"></div>`;
 }
 
 /* ---------- reader ---------- */
@@ -106,7 +107,7 @@ export function hizbReadView() {
       <button type="button" class="tl-hbtn lite aa" aria-label="${TT.aa}" onclick="A.tlAa('hizb')">Aa</button></div>
       <div class="tl-bar g tl-thin"><i id="hzBar" style="width:${Math.round(100 * (startI + 1) / total)}%"></i></div></div>
     ${showPick ? `<div class="tl-pick-b" id="hzPicked"><span>${I.bookmark}<b>${TT.pickedUp}</b></span><button type="button" onclick="A.tlHizbStart()">${TT.startOfManzil}</button></div>` : ""}
-    <div class="tl-hzwrap">${body}</div>
+    <div class="tl-hzwrap">${toolTip("hizb", "hz")}${body}</div>
     <div class="tl-dock hz"><div><b id="hzCount">${TT.duaOf(startI + 1, total)}</b><span>${TT.savedScroll}</span></div>
       <button class="tl-cta" onclick="A.tlHizbFinish(${m})">${I.check} ${done ? TT.manzilDone(m) : m === manzilToday() ? TT.finishManzil : TT.finishOther(m)}</button></div>`;
 }

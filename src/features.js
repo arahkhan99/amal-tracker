@@ -12,7 +12,7 @@ import { FEATURE, TOOL_NAME, TOOL_SUB, NAV } from "./strings.js";
 export const FEATURES = ["prayers", "sunnah", "deeds", "makeups", "week", "progress", "tools"];
 export const SWITCHABLE = FEATURES.filter(f => f !== "prayers");
 /** Tools that can be hidden one by one. */
-export const TOOLS = ["adhkar", "durud", "hizb", "quran"];
+export const TOOLS = ["adhkar", "durud", "hizb", "quran", "manzil", "afterSalah"];
 
 /** Every module on (the default for a new install and for anything missing in an older save). */
 export function defaultFeatures() { return Object.fromEntries(SWITCHABLE.map(f => [f, true])); }
@@ -90,5 +90,5 @@ export function featureRows(S) {
 
 /** Rows for the Tools settings page: [{ id, name, sub, visible }]. */
 export function toolRows(S) {
-  return TOOLS.map(t => ({ id: t, name: TOOL_NAME[t], sub: TOOL_SUB[t], visible: !(S?.settings?.hiddenTools || []).includes(t) }));
+  return TOOLS.map(t => ({ id: t, name: TOOL_NAME[t] || t, sub: TOOL_SUB[t] || "", visible: !(S?.settings?.hiddenTools || []).includes(t) }));
 }
