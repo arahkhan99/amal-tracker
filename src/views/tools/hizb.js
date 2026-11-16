@@ -1,5 +1,5 @@
 /* Al-Hizb al-Aʿzam: weekly overview (HZ1) and the continuous reader (HR1). Saturday = manzil 1. */
-import { A, S, $, NOW, esc, I, T, open, redraw, part, persist, prune, prefs, toast, openSheet, head, info, COMMON, APP, arNum, dayName, minutesFor, wordCount, weekKey, dkey } from "./core.js";
+import { A, S, $, NOW, esc, I, T, open, redraw, part, persist, prune, prefs, toast, openSheet, head, info, COMMON, APP, arNum, dayName, minutesFor, wordCount, weekKey, dkey, topIn } from "./core.js";
 import { manzilFor, weekDates, weekRangeLabel, HIZB_WEEK_START } from "../../times.js";
 import { commit } from "../../app.js";
 import { TT } from "./strings-tools.js";
@@ -119,7 +119,7 @@ export function hizbReadAfter() {
   const pos = resumePos(m);
   if (!T.resumed && pos && pos.i > 0) {
     const el = $("#hz" + pos.i);
-    if (el) scroller.scrollTop = el.offsetTop - 120;
+    if (el) scroller.scrollTop = topIn(el, scroller) - 120; // screen px, also under the tablet zoom
   }
   // Pickthall for duas that are Qurʾān passages (only when the translation is on)
   document.querySelectorAll("#v-tools .tl-pick").forEach(async el => {
@@ -138,7 +138,7 @@ export function hizbReadAfter() {
       const top = scroller.scrollTop + 150;
       const secs = [...document.querySelectorAll("#v-tools .tl-hz")];
       let i = 0;
-      for (let k = 0; k < secs.length; k++) { if (secs[k].offsetTop <= top) i = k; else break; }
+      for (let k = 0; k < secs.length; k++) { if (topIn(secs[k], scroller) <= top) i = k; else break; }
       const ws = weekState(NOW(), true);
       if (!ws.read[m]) ws.pos = { m, i };
       persist();

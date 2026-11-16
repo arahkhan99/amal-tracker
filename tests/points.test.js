@@ -184,26 +184,57 @@ describe("points: levels", () => {
 });
 
 describe("points: make-ups from monthLog (old months) vs dayLog", () => {
-  it("an old month without dayLog: min(total, 5 × days), spread evenly", () => {
+  it("an old month without dayLog: min(total, 5 × days), each kind spread evenly", () => {
     const S = fresh("2026-09-01");
-    S.qada.monthLog["2026-09"] = { prayers: 40, fasts: 5 }; // 45 over 30 days: 1 or 2 a day
+    S.qada.monthLog["2026-09"] = { prayers: 40, fasts: 5 }; // prayers 1 or 2 a day, fasts 0 or 1 a day
     S.qada.monthLog["2026-10"] = { prayers: 500, fasts: 0 }; // over the cap: 5 × 31
     const { byDay, approx } = pts.makeupsByDay(S, { today: TODAY });
     const sep = Object.entries(byDay).filter(([k]) => k.startsWith("2026-09"));
     expect(sep.length).toBe(30);
     expect(sep.reduce((a, [, n]) => a + n, 0)).toBe(45);
-    expect(Math.max(...sep.map(([, n]) => n)) - Math.min(...sep.map(([, n]) => n))).toBeLessThanOrEqual(1);
-    expect(byDay["2026-09-30"]).toBe(2); // remainders go to the later days
+    expect(byDay["2026-09-01"]).toBe(1);
+    expect(byDay["2026-09-21"]).toBe(2); // the 10 extra prayers go to the later days
+    expect(byDay["2026-09-30"]).toBe(3); // ... and so do the 5 fasts
     expect(approx.has("2026-09-01")).toBe(true);
     const r = pts.provisions(S, { today: TODAY });
     expect(r.total).toBe(45 + 5 * 31);
   });
 
-  it("only days in range count for the spread (created mid-month, current month up to today)", () => {
+  it("only days from the install count for the spread; the current month is spread over all its days", () => {
     const S = fresh("2026-09-21"); // 10 days of September
-    S.qada.monthLog["2026-09"] = { prayers: 100, fasts: 0 };
-    S.qada.monthLog["2026-11"] = { prayers: 100, fasts: 0 }; // only 1..12 Nov so far
-    expect(pts.provisions(S, { today: TODAY }).total).toBe(5 * 10 + 5 * 12);
+    S.qada.monthLog["2026-09"] = { prayers: 100, fasts: 0 }; // capped: 5 × 10
+    S.qada.monthLog["2026-11"] = { prayers: 100, fasts: 0 }; // over 30 days: 3 a day, 4 on the last 10; 1..12 Nov so far
+    expect(pts.provisions(S, { today: TODAY }).total).toBe(5 * 10 + 3 * 12);
+    expect(pts.makeupsByDay(S, { today: TODAY }).byDay["2026-11-13"]).toBeUndefined(); // not yet
+  });
+
+  it("a past day's share stays the same as today moves (it never depends on today)", () => {
+    const S = fresh("2026-11-01");
+    S.qada.monthLog["2026-11"] = { prayers: 47, fasts: 3 };
+    S.qada.dayLog["2026-11-04"] = { prayers: 2, fasts: 0 }; // exact prayers on the 4th; fasts can still spread there
+    S.qada.monthLog["2026-11"].prayers += 2;
+    const at = t => pts.makeupsByDay(S, { today: t }).byDay;
+    const a = at("2026-11-05"), b = at(TODAY), c = at("2026-11-30");
+    for (const k of Object.keys(a)) { expect(b[k]).toBe(a[k]); expect(c[k]).toBe(a[k]); }
+    for (const k of Object.keys(b)) expect(c[k]).toBe(b[k]);
+    expect(Object.keys(a).every(k => k <= "2026-11-05")).toBe(true);
+    expect(Object.values(c).reduce((x, y) => x + y, 0)).toBe(52); // all of it once the month is over
+    // provisions for a past day don't change either
+    const p1 = pts.provisions(S, { today: "2026-11-05" }).byDay, p2 = pts.provisions(S, { today: "2026-11-30" }).byDay;
+    for (const k of Object.keys(p1)) expect(p2[k]).toBe(p1[k]);
+  });
+
+  it("a dayLog entry with a zero count doesn't take its day out of the spread", () => {
+    const S = fresh("2026-09-01");
+    S.qada.monthLog["2026-09"] = { prayers: 30, fasts: 0 };
+    S.qada.dayLog["2026-09-10"] = { prayers: 0, fasts: 0 }; // e.g. one logged and then undone
+    const { byDay } = pts.makeupsByDay(S, { today: TODAY });
+    expect(byDay["2026-09-10"]).toBe(1);
+    expect(Object.values(byDay).reduce((x, y) => x + y, 0)).toBe(30);
+    // only a day with exact prayers is skipped, and only for prayers
+    S.qada.dayLog["2026-09-10"] = { prayers: 0, fasts: 1 };
+    S.qada.monthLog["2026-09"].fasts = 1;
+    expect(pts.makeupsByDay(S, { today: TODAY }).byDay["2026-09-10"]).toBe(1 + 1);
   });
 
   it("a month with dayLog: exact days, and only the remainder is spread", () => {
@@ -214,8 +245,10 @@ describe("points: make-ups from monthLog (old months) vs dayLog", () => {
     expect(S.qada.monthLog["2026-11"].prayers).toBe(7);
     const { byDay } = pts.makeupsByDay(S, { today: TODAY });
     expect(byDay[TODAY]).toBe(3);
-    expect(Object.values(byDay).reduce((a, b) => a + b, 0)).toBe(7);
-    expect(pts.provisions(S, { today: TODAY }).total).toBe(7);
+    // the 4 others spread over the month's other 29 days: the last 4 (27..30 Nov), not credited before then
+    expect(Object.values(byDay).reduce((a, b) => a + b, 0)).toBe(3);
+    expect(pts.makeupsByDay(S, { today: "2026-11-30" }).byDay).toEqual({ [TODAY]: 3, "2026-11-27": 1, "2026-11-28": 1, "2026-11-29": 1, "2026-11-30": 1 });
+    expect(pts.provisions(S, { today: TODAY }).total).toBe(3);
     // a fully exact month spreads nothing
     const T = fresh("2026-11-01"); T.qada.Fajr = 9;
     for (let i = 0; i < 9; i++) store.madeUpPrayer(T, "Fajr", NOW);
@@ -293,5 +326,88 @@ describe("store: day.first, remembrance, provisions settings", () => {
     expect(store.normalize({ settings: { provisions: { on: true, best: 4 } } }, NOW).settings.provisions.best).toBe(4);
     // new installs
     expect(store.defaultState(NOW).settings.provisions.on).toBe(false);
+  });
+});
+
+describe("review fixes: excused prayers count only once begun; auto writes don't stamp day.first", () => {
+  it("today: an excused prayer (and its remembrance) counts only once its time has begun", () => {
+    const S = fresh(), k = TODAY;
+    store.setExcusedDay(S, k, true, NOW);
+    store.setRemember(S, k, "Fajr", true, NOW);
+    // 3 PM: Fajr, Dhuhr, Asr have begun (as times.startedPrayers would say); Maghrib and ʿIshāʾ not yet
+    const started = ["Fajr", "Dhuhr", "Asr"];
+    expect(pts.provisions(S, { today: TODAY, started }).total).toBe(5 + 3 + 3);
+    expect(pts.dayBreakdown(S, k, { today: TODAY, started }).parts.map(x => x.id)).toEqual(["Fajr", "Dhuhr", "Asr"]);
+    // before Fajr: nothing yet
+    expect(pts.provisions(S, { today: TODAY, started: [] }).total).toBe(0);
+    // an explicit "excused" status waits for its time too
+    store.setExcusedDay(S, k, false, NOW);
+    store.setPrayer(S, k, "Isha", "excused", NOW);
+    expect(pts.provisions(S, { today: TODAY, started }).total).toBe(0);
+    expect(pts.provisions(S, { today: TODAY, started: [...started, "Maghrib", "Isha"] }).total).toBe(3);
+  });
+
+  it("past days count in full; `started` only applies to today; future days count nothing", () => {
+    const S = fresh();
+    store.setExcusedDay(S, "2026-11-11", true, NOW);
+    store.setExcusedDay(S, TODAY, true, NOW);
+    store.setExcusedDay(S, "2026-11-13", true, NOW);
+    const r = pts.provisions(S, { today: TODAY, started: ["Fajr"] });
+    expect(r.byDay["2026-11-11"]).toBe(15);
+    expect(r.byDay[TODAY]).toBe(3);
+    expect(r.byDay["2026-11-13"]).toBeUndefined();
+    expect(r.total).toBe(18);
+    // a past day's breakdown ignores `started`
+    expect(pts.dayBreakdown(S, "2026-11-11", { today: TODAY, started: [] }).total).toBe(15);
+    // without `started` (older callers) every prayer of today counts
+    expect(pts.provisions(S, { today: TODAY }).byDay[TODAY]).toBe(15);
+  });
+
+  it("setRemember: the caller's `allowed` (time begun) can refuse a tick; unticking is always allowed", () => {
+    const S = fresh(), k = TODAY;
+    store.setExcusedDay(S, k, true, NOW);
+    expect(store.setRemember(S, k, "Isha", true, NOW, { allowed: false })).toBe(false);
+    expect(S.days[k].remember).toBeUndefined();
+    const seen = [];
+    const allowed = (key, p) => { seen.push([key, p]); return p !== "Isha"; };
+    expect(store.setRemember(S, k, "Isha", true, NOW, { allowed })).toBe(false);
+    expect(store.setRemember(S, k, "Asr", true, NOW, { allowed })).toBe(true);
+    expect(seen).toEqual([[k, "Isha"], [k, "Asr"]]);
+    expect(store.setRemember(S, k, "Asr", true, NOW, { allowed: true })).toBe(true);
+    S.days[k].remember.Isha = true; // e.g. from an older copy
+    expect(store.setRemember(S, k, "Isha", false, NOW, { allowed: false })).toBe(true);
+    expect(S.days[k].remember.Isha).toBeUndefined();
+  });
+
+  it("endExcused stores the begun prayers as excused without stamping day.first", () => {
+    const S = fresh();
+    S.excusedMode = { since: "2026-11-10" };
+    store.setExcusedDay(S, TODAY, true, NOW);
+    store.endExcused(S, TODAY, { excusedPrayers: ["Fajr", "Dhuhr"] }, NOW);
+    expect(S.days[TODAY].prayers).toEqual({ Fajr: "excused", Dhuhr: "excused" });
+    expect(S.days[TODAY].first).toBeUndefined();
+    // the user's own log afterwards stamps it
+    store.setPrayer(S, TODAY, "Asr", "ontime", NOW);
+    expect(S.days[TODAY].first).toBe(NOW.getTime());
+  });
+
+  it("setPrayer / setWitr { auto: true } don't stamp day.first; the Witr that follows ʿIshāʾ is auto", () => {
+    const S = fresh();
+    store.setPrayer(S, TODAY, "Fajr", "ontime", NOW, { auto: true });
+    store.setWitr(S, TODAY, "done", NOW, { auto: true });
+    expect(S.days[TODAY].first).toBeUndefined();
+    expect(S.days[TODAY].prayers.Fajr).toBe("ontime");
+    // ʿIshāʾ missed by the user stamps the day (Witr is marked missed with it, Hanafi)
+    store.setPrayer(S, "2026-11-11", "Isha", "missed", NOW);
+    expect(S.days["2026-11-11"].witr).toBe("missed");
+    expect(S.days["2026-11-11"].first).toBe(NOW.getTime());
+  });
+
+  it("a reader ticking its good deed (tools tickAmal, auto) doesn't stamp day.first", async () => {
+    const fs = await import("node:fs");
+    const core = fs.readFileSync("src/views/tools/core.js", "utf8");
+    const tick = core.slice(core.indexOf("export function tickAmal"), core.indexOf("export function untickAmal"));
+    expect(tick).toContain("auto: true");
+    expect(tick).not.toContain("markLogged(");
   });
 });

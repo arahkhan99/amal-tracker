@@ -6,7 +6,7 @@ import { TOOLS_UI, FEEDBACK } from "../../strings.js";
 import { FLAG_SVG } from "../../feedback.js";
 import { TT } from "./strings-tools.js";
 import { listMushafs, getMushaf, getSurahs, getPage, getPageTranslation, getQuranCredits, loadMushafFont, pageForJuz, pageForSurah, juzForPage, manzilForPage, DEFAULT_MUSHAF } from "../../tools/quran-data.js";
-import { spreadPages, stepSpread, spreadFirst, TABLET_QUERY, SPREAD_QUERY } from "../../tools/quran-spread.js";
+import { readerPages, stepSpread, spreadFirst, TABLET_QUERY, SPREAD_QUERY } from "../../tools/quran-spread.js";
 
 /* ---------- tablets: a bigger page, and two pages side by side in landscape (docs/build/tablet.md) ---------- */
 const mq = q => (typeof matchMedia === "function" ? matchMedia(q) : null);
@@ -16,7 +16,7 @@ const isSpread = () => !!SPREAD?.matches;
 /** The pages on screen for page n: [n] on phones and in portrait, [right, left] in a landscape spread. */
 const shown = (id, n) => {
   const ix = C.index[id], total = ix?.pages || 610;
-  return isSpread() ? spreadPages(n, total, spreadFirst(id, ix)) : [n];
+  return isSpread() ? readerPages(n, total, spreadFirst(id, ix), true).shown : [n];
 };
 
 const NAME = { indopak15: TOOLS_UI.mushaf.indopak15, indopak13: TOOLS_UI.mushaf.indopak13, madani15: TOOLS_UI.mushaf.uthmani15 };
@@ -27,6 +27,8 @@ export const mushafName = id => NAME[id] || id;
 const q = () => part("quran", { mushaf: DEFAULT_MUSHAF, pages: {}, bookmarks: [], night: false, trans: false, read: {} });
 export const quranMushaf = () => S.tools?.quran?.mushaf || DEFAULT_MUSHAF;
 export const quranPage = (id = quranMushaf()) => S.tools?.quran?.pages?.[id] || 1;
+/** The page numbers on screen in the reader now: [n], or [right, left] in a tablet's landscape spread (feedback reports one of them). */
+export const quranShown = (id = quranMushaf()) => shown(id, T.page || quranPage(id));
 export const quranHasStarted = () => !!S.tools?.quran?.pages && Object.keys(S.tools.quran.pages).length > 0;
 export const pagesToday = () => (S.tools?.quran?.read?.[todayKey()] || []).length;
 
@@ -91,9 +93,10 @@ export function quranView() {
   ensureIndex(id);
   const ix = C.index[id];
   const st = q();
-  const ps = shown(id, T.page || quranPage(id)); // one page, or a [right, left] spread on a tablet in landscape
-  const n = ps[0];
-  T.page = n;
+  // T.page stays the page the reader chose (it is what is saved, bookmarked and shown as "last read");
+  // ps is only what is drawn: that page, or the [right, left] spread holding it on a tablet in landscape
+  const n = T.page = T.page || quranPage(id);
+  const ps = shown(id, n);
   const total = ix?.pages || 610;
   const pages = ix && !ix.failed ? ps.map(p => ensurePage(id, p)) : [null];
   const page = pages.find(p => p?.failed) || (pages.every(Boolean) ? pages[0] : null);
@@ -262,15 +265,15 @@ A.tlQPage = d => {
 A.tlQSlide = (v, live) => {
   const id = quranMushaf(), total = C.index[id]?.pages || 610, ps = shown(id, +v);
   if (live) { const b = document.querySelector("#v-tools .tl-qmeta b"); if (b) b.textContent = ps.length > 1 ? TT.pagesOf(ps[0], ps[1], total) : TT.pageOf(ps[0], total); return; }
-  T.page = ps[0]; redraw();
+  T.page = Math.min(total, Math.max(1, +v || 1)); redraw(); // the page picked, even the left page of a spread
 };
 A.tlQMushaf = () => open("picker");
 A.tlQNight = () => { const s = q(); s.night = !s.night; persist(); redraw(); };
 A.tlQTrans = () => { const s = q(); s.trans = !s.trans; persist(); redraw(); };
 A.tlBookmark = () => {
   const s = q(), id = quranMushaf(), n = T.page, ps = shown(id, n);
-  // a spread is bookmarked when either of its pages is; the icon then clears both, else it marks the right-hand page
-  if (s.bookmarks.some(b => b.m === id && ps.includes(b.n))) { s.bookmarks = s.bookmarks.filter(b => !(b.m === id && ps.includes(b.n))); toast(TT.unbookmarked); } else { s.bookmarks.push({ m: id, n: ps[0], at: Date.now() }); toast(TT.bookmarked); }
+  // a spread is bookmarked when either of its pages is; the icon then clears both, else it marks the chosen page
+  if (s.bookmarks.some(b => b.m === id && ps.includes(b.n))) { s.bookmarks = s.bookmarks.filter(b => !(b.m === id && ps.includes(b.n))); toast(TT.unbookmarked); } else { s.bookmarks.push({ m: id, n, at: Date.now() }); toast(TT.bookmarked); }
   persist(); redraw();
 };
 A.tlBookmarks = () => {

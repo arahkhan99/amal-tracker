@@ -731,3 +731,68 @@ To check them: `git status`; look for the files and screenshots named above; run
 - 15 Nov: ✅ Consent + Sign in with Apple built (src/views/consent.js, src/css/consent.css, tests/apple.test.js; TERMS_VERSION 2026-11-15; crash opt-in). Apple button HIDDEN via APPLE_READY=false in src/views/consent.js until console setup (docs/build/apple-sign-in.md). privacy.html now mentions Apple. ALL 4 FEATURES DONE: 279 passed/23 skipped, build OK, assembleDebug OK. Built-screens page https://claude.ai/artifact/L691B8FFFU4La7YVF8Uh5R. NEXT: ask user to push (incl. the policy pages now that consent ships), then rules deploy.
 - 15 Nov: user asked prayer times to follow location when traveling — NOT done before (location fixed). Agent building auto-update (settings.location.source gps|city, settings.autoLocation, check on open/resume, >25 km, tests/travel.test.js, privacy line). Push still awaiting explicit yes. User tried firebase login without '!' prefix.
 - 15 Nov: ✅ Firebase CLI logged in (arah.khan99). ✅ Firestore rules DEPLOYED (hijriCommittees + feedback). User approved push AFTER the travel fix finishes (push everything incl. policy pages; keep docs/plan, docs/legal excluded).
+- 15 Nov: ✅ PUSHED aa9d0a5 (feedback, consent, Apple hidden, provisions, gender, not-started block, travel auto-location, policy pages live). Watching CI. Known caveat: two devices in different cities with cloud sync could flip the shared location.
+- 15 Nov: ✅ CI green for aa9d0a5 (Android sent via App Distribution, iPhone compile, Pages). Open question to user: crash reports default — A ask everyone (recommended, current) / B on by default except EU+UK / C on for all.
+- 15 Nov: ✅ DECIDED crash reports stay opt-in (ask everyone, option A). No change.
+- 15 Nov: ✅ Created Firestore hijriCommittees/chc-na {name, editors:[HfNqGoSpjNUW0uzm5JhLScTj5f42 = user's UID]} via REST with the user's OK. To add editors later: edit the editors array in the console.
+- 15 Nov: ✅ User confirmed the CHC editor button shows in the app. CHC editor setup DONE.
+- 15 Nov: ✅ Crashlytics live (console shows 'App detected'). Firebase has ONE project, display name 'Amal Tracker' (id amal-tracker-cfe23). It contains 2 Android apps named Zad (old com.amaltracker.app + new com.zad.app; the detected one is in use), iOS Zad, 'Amal Tracker web'. TODO before launch: remove the old Android app + web app after checking which is which; optionally rename the project display to Zad.
+- 15 Nov: correction: the ONE project amal-tracker-cfe23 is named 'Zad App' on the projects list; some pages and the CLI still show the old name 'Amal Tracker'. No rename needed.
+- 15 Nov: user approved a HIGH-EFFORT CODE REVIEW in parts (sync/consent/account first; then reminders+travel, provisions, gender+excused, feedback, not-started), scope since c897721. Scheduled to start 8:22pm after the usage reset. If the session was lost, start it on resume.
+- 15 Nov 8:22pm: code review PART 1 started (/code-review high c897721..HEAD, focus cloud.js/store.js/consent/account deletion), running in the background.
+- 15 Nov: ✅ Code review PART 1 done (sync/consent/account), 10 findings, NOT yet fixed, waiting for the user's OK:
+  1. store.js normalize: old saved locations get source "gps", so a hand-picked city is overwritten by the travel check → fix: missing source = "unknown", no auto updates until the user taps Use my current location.
+  2. Apple delete needs a re-sign-in; if it fails, deletion is impossible → fix: delete without the revoke.
+  3. Feedback deletion failure is ignored, so documents can be left behind → fix: retry, and fail the "data" step.
+  4. Consent only enforced in the client; old builds can still upload → low risk (testers only), skip for now.
+  5. recordAllConsent can downgrade a newer consent version; scope ignored → fix.
+  6. keepAccount says sync is on while consent is missing → open the consent sheet.
+  7. Double sync on consent → fix.
+  8. Serial deletes → parallel/batch.
+  9. Duplicated SITE/pageUrl, Apple check → cleanup.
+  10. Stale comments/alias → cleanup.
+- Code review PART 2 started (reminders/travel, not-started, widgets).
+- 15 Nov: user approved fixing part-1 findings 1–8; a fix agent is running (finding 4, server-side consent enforcement, is deferred until before public launch).
+- 15 Nov: ✅ Code review PART 2 done (reminders/travel/not-started/widgets), 10 findings, NOT fixed yet, awaiting the user's OK:
+  1. A logged prayer whose time is now in the future opens the full sheet, and taps silently do nothing.
+  2. Android widget minute tick uses setWindow (stretched to ≥10 min on API 31+), so the countdown and Now/Next switch can be up to 10 min late → use a Chronometer countdown and boundary alarms.
+  3. Travel location syncs across devices, so two devices in different cities flip back and forth → keep GPS location per device, not synced.
+  4. The startup timeout's setStatusBar breaks dark-mode status bar icons.
+  5. The not-started guard blocks UNticking chips too.
+  6. The remembrance tick isn't guarded.
+  7. The not-started rule is only in UI handlers → move it into one shared canLog helper used by the store paths.
+  8. The widget cold-start URL is handled twice.
+  9. The travel toast can show over the app lock (reveals the city).
+  10. The widget snapshot is rebuilt every 20 s → use a cheap signature.
+- Code review PART 3 started (provisions, gender/excused, feedback).
+- 15 Nov: user approved fixing ALL part-2 findings; a second fix agent is running (shared tree with the part-1 fixer).
+- 15 Nov: ✅ Part-1 fixes DONE (306 passed/23 skipped, build OK). Open: web home-screen app can't re-confirm a sign-in for deletion (popup); the web app is coming down, so low priority.
+- 15 Nov: ✅ Code review PART 3 done (provisions/gender/feedback), 10 findings, awaiting the user's OK:
+  1. A late feedback send can replace a newly opened form with the thank-you → use a per-send token.
+  2. Excused days credit future prayer times → only count started ones (pass `now`).
+  3. setRemember works for unstarted prayers (part-2 fix guards the UI).
+  4. Changing scoring settings (homeFull/Sister) shows an unearned level-up → record silently.
+  5. Full history re-scored on every commit and tap → cache by updatedAt+today.
+  6. The monthLog make-up spread shifts as today moves → spread over the whole month (or up to month end).
+  7. Tablet two-page Qurʾān report always sends the left page → let the user pick.
+  8. day.first is stamped by automatic writes (endExcused) → KEEP the field (it's for the leaderboard) but stop automatic stamping.
+  9. Duplicated end-excused logic + jumuah/autoLocation toggles → reuse.
+  10. pvSummary duplicates displayLevel; stats reads gender directly → reuse helpers.
+- 15 Nov: user approved fixing ALL part-3 findings; a fix agent is running (parallel with the part-2 fixer). After both: full tests + build + assembleDebug, then ask to push. Remaining review areas not yet covered: onboarding/tour/help, tablet, content loading, Hijri, Qurʾān reader — consider a part 4.
+- 15 Nov: ✅ Part-2 fixes DONE (331 passed/23 skipped; build + assembleDebug OK; iOS widget not compiled). New src/logging.js canLog/logAllowed. Widget countdown = Chronometer (can briefly show negative up to ~10 min if exact-alarm permission off on Android 12+). A city picked on phone B no longer overrides phone A's GPS location.
+- 15 Nov: code review PART 4 started (thorough): onboarding, tour/tips/help, tablet + Qurʾān reader/spread, content loading, Hijri + committee editor, Sunday weeks/Hizb.
+- 15 Nov: notification icon: Android shows the default 'i' because there is no small icon. Made white silhouettes from Zad_Logo_6_Symbol_Only (scratchpad staticon/var/{A,B,C}/drawable-*/ic_stat_zad.png; script staticon/variants.mjs). Options page https://claude.ai/artifact/HaUBpjK7kQqqiC5XbQwaW1 (A solid, recommended; B outline; C in a circle). On choice: copy into android/app/src/main/res/drawable-*/ and set capacitor.config.json plugins.LocalNotifications.smallIcon='ic_stat_zad', then cap sync. User also asked for 'different ideas for the logo' — asked whether they mean the main app logo.
+- 15 Nov: ✅ Part-3 fixes DONE (351 passed/23 skipped, build OK). All review fixes for parts 1–3 in, uncommitted. Waiting: part 4 review, the user's notification icon choice, then the push (needs the user's OK).
+- 15 Nov: ✅ Code review PART 4 done, 10 findings, awaiting the user's OK:
+  1. Landscape Qurʾān spread overwrites the saved page with the right-hand page.
+  2. Tablet zoom 1.15 breaks Hizb/adhkār/after-salah resume and counters (offsetTop vs scrollTop).
+  3. The CHC default is chosen by language en-US even outside North America → time zone first.
+  4. "new set after Jumuʿah" is stale (weeks now start Sunday), plus the unused nextWeek string.
+  5. The Hijri editor sheet crashes on null hijriParts and uses the editor's personal ±adjust.
+  6. Home render stacks loadContent().then(render) and retries forever offline.
+  7. The Hijri source rebuilds the region and re-sorts committee months on every call → memoise.
+  8. Progress chapter jumps are off on tablet zoom.
+  9. Skip on the name screen leaves homeFull on.
+  10. guide.js copies the tools prefs defaults by hand → share one module.
+- 15 Nov: user chose notification icon C (in a circle) → INSTALLED: android/app/src/main/res/drawable-*/ic_stat_zad.png + capacitor.config.json LocalNotifications.smallIcon. User approved fixing all 10 part-4 findings (fix agent running). User wants NEW MAIN LOGO concepts → mockup agent running (design-review/mockups2/logo/logo-review.html, to publish).
+- 15 Nov: ✅ Part-4 fixes DONE (367 passed/23 skipped, build + cap sync + assembleDebug OK; the notification icon is synced). ALL REVIEW PARTS 1–4 FIXED, uncommitted. Also fixed: progress excused-day caption used Saturday-first names. NEXT: ask the user to push; logo concepts agent still running.

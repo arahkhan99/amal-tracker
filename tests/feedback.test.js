@@ -137,3 +137,30 @@ describe("reportLink", () => {
     expect(reportLink("A.fbReport('hadith')")).toMatch(/^<button type="button" class="fb-rep" onclick="A.fbReport\('hadith'\)">.*Report a mistake<\/span><\/button>$/);
   });
 });
+
+import { quranItem, sendGate } from "../src/feedback.js";
+
+describe("Qurʾān report item (one page, or either page of a tablet spread)", () => {
+  const labels = { surah: "Al-Baqarah", mushafLabel: "IndoPak 15-line" };
+  it("builds the id and title for each of the two pages", () => {
+    const right = quranItem("indopak15", 12, labels), left = quranItem("indopak15", 13, labels);
+    expect(right).toMatchObject({ id: "quran:indopak15#p12", kind: "quran", page: 12, short: "Qurʾān · Page 12", title: "Qurʾān · Page 12 · Al-Baqarah · IndoPak 15-line" });
+    expect(left).toMatchObject({ id: "quran:indopak15#p13", page: 13, short: "Qurʾān · Page 13", title: "Qurʾān · Page 13 · Al-Baqarah · IndoPak 15-line" });
+    expect(buildPayload({ ...base, item: left }).itemId).toBe("quran:indopak15#p13");
+  });
+  it("leaves out what isn't known", () => {
+    expect(quranItem("madani15", 1).title).toBe("Qurʾān · Page 1");
+  });
+});
+
+describe("send gate (a slow send never touches a newer feedback form)", () => {
+  it("a send's token stops being current once the sheet is opened again", () => {
+    const g = sendGate();
+    g.open();
+    const t = g.token();
+    expect(g.isCurrent(t)).toBe(true); // same form: the thank-you may replace it
+    g.open(); // closed and a new form opened while the send was slow
+    expect(g.isCurrent(t)).toBe(false);
+    expect(g.isCurrent(g.token())).toBe(true);
+  });
+});

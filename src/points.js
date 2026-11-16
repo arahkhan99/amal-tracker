@@ -14,6 +14,9 @@
  * - Witr: only where the Witr chip is allowed (store.witrChip: not on an excused day, not when ʿIshāʾ is excused).
  * - Remembrance at prayer time: only on a prayer whose status is excused.
  * - Days before S.createdKey and days after `today` count as nothing.
+ * - Today: an excused prayer (and its remembrance) counts only once its time has begun. The caller passes
+ *   `started`, today's prayers already begun (times.startedPrayers), since this file never reads the clock.
+ *   Past days count in full; without `started` every prayer counts.
  */
 import { PRAYERS, dkey, addDays, parseKey } from "./util.js";
 import { statusOf } from "./store.js";
@@ -49,15 +52,17 @@ export function levelFor(total) {
 /**
  * Provisions for one day record: { total, parts: [{ id, kind, n, ... }] } (drives the day breakdown).
  * opts: { w (weights object, default CURRENT), homeFull (sisters' rule), makeups (completed that day),
- *         madhhab (for sunnah item lookup, default Hanafi) }
+ *         madhhab (for sunnah item lookup, default Hanafi), started (for today: the prayers whose time has
+ *         begun; an excused prayer not in it counts nothing yet. Omit for a past day: all have begun) }
  */
-export function dayProvisions(day, { w = WEIGHTS[CURRENT], homeFull = false, makeups = 0, madhhab } = {}) {
+export function dayProvisions(day, { w = WEIGHTS[CURRENT], homeFull = false, makeups = 0, madhhab, started } = {}) {
   const parts = [];
   if (day) {
     const excusedDay = !!day.excused;
     for (const p of PRAYERS) {
       const s = statusOf(day, p);
       if (!s) continue;
+      if (s === "excused" && started && !started.includes(p)) continue; // its time hasn't begun yet
       let n, remember = false;
       if (s === "excused") { remember = !!day.remember?.[p]; n = remember ? w.excused.remembrance : w.excused.base; }
       else if (s === "ontime" && homeFull) n = w.fardOntimeHomeFull;
@@ -86,31 +91,35 @@ const logCount = v => (v?.prayers || 0) + (v?.fasts || 0);
 /**
  * Make-ups completed per day: { "YYYY-MM-DD": n }. Exact from qada.dayLog (prayers + fasts).
  * Older months were only counted per month (qada.monthLog), so whatever a month's total holds beyond its
- * dayLog entries is approximated: spread evenly over that month's days that have no dayLog entry and fall
- * inside [createdKey, today], at most `cap` a day. So the month earns min(remainder, cap × those days), the
- * same 5-a-day limit as exact days. Remainders (when it doesn't divide evenly) go to the month's later days.
- * Spread days are listed in `approx`.
+ * dayLog entries is approximated, prayers and fasts each on their own: spread evenly over the month's days
+ * from max(month start, createdKey) to the month's end, skipping only days whose dayLog has a non-zero count
+ * of that kind, at most `cap` a day. So the month earns min(remainder, cap × those days), the same 5-a-day
+ * limit as exact days. Remainders (when it doesn't divide evenly) go to the month's later days.
+ * The split never depends on `today`, so a past day's share stays put as time goes on; days after `today`
+ * just aren't credited yet. Spread days are listed in `approx`.
  */
 export function makeupsByDay(S, { today, cap = WEIGHTS[CURRENT].makeups.cap } = {}) {
   const q = S.qada || {}, dl = q.dayLog || {}, out = {}, approx = new Set();
   const created = S.createdKey || "";
   for (const [k, v] of Object.entries(dl)) { const n = logCount(v); if (n > 0) out[k] = n; }
   for (const [ym, v] of Object.entries(q.monthLog || {})) {
-    let rest = logCount(v);
-    for (const [k, n] of Object.entries(out)) if (k.startsWith(ym + "-")) rest -= n;
-    if (rest <= 0) continue;
-    const free = [];
-    for (let d = 1, len = daysInMonth(ym); d <= len; d++) {
-      const k = `${ym}-${String(d).padStart(2, "0")}`;
-      if (k < created || (today && k > today) || dl[k]) continue;
-      free.push(k);
+    for (const kind of ["prayers", "fasts"]) {
+      let rest = v?.[kind] || 0;
+      for (const [k, x] of Object.entries(dl)) if (k.startsWith(ym + "-")) rest -= x?.[kind] || 0;
+      if (rest <= 0) continue;
+      const free = [];
+      for (let d = 1, len = daysInMonth(ym); d <= len; d++) {
+        const k = `${ym}-${String(d).padStart(2, "0")}`;
+        if (k < created || dl[k]?.[kind] > 0) continue;
+        free.push(k);
+      }
+      if (!free.length) continue;
+      const give = Math.min(rest, cap * free.length), each = Math.floor(give / free.length), extra = give % free.length;
+      free.forEach((k, i) => {
+        const n = each + (i >= free.length - extra ? 1 : 0);
+        if (n > 0 && !(today && k > today)) { out[k] = (out[k] || 0) + n; approx.add(k); }
+      });
     }
-    if (!free.length) continue;
-    const give = Math.min(rest, cap * free.length), each = Math.floor(give / free.length), extra = give % free.length;
-    free.forEach((k, i) => {
-      const n = each + (i >= free.length - extra ? 1 : 0);
-      if (n > 0) { out[k] = n; approx.add(k); }
-    });
   }
   return { byDay: out, approx };
 }
@@ -118,10 +127,11 @@ export function makeupsByDay(S, { today, cap = WEIGHTS[CURRENT].makeups.cap } = 
 /**
  * Provisions over the history: { total, level, need, next, toNext, byDay, version, daysLogged, since }.
  * opts: { version (default settings.provisions.weights), from, to (inclusive keys), today (key; days after it
- *         count nothing), homeFull (default settings.provisions.homeFull) }
+ *         count nothing), started (today's prayers already begun, see dayProvisions),
+ *         homeFull (default settings.provisions.homeFull) }
  * byDay holds each counted day's total; daysLogged = days with provisions; since = the first such day.
  */
-export function provisions(S, { version, from, to, today, homeFull } = {}) {
+export function provisions(S, { version, from, to, today, started, homeFull } = {}) {
   const set = S.settings?.provisions || {};
   const ver = WEIGHTS[version] ? version : WEIGHTS[set.weights] ? set.weights : CURRENT;
   const w = WEIGHTS[ver];
@@ -133,7 +143,7 @@ export function provisions(S, { version, from, to, today, homeFull } = {}) {
   let total = 0, daysLogged = 0, since = null;
   for (const key of [...new Set([...Object.keys(S.days || {}), ...Object.keys(made)])].sort()) {
     if (key < created || (today && key > today) || (from && key < from) || (to && key > to)) continue;
-    const t = dayProvisions(S.days?.[key], { w, homeFull: hf, makeups: made[key] || 0, madhhab }).total;
+    const t = dayProvisions(S.days?.[key], { w, homeFull: hf, makeups: made[key] || 0, madhhab, started: key === today ? started : undefined }).total;
     byDay[key] = t;
     total += t;
     if (t > 0) { daysLogged++; since ||= key; }
@@ -142,13 +152,13 @@ export function provisions(S, { version, from, to, today, homeFull } = {}) {
   return { total, level, need: needFor(level), next: needFor(level + 1), toNext: needFor(level + 1) - total, byDay, version: ver, daysLogged, since };
 }
 
-/** One day's breakdown with the app's settings applied (for the Tracker sheet). */
-export function dayBreakdown(S, key, { today, version } = {}) {
+/** One day's breakdown with the app's settings applied (for the Tracker sheet). started: as provisions(). */
+export function dayBreakdown(S, key, { today, version, started } = {}) {
   const set = S.settings?.provisions || {};
   const w = weightsFor(version || set.weights);
   if (key < (S.createdKey || "") || (today && key > today)) return { total: 0, parts: [] };
   const made = makeupsByDay(S, { today, cap: w.makeups.cap }).byDay[key] || 0;
-  return dayProvisions(S.days?.[key], { w, homeFull: !!set.homeFull, makeups: made, madhhab: madhhabOf(S) });
+  return dayProvisions(S.days?.[key], { w, homeFull: !!set.homeFull, makeups: made, madhhab: madhhabOf(S), started: key === today ? started : undefined });
 }
 
 /**

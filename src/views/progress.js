@@ -3,7 +3,7 @@
  * CSS tokens are --pg-* (src/css/progress.css), so nothing depends on the shell styles. */
 import { S, UI, A, $, NOW, todayKey, onRender, render, openSheet, closeSheet, toast } from "../app.js";
 import * as store from "../store.js";
-import { PRAYERS, MON, MON3, dkey, parseKey, addDays, esc } from "../util.js";
+import { PRAYERS, MON, MON3, dkey, parseKey, addDays, esc, topIn, stickyBottom } from "../util.js";
 import * as st from "../stats.js";
 import { weekDates, weekRangeLabel } from "../times.js";
 import { isOn } from "../features.js";
@@ -30,7 +30,7 @@ A.pgGo = id => {
   const el = document.getElementById("pg-" + id);
   if (!el) return;
   const scr = $("#screen"), chips = document.querySelector(".pg-jump");
-  const top = el.getBoundingClientRect().top - scr.getBoundingClientRect().top + scr.scrollTop - ((chips?.offsetHeight || 44) + (parseFloat(chips && getComputedStyle(chips).top) || 0) + 6);
+  const top = topIn(el, scr) - (stickyBottom(chips) + 6); // all screen px, so it holds under the tablet zoom
   scr.scrollTo({ top, behavior: "smooth" });
 };
 A.pgExplain = id => {
@@ -445,7 +445,7 @@ function body(P, list) {
     const ser = weekDates(P.end, 0).length ? st.weekSeries(S, NOW(), -P.off, { settings: S.settings }) : series;
     const ks = ["j", "o", "r", "m", ...(c.excusedDays ? ["x"] : []), "u", "d"];
     const exDay = ser.find(x => x.excused);
-    salahB = `${sub(PROGRESS.weekSalah, PROGRESS.tapDot)}<div class="card"><div style="padding:10px 14px 2px">${weekGrid(CW - 28, ser, P)}</div>${legend(ks)}</div>${exDay ? cap(EXCUSED.weekCap(["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"][ser.indexOf(exDay)])) : c.madeup ? cap(PROGRESS.madeUpCap(c.madeup)) : ""}
+    salahB = `${sub(PROGRESS.weekSalah, PROGRESS.tapDot)}<div class="card"><div style="padding:10px 14px 2px">${weekGrid(CW - 28, ser, P)}</div>${legend(ks)}</div>${exDay ? cap(EXCUSED.weekCap(["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][exDay.date.getDay()])) : c.madeup ? cap(PROGRESS.madeUpCap(c.madeup)) : ""}
     ${sub(PROGRESS.howYouPrayed, PROGRESS.thisWeekLower)}<div class="card">${breakdown(CW - 32, c)}</div>`;
   } else if (isM) {
     const ser = st.eachPrayerSeries(S, P.now, { from: P.from, to: P.end, settings: optsFor(P.end).settings });
@@ -570,7 +570,7 @@ function markChapter() {
   const scr = $("#screen"), sec = $("#v-progress"); if (!scr || !sec || UI.view !== "progress") return;
   const chs = [...sec.querySelectorAll("section[data-ch]")], jump = sec.querySelector(".pg-jump");
   if (!chs.length) return;
-  const line = scr.getBoundingClientRect().top + (jump?.offsetHeight || 44) + (parseFloat(jump && getComputedStyle(jump).top) || 0) + 40;
+  const line = scr.getBoundingClientRect().top + stickyBottom(jump) + 40;
   let cur = chs[0].dataset.ch;
   for (const c of chs) if (c.getBoundingClientRect().top <= line) cur = c.dataset.ch;
   if (scr.scrollTop + scr.clientHeight >= scr.scrollHeight - 4) cur = chs[chs.length - 1].dataset.ch;

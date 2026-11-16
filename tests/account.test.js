@@ -4,7 +4,7 @@ import * as store from "../src/store.js";
 
 const h = vi.hoisted(() => ({
   S: null, commits: 0, docs: new Map(), log: [], deleteUserErrors: [], reauthError: null, currentUser: null,
-  authCb: null, commitHooks: [], A: {}, popupUser: null, popupError: null, session: new Map(),
+  authCb: null, commitHooks: [], A: {}, popupUser: null, popupError: null, session: new Map(), feedbackFails: 0, pulls: 0,
 }));
 
 vi.mock("../src/app.js", () => ({
@@ -62,13 +62,13 @@ vi.mock("firebase/firestore", () => {
     query: (c, w) => ({ ...c, w }),
     where: (field, op, value) => ({ field, op, value }),
     async getDocs(c) {
-      if (c.path === "feedback" && h.feedbackError) throw new Error(h.feedbackError);
+      if (c.path === "feedback" && h.feedbackFails > 0) { h.feedbackFails--; throw new Error("permission-denied"); }
       const docs = [...h.docs.keys()].filter(p => p.startsWith(c.path + "/") && !p.slice(c.path.length + 1).includes("/"))
         .filter(p => !c.w || h.docs.get(p)?.[c.w.field] === c.w.value)
         .map(p => ({ ref: { path: p }, data: () => h.docs.get(p) }));
       return { docs, forEach: f => docs.forEach(f) };
     },
-    async getDoc(r) { return { exists: () => h.docs.has(r.path), data: () => h.docs.get(r.path) }; },
+    async getDoc(r) { h.pulls++; return { exists: () => h.docs.has(r.path), data: () => h.docs.get(r.path) }; },
     async setDoc(r, v) { h.log.push("set " + r.path); h.docs.set(r.path, v); },
     async deleteDoc(r) { h.log.push("delete " + r.path); h.docs.delete(r.path); },
     serverTimestamp: () => 0,
@@ -81,7 +81,7 @@ globalThis.document ??= { addEventListener() {}, hidden: false };
 globalThis.sessionStorage = { getItem: k => h.session.get(k) ?? null, setItem: (k, v) => h.session.set(k, String(v)), removeItem: k => h.session.delete(k) };
 
 const cloudMod = await import("../src/cloud.js");
-const { cloud, deleteAccount, sync, recordConsent, TERMS_VERSION, DATA_CONSENT_VERSION, keepAccount, signIn, agreeConsent, initCloud, needsAnyConsent, userInfo } = cloudMod;
+const { cloud, deleteAccount, sync, recordAllConsent, TERMS_VERSION, DATA_CONSENT_VERSION, keepAccount, signIn, agreeConsent, initCloud, needsAnyConsent, userInfo } = cloudMod;
 const consented = () => ({ consent: { version: TERMS_VERSION, at: "2026-11-15T09:00:00.000Z" }, dataConsent: { version: DATA_CONSENT_VERSION, at: "2026-11-15T09:00:00.000Z", scope: "cloud-backup-sensitive" } });
 
 function signedIn(uid = "u1") {
@@ -95,7 +95,7 @@ function signedIn(uid = "u1") {
     ["users/other", { state: "{}" }],
     ["users/other/years/2026", { days: "{}" }],
   ]);
-  h.log = []; h.deleteUserErrors = []; h.reauthError = null; h.commits = 0; h.feedbackError = null;
+  h.log = []; h.deleteUserErrors = []; h.reauthError = null; h.commits = 0; h.feedbackFails = 0; h.pulls = 0;
   h.currentUser = { uid };
   cloud.user = { uid, email: "a@b.c" };
   cloud.deletePending = ""; cloud.lastSync = 123;
@@ -124,13 +124,33 @@ describe("terms consent", () => {
     expect(store.load({ getItem: () => JSON.stringify({ profile: { consent: c } }) }).profile.consent).toEqual(c);
   });
 
-  it("recordConsent saves the current version with a timestamp and commits", () => {
+  it("recordAllConsent saves the current version with a timestamp and commits", () => {
     h.S = store.defaultState(); h.commits = 0;
-    recordConsent();
+    expect(recordAllConsent()).toBe(true);
     expect(h.S.profile.consent.version).toBe(TERMS_VERSION);
     expect(new Date(h.S.profile.consent.at).toISOString()).toBe(h.S.profile.consent.at);
     expect(h.commits).toBe(1);
     expect(store.needsConsent(h.S.profile, TERMS_VERSION)).toBe(false);
+    // already current: nothing rewritten, nothing committed
+    const before = JSON.stringify(h.S.profile);
+    expect(recordAllConsent()).toBe(false);
+    expect(h.commits).toBe(1);
+    expect(JSON.stringify(h.S.profile)).toBe(before);
+  });
+
+  it("recordAllConsent never downgrades a newer record, but replaces an older or wrong-scope one", () => {
+    h.S = store.defaultState(); h.commits = 0;
+    const newer = { version: "2099-01-01", at: "n" };
+    h.S.profile.consent = { ...newer };
+    h.S.profile.dataConsent = { ...newer, scope: "cloud-backup-sensitive" };
+    expect(recordAllConsent()).toBe(false);
+    expect(h.S.profile.consent).toEqual(newer);
+    expect(h.S.profile.dataConsent).toEqual({ ...newer, scope: "cloud-backup-sensitive" });
+    h.S.profile.dataConsent = { ...newer, scope: "something-else" }; // newer but the wrong scope
+    h.S.profile.consent = { version: "2026-01-01", at: "old" };
+    expect(recordAllConsent()).toBe(true);
+    expect(h.S.profile.dataConsent).toMatchObject({ version: DATA_CONSENT_VERSION, scope: "cloud-backup-sensitive" });
+    expect(h.S.profile.consent.version).toBe(TERMS_VERSION);
   });
 
   it("the newer side's profile (with its consent) wins a merge", () => {
@@ -153,22 +173,42 @@ describe("deleteAccount", () => {
     expect(cloud.deletePending).toBe("");
   });
 
-  it("also deletes the feedback this user sent (and only theirs), before the backup", async () => {
+  it("also deletes the feedback this user sent (and only theirs), with the years, before the main doc and the sign-in", async () => {
     h.docs.set("feedback/f1", { uid: "u1", message: "a" });
     h.docs.set("feedback/f2", { uid: "other", message: "b" });
     h.docs.set("feedback/f3", { uid: "u1", message: "c" });
     await deleteAccount();
-    expect(h.log).toEqual(["delete feedback/f1", "delete feedback/f3", "delete users/u1/years/2025", "delete users/u1/years/2026", "delete users/u1", "deleteUser u1"]);
+    expect(h.log.slice(0, 4).sort()).toEqual(["delete feedback/f1", "delete feedback/f3", "delete users/u1/years/2025", "delete users/u1/years/2026"]);
+    expect(h.log.slice(4)).toEqual(["delete users/u1", "deleteUser u1"]);
     expect([...h.docs.keys()]).toEqual(["users/other", "users/other/years/2026", "feedback/f2"]);
   });
 
-  it("still deletes the account when deleting feedback fails", async () => {
-    h.feedbackError = "permission-denied";
+  it("retries deleting feedback once, then finishes", async () => {
+    h.docs.set("feedback/f1", { uid: "u1", message: "a" });
+    h.feedbackFails = 1;
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     await deleteAccount();
-    expect(warn).toHaveBeenCalled();
     warn.mockRestore();
-    expect(h.log).toEqual(["delete users/u1/years/2025", "delete users/u1/years/2026", "delete users/u1", "deleteUser u1"]);
+    expect(h.log).toContain("delete feedback/f1");
+    expect(h.log.slice(-2)).toEqual(["delete users/u1", "deleteUser u1"]);
+    expect(cloud.user).toBeNull();
+  });
+
+  it("if feedback still can't be deleted: data step, the main doc and the sign-in are kept, and Try again finishes", async () => {
+    h.docs.set("feedback/f1", { uid: "u1", message: "a" });
+    h.feedbackFails = 2;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const e = await deleteAccount().catch(x => x);
+    warn.mockRestore();
+    expect(e.step).toBe("data");
+    expect(h.docs.has("users/u1")).toBe(true);
+    expect(h.docs.has("feedback/f1")).toBe(true);
+    expect(h.log).not.toContain("deleteUser u1");
+    expect(cloud.user).not.toBeNull();
+    expect(cloud.deletePending).toBe("u1");
+    await deleteAccount();
+    expect(h.docs.has("feedback/f1")).toBe(false);
+    expect(h.log.at(-1)).toBe("deleteUser u1");
     expect(cloud.user).toBeNull();
   });
 
@@ -214,9 +254,22 @@ describe("deleteAccount", () => {
     expect(cloud.deletePending).toBe("u1");
 
     h.log = [];
-    await keepAccount();
+    expect(await keepAccount()).toBe(true);
     expect(cloud.deletePending).toBe("");
     expect(h.log).toContain("set users/u1");
+  });
+
+  it("keeping the account without a current consent opens the re-consent sheet instead of syncing", async () => {
+    h.S.profile.consent = { version: "2026-11-03", at: "old" };
+    cloud.deletePending = "u1";
+    h.A = { consentSheet: vi.fn() };
+    try {
+      expect(await keepAccount()).toBe(false);
+      expect(cloud.deletePending).toBe("");
+      expect(cloud.consentNeeded).toBe(true);
+      expect(h.A.consentSheet).toHaveBeenCalledTimes(1);
+      expect(h.log).toEqual([]);
+    } finally { h.A = {}; cloud.consentNeeded = false; }
   });
 });
 
@@ -262,6 +315,30 @@ describe("explicit consent before any upload (privacy audit A1/A2)", () => {
     expect(main.profile.consent.version).toBe(TERMS_VERSION);
     expect(main.profile.dataConsent).toMatchObject({ version: DATA_CONSENT_VERSION, scope: "cloud-backup-sensitive" });
     expect(needsAnyConsent()).toBe(false);
+    expect(h.pulls).toBe(1); // one sync
+  });
+
+  it("a newer consent brought in from the cloud (agreed on a newer app) is kept, not downgraded", async () => {
+    fresh();
+    const cloudSide = store.defaultState(); cloudSide.profile.onboarded = true; cloudSide.updatedAt = Date.now() + 1e6;
+    cloudSide.profile.consent = { version: "2099-01-01", at: "2099-01-01T00:00:00.000Z" };
+    cloudSide.profile.dataConsent = { version: "2099-01-01", at: "2099-01-01T00:00:00.000Z", scope: "cloud-backup-sensitive" };
+    h.docs.set("users/u9", { state: JSON.stringify({ ...cloudSide, days: undefined }), updatedAt: cloudSide.updatedAt });
+    await signIn({ provider: "google", consent: true });
+    expect(h.S.profile.consent.version).toBe("2099-01-01");
+    expect(h.S.profile.dataConsent.version).toBe("2099-01-01");
+    expect(JSON.parse(h.docs.get("users/u9").state).profile.dataConsent.version).toBe("2099-01-01");
+  });
+
+  it("mergeStates prefers a data consent with the right scope over a newer one with the wrong scope", () => {
+    const local = store.defaultState(); local.profile.onboarded = true; local.updatedAt = 1;
+    local.profile.dataConsent = { version: "2026-11-15", at: "b", scope: "cloud-backup-sensitive" };
+    const remote = store.defaultState(); remote.profile.onboarded = true; remote.updatedAt = 2;
+    remote.profile.dataConsent = { version: "2099-01-01", at: "c", scope: "other" };
+    expect(store.mergeStates(local, remote).profile.dataConsent).toEqual(local.profile.dataConsent);
+    // same version and scope: the later time wins
+    remote.profile.dataConsent = { version: "2026-11-15", at: "c", scope: "cloud-backup-sensitive" };
+    expect(store.mergeStates(local, remote).profile.dataConsent.at).toBe("c");
   });
 
   it("a restored (older) cloud profile without consent does not remove the consent just given", async () => {
@@ -308,6 +385,23 @@ describe("explicit consent before any upload (privacy audit A1/A2)", () => {
     } finally { vi.useRealTimers(); h.commitHooks.length = 0; h.A = {}; }
   });
 
+  it("Continue on the re-consent sheet costs a single sync: one pull, one push", async () => {
+    fresh("u6");
+    h.S.profile.consent = { version: "2026-11-03", at: "old" };
+    h.A = { consentSheet: vi.fn() };
+    try {
+      await initCloud();
+      h.authCb({ uid: "u6", email: "a@b.c", providerData: [{ providerId: "google.com" }] });
+      expect(cloud.consentNeeded).toBe(true);
+      vi.useFakeTimers();
+      h.pulls = 0; h.log = [];
+      await agreeConsent();
+      await vi.advanceTimersByTimeAsync(10000); // no debounced second sync after it
+      expect(h.pulls).toBe(1);
+      expect(h.log.filter(l => l === "set users/u6")).toHaveLength(1);
+    } finally { vi.useRealTimers(); h.commitHooks.length = 0; h.A = {}; }
+  });
+
   it("redirect sign-in (web): the consent saved before leaving is recorded before the first sync", async () => {
     fresh("u8");
     h.popupError = "auth/popup-blocked";
@@ -348,14 +442,18 @@ describe("Sign in with Apple on the web (Firebase OAuth provider apple.com)", ()
     expect(h.log.slice(-2)).toEqual(["revoke apple-at", "deleteUser ap2"]);
   });
 
-  it("if the Apple confirmation is cancelled nothing is deleted", async () => {
+  it("if the Apple confirmation is cancelled or fails, deletion proceeds without revoking", async () => {
     signedIn("ap3");
     h.currentUser = { uid: "ap3", providerData: [{ providerId: "apple.com" }] };
     h.reauthError = "auth/popup-closed-by-user";
-    const e = await deleteAccount().catch(x => x);
-    expect(e.step).toBe("confirm");
-    expect(h.log).toEqual(["reauth ap3 apple"]);
-    expect(h.docs.has("users/ap3")).toBe(true);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await deleteAccount();
+    warn.mockRestore();
+    expect(h.log[0]).toBe("reauth ap3 apple");
+    expect(h.log.some(l => l.startsWith("revoke"))).toBe(false);
+    expect(h.log.slice(-2)).toEqual(["delete users/ap3", "deleteUser ap3"]);
+    expect(h.docs.has("users/ap3")).toBe(false);
+    expect(cloud.user).toBeNull();
     expect(cloud.deletePending).toBe("");
   });
 });

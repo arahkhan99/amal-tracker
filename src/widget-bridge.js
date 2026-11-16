@@ -9,25 +9,32 @@ import { registerPlugin } from "@capacitor/core";
 import { S, A, NOW, onRender, go, todayKey } from "./app.js";
 import { isNative } from "./platform.js";
 import { navTabs } from "./features.js";
-import { buildSnapshot, serializeSnapshot, parseDeepLink } from "./widgets.js";
+import { buildSnapshot, serializeSnapshot, snapshotInputSig, linkDeduper, parseDeepLink } from "./widgets.js";
 
 const ZadWidgets = registerPlugin("ZadWidgets");
 
-let lastSig = "", timer = null;
+let lastSig = "", lastInput = "", timer = null;
 function pushSnapshot() {
   timer = null;
   if (!S.profile?.onboarded) return;
   try {
-    const { json, sig } = serializeSnapshot(buildSnapshot(S, NOW()));
+    // Most redraws (the 20 s tick, view switches) change nothing the snapshot reads: skip building it
+    const now = NOW(), input = snapshotInputSig(S, now);
+    if (input === lastInput) return;
+    lastInput = input;
+    const { json, sig } = serializeSnapshot(buildSnapshot(S, now));
     if (sig === lastSig) return;
     lastSig = sig;
-    ZadWidgets.setSnapshot({ json }).catch(e => { lastSig = ""; console.warn("widgets", e); });
-  } catch (e) { console.warn("widgets", e); }
+    ZadWidgets.setSnapshot({ json }).catch(e => { lastSig = ""; lastInput = ""; console.warn("widgets", e); });
+  } catch (e) { lastInput = ""; console.warn("widgets", e); }
 }
 /** Coalesce bursts of redraws into one write. */
 function schedule() { if (!timer) timer = setTimeout(pushSnapshot, 400); }
 
+// A cold start delivers the widget's URL twice (appUrlOpen and App.getLaunchUrl): handle it once
+const firstTime = linkDeduper(2000);
 function handleUrl(url) {
+  if (!firstTime(url)) return;
   const link = parseDeepLink(url);
   if (!link || !S.profile?.onboarded) return;
   if (link.kind === "open") {

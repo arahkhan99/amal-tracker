@@ -1,6 +1,6 @@
 /* Adhkār after Salāh: the poster's list with tap counters, a 33·33·33·1 tasbīh counter, Āyat al-Kursī and the Quls
    (3× after Fajr and Maghrib, 1× otherwise). Qurʾānic parts come from the Quran data (IndoPak + Pickthall). */
-import { A, S, $, NOW, esc, I, T, open, redraw, part, persist, prune, prefs, toast, headWords, COMMON, APP, dkey, addDays } from "./core.js";
+import { A, S, $, NOW, esc, I, T, open, redraw, part, persist, prune, prefs, toast, headWords, COMMON, APP, dkey, addDays, topIn } from "./core.js";
 import { AFTER_SALAH, AFTER_SALAH_META, PRAYERS5, unitsFor, qulsCount } from "../../tools/data/after-salah.js";
 import { timesFor } from "../../times.js";
 import { fmt12 } from "../../util.js";
@@ -186,7 +186,7 @@ A.asTap = n => {
   redraw();
   if (doneNow) {
     const next = document.querySelector("#v-tools .tl-ad.now");
-    $("#screen").scrollTop = next ? Math.max(0, next.offsetTop - 70) : y;
+    $("#screen").scrollTop = next ? Math.max(0, topIn(next, $("#screen")) - 70) : y;
   }
 };
 A.asUndo = n => {

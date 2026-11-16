@@ -45,6 +45,7 @@ public final class WidgetModel {
     public final List<Deed> deeds = new ArrayList<>();
     public Integer makeups; // null when the Make-ups module is off
     public long nextChange; // 0 when unknown
+    public long builtAt; // the "now" the model was worked out for (the countdown chronometer counts from it)
     public final Map<String, String> labels = new HashMap<>();
 
     private WidgetModel() {}
@@ -150,6 +151,7 @@ public final class WidgetModel {
 
             WidgetModel m = new WidgetModel();
             m.labels.putAll(labelsOf(json));
+            m.builtAt = now;
             m.date = todayKey;
             m.hijri = today.optString("hijri", "");
 

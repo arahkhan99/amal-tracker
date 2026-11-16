@@ -43,9 +43,12 @@ export const needsAnyConsent = () => store.needsDataConsent(S.profile, DATA_CONS
 /** Sync is paused while this user's account deletion is under way or unfinished, and while consent is missing. */
 const paused = () => !cloud.user || cloud.deletePending === cloud.user.uid || needsAnyConsent();
 
+/** True if the user signed in with Apple. */
+export const isAppleUser = user => !!user?.providerData?.some(p => p?.providerId === APPLE);
+
 /** The signed-in user as the app shows it. A private-relay address ("Hide my email") is shown as the Apple ID. */
 export function userInfo(u, labelHidden = CONSENT.appleHidden) {
-  const provider = (u.providerData || []).some(p => p?.providerId === APPLE) ? "apple" : "google";
+  const provider = isAppleUser(u) ? "apple" : "google";
   const relay = u.email ? RELAY.test(u.email) : provider === "apple";
   return { uid: u.uid, email: relay ? labelHidden : u.email || "", relay, provider };
 }
@@ -77,7 +80,7 @@ export async function initCloud() {
     if (u && !signingIn) {
       // Consent first, upload after: a pending consent from a redirect sign-in (web) is recorded before the first
       // sync; without a current consent nothing is uploaded until the re-consent sheet's Continue.
-      if (applyPendingConsent()) sync().then(() => { recordAllConsent(); });
+      if (applyPendingConsent()) sync().then(() => { if (recordAllConsent()) return sync(); });
       else if (needsAnyConsent()) askConsent();
       else sync();
     }
@@ -90,21 +93,25 @@ export async function initCloud() {
 }
 
 /* ---------- consent ---------- */
-/** Write both records (terms + explicit data consent) into the profile, without saving. */
+/** Write the terms and explicit data-consent records into the profile, without saving. Each is written only when
+ *  it is missing, older than this app's version or (data consent) has the wrong scope: a newer record brought in
+ *  from the cloud (agreed on a newer app) is never replaced. True if anything changed. */
 function writeConsent(at = new Date().toISOString()) {
-  S.profile.consent = { version: TERMS_VERSION, at };
-  S.profile.dataConsent = { version: DATA_CONSENT_VERSION, at, scope: store.DATA_CONSENT_SCOPE };
+  let changed = false;
+  if (store.needsConsent(S.profile, TERMS_VERSION)) { S.profile.consent = { version: TERMS_VERSION, at }; changed = true; }
+  if (store.needsDataConsent(S.profile, DATA_CONSENT_VERSION)) { S.profile.dataConsent = { version: DATA_CONSENT_VERSION, at, scope: store.DATA_CONSENT_SCOPE }; changed = true; }
+  return changed;
 }
-/** Save that the user agreed to the current terms and to backing up their data (synced with the rest of the profile). */
+/** Save that the user agreed to the current terms and to backing up their data. It is saved without scheduling the
+ *  debounced sync: the caller runs one sync() itself. True if anything changed (and so still has to be synced). */
 export function recordAllConsent() {
-  writeConsent();
+  const changed = writeConsent();
   cloud.consentNeeded = false;
-  commit();
+  if (changed) { commit(); clearTimeout(syncTimer); }
+  return changed;
 }
-/** Kept for older callers: agreeing now always records both. */
-export const recordConsent = recordAllConsent;
 
-/** Re-consent sheet answered with Continue (A.consentSheet): record, then start syncing. */
+/** Re-consent sheet answered with Continue (A.consentSheet): record, then one sync. */
 export function agreeConsent() {
   recordAllConsent();
   return sync();
@@ -164,7 +171,7 @@ export const givenName = n => (typeof n === "string" ? n.trim().split(/\s+/)[0] 
 /**
  * Sign in with Google or Apple. `consent` must be true: the caller showed the consent block and the box is ticked.
  * The terms and data-consent records are written before the first sync, so they exist before anything is uploaded;
- * after the merge they are saved (and synced) again.
+ * the merge keeps the newest records (store.mergeStates), and only if it still lacks them are they saved and synced again.
  */
 export async function signIn({ provider = "google", consent = false } = {}) {
   if (consent !== true) throw Object.assign(new Error("consent required"), { code: "zad/consent-required" });
@@ -195,7 +202,7 @@ export async function signIn({ provider = "google", consent = false } = {}) {
     if (!S.profile.name && givenName(name)) S.profile.name = givenName(name);
     store.save(S);
     await sync();
-    recordAllConsent(); // again after the merge, so the restored profile keeps it
+    if (recordAllConsent()) await sync(); // the merged profile still lacked them: record and push once more
   } finally {
     signingIn = false;
   }
@@ -215,7 +222,8 @@ export async function signOut() {
 }
 
 /* ---------- delete account ---------- */
-/** Error from deleteAccount; `step` is "data" (cloud backup not fully deleted) or "auth" (backup deleted, sign-in not). */
+/** Error from deleteAccount; `step` is "data" (cloud backup or sent feedback not fully deleted; the sign-in is kept)
+ *  or "auth" (backup deleted, sign-in not). */
 export class DeleteError extends Error {
   constructor(step, cause) { super(cause?.message || step); this.step = step; this.code = cause?.code; this.cause = cause; }
 }
@@ -237,10 +245,12 @@ export async function deleteAccount() {
     catch (e) { throw new DeleteError("auth", e); } // only set once the backup is already deleted
   }
   // Sign in with Apple: confirm with Apple first (while the tap still allows a popup) to get a fresh token, so the
-  // app's access to the Apple ID is revoked below (App Store guideline 5.1.1(v)). Nothing is deleted if cancelled.
+  // app's access to the Apple ID is revoked below (App Store guideline 5.1.1(v)). The user already confirmed the
+  // deletion in Zad's own sheet, so if this fails (cancelled, popups unsupported in a Home Screen app, an error)
+  // the account is still deleted, just without revoking the token.
   else if (isAppleUser(a.currentUser) && a.currentUser?.uid === uid) {
     try { appleToken = await reauthenticate(a.currentUser); }
-    catch (e) { throw new DeleteError("confirm", e); }
+    catch (e) { console.warn("apple confirm before delete (deleting without revoking)", e); }
   }
   clearTimeout(syncTimer);
   cloud.deletePending = uid;
@@ -248,16 +258,15 @@ export async function deleteAccount() {
   render();
   if (running) await running.catch(() => {}); // let an in-flight sync finish before deleting underneath it
 
-  // Feedback this user sent (feedback/{id} with uid == theirs). Best effort: a failure here is logged and never
-  // blocks deleting the account itself.
+  // The data first: the feedback this user sent (feedback/{id} with uid == theirs, tried twice) and the year docs
+  // in parallel, then users/{uid}. Any failure stops here with the sign-in kept, so "Try again" can finish it.
+  const deleteAll = async q => { const snap = await fs.getDocs(q); await Promise.all(snap.docs.map(d => fs.deleteDoc(d.ref))); };
+  const feedback = () => deleteAll(fs.query(fs.collection(db, "feedback"), fs.where("uid", "==", uid)));
   try {
-    const sent = await fs.getDocs(fs.query(fs.collection(db, "feedback"), fs.where("uid", "==", uid)));
-    for (const d of sent.docs) await fs.deleteDoc(d.ref);
-  } catch (e) { console.warn("delete feedback", e); }
-
-  try {
-    const years = await fs.getDocs(fs.collection(db, "users", uid, "years"));
-    for (const d of years.docs) await fs.deleteDoc(d.ref);
+    await Promise.all([
+      feedback().catch(e => { console.warn("delete feedback, retrying", e); return feedback(); }),
+      deleteAll(fs.collection(db, "users", uid, "years")),
+    ]);
     await fs.deleteDoc(fs.doc(db, "users", uid));
   } catch (e) { throw new DeleteError("data", e); }
 
@@ -286,7 +295,6 @@ export async function deleteAccount() {
   render();
 }
 
-export const isAppleUser = user => !!user?.providerData?.some(p => p?.providerId === APPLE);
 
 /** Confirm the sign-in again with the provider the user signed in with. For Apple it returns the token to revoke:
  *  the authorization code on iOS, the OAuth access token on Android and the web ("" if none came back). */
@@ -310,11 +318,20 @@ async function revokeApple(token) {
   else await auth.revokeAccessToken(a, token);
 }
 
-/** Stop an unfinished deletion and keep the account: sync resumes and uploads this phone's data again. */
-export function keepAccount() {
+/** Stop an unfinished deletion and keep the account: sync resumes and uploads this phone's data again. Without a
+ *  current consent the re-consent sheet opens instead (sync stays paused until its Continue). Resolves to true
+ *  when sync resumed, false when the sheet was opened. */
+export async function keepAccount() {
   cloud.deletePending = "";
   saveMeta();
-  return sync();
+  if (needsAnyConsent()) {
+    cloud.consentNeeded = true;
+    clearTimeout(syncTimer);
+    A.consentSheet?.();
+    return false;
+  }
+  await sync();
+  return true;
 }
 
 /* ---------- feedback ---------- */

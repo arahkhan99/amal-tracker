@@ -31,3 +31,23 @@ export function monIdx(d) { return (d.getDay() + 6) % 7; }
  * times by well under a minute.
  */
 export const roundCoord = v => Math.round(v * 100) / 100;
+
+/* ---------- scroll positions under CSS zoom ----------
+   On tablets src/css/tablet.css zooms each `.view` (1.15) while the #screen scroller stays at zoom 1, so
+   offsetTop / offsetHeight / computed lengths inside a view are unzoomed CSS px but scrollTop and
+   getBoundingClientRect() are screen px. Mixing the two puts scroll targets off by 15%. Use these instead. */
+
+/** Screen px per CSS px for el (1 on phones, 1.15 inside a zoomed tablet view). */
+export function zoomOf(el) {
+  const h = el?.offsetHeight;
+  return h ? (el.getBoundingClientRect().height / h) || 1 : 1;
+}
+/** Top of el in the scroller's scroll coordinates, in screen px: the units of scroller.scrollTop. */
+export function topIn(el, scroller) {
+  return el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+}
+/** Screen px from the scroller's top edge to the bottom of a stuck `position: sticky` bar (its height plus its CSS top). */
+export function stickyBottom(bar, fallback = 44) {
+  if (!bar) return fallback;
+  return bar.getBoundingClientRect().height + (parseFloat(getComputedStyle(bar).top) || 0) * zoomOf(bar);
+}

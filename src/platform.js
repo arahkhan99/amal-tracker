@@ -3,6 +3,11 @@ import { roundCoord } from "./util.js";
 
 export const isNative = () => Capacitor.isNativePlatform();
 
+/* ---------- web pages (privacy, terms, support...) ---------- */
+export const SITE = "https://arahkhan99.github.io/amal-tracker/";
+/** Link to one of the site's pages: relative on the web, the full address in the app. */
+export const pageUrl = p => (isNative() ? SITE + p : p);
+
 /* ---------- location ---------- */
 export async function currentPosition() {
   if (isNative()) {

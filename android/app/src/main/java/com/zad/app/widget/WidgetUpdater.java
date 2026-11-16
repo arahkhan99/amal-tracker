@@ -6,13 +6,17 @@ import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.widget.RemoteViews;
 
 /**
  * Redraws every placed Zad widget from the stored snapshot and schedules the next redraw.
- * The countdown shows whole minutes, so the next redraw is at the start of the next minute (or the next
- * prayer boundary if that is sooner). The alarm is RTC (not a wake-up alarm): while the phone sleeps it
- * waits, and it fires as soon as the screen comes on, so it costs nothing in the background.
+ * The countdown is a count-down Chronometer that ticks by itself, so the only redraw needed is at the next
+ * boundary (a prayer starts or its window ends, sunrise, the middle of the night, midnight: model.nextChange).
+ * That alarm is exact when the app may schedule exact alarms (SCHEDULE_EXACT_ALARM is declared for the
+ * reminders; always true before Android 12), otherwise an inexact window that starts at the boundary.
+ * The alarm is RTC (not a wake-up alarm): while the phone sleeps it waits, and it fires as soon as the
+ * screen comes on, so it costs nothing in the background.
  */
 public final class WidgetUpdater {
     static final String ACTION_TICK = "com.zad.app.widget.TICK";
@@ -49,9 +53,17 @@ public final class WidgetUpdater {
         if (am == null) return;
         PendingIntent pi = tickIntent(c);
         if (!any) { am.cancel(pi); return; }
-        long at = (now / 60000 + 1) * 60000 + 500; // just after the next minute starts
-        if (model != null && model.nextChange > now && model.nextChange < at) at = model.nextChange + 500;
-        // Inexact window of 10 s: lets the system batch it, still on the right minute. Never needs SCHEDULE_EXACT_ALARM.
-        am.setWindow(AlarmManager.RTC, at, 10_000, pi);
+        // Just after the next boundary. Without a model (no snapshot for today) check again in an hour.
+        long at = model != null && model.nextChange > now ? model.nextChange + 500 : now + 3_600_000L;
+        if (canExact(am)) {
+            try { am.setExactAndAllowWhileIdle(AlarmManager.RTC, at, pi); return; }
+            catch (SecurityException e) { /* permission revoked meanwhile: fall back below */ }
+        }
+        // Smallest window the system allows (it stretches shorter ones to its minimum on Android 12+)
+        am.setWindow(AlarmManager.RTC, at, 60_000, pi);
+    }
+
+    private static boolean canExact(AlarmManager am) {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms();
     }
 }

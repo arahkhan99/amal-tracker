@@ -10,8 +10,8 @@
             android:fontFamily="serif" android:text="ʿAsr" android:textColor="@color/zw_on_forest" android:textSize="21sp" android:maxLines="1" />
         <TextView android:id="@+id/zw_time" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
             android:text="3:42 PM" android:textColor="@color/zw_on_forest_dim" android:textSize="12sp" android:maxLines="1" />
-        <TextView android:id="@+id/zw_countdown" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end"
-            android:fontFamily="serif" android:text="1h 24m" android:textColor="@color/zw_gold_text" android:textSize="21sp" android:textStyle="bold" android:maxLines="1" />
+        <Chronometer android:id="@+id/zw_countdown" android:countDown="true" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end"
+            android:fontFamily="serif" android:textColor="@color/zw_gold_text" android:textSize="21sp" android:textStyle="bold" android:maxLines="1" />
     </LinearLayout>
     <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:layout_marginTop="10dp" android:orientation="horizontal">
         <LinearLayout android:id="@+id/zw_p0" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"

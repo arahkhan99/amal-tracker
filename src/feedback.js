@@ -22,6 +22,27 @@ export function itemId(kind, id, sub) {
   return ITEM_ID.test(s) && s.length <= LIMITS.itemId ? s : "";
 }
 
+/**
+ * The Qurʾān page being reported: { id, kind, page, short, title }. On a tablet's two-page spread the sheet
+ * lets the user pick which of the two pages (views/feedback.js), and this is built again for that page.
+ * opts: { surah (the name on screen), mushafLabel (the muṣḥaf's name) }
+ */
+export function quranItem(mushaf, page, { surah = "", mushafLabel = "" } = {}) {
+  const short = `${F.kind.quran} · ${F.page(page)}`;
+  const title = clip([F.kind.quran, F.page(page), surah, mushafLabel].filter(Boolean).join(" · "), LIMITS.itemTitle);
+  return { id: itemId("quran", mushaf, "p" + page), kind: "quran", page, short, title };
+}
+
+/**
+ * Which opening of the feedback sheet a send belongs to. open() each time the sheet opens (a new form);
+ * a send keeps the token it started with, and its result may touch the screen only while isCurrent(token):
+ * a slow send that finishes after its sheet was closed and a new one opened leaves the new form alone.
+ */
+export function sendGate() {
+  let cur = 0;
+  return { open: () => ++cur, token: () => cur, isCurrent: t => t === cur };
+}
+
 /** Trim and cut to `max` characters without splitting a surrogate pair. */
 export function clip(s, max) {
   let t = String(s ?? "").replace(/\r\n?/g, "\n").trim();

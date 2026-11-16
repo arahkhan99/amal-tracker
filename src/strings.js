@@ -572,13 +572,12 @@ export const SETTINGS = {
   signedInToast: "Signed in · backup is on", signInFailed: "Sign-in didn't finish. Try again.",
   syncedToast: "Synced", signedOutToast: "Signed out · data kept on this phone", syncBackOn: "Sync is back on",
   // consent
-  updatedTerms: "Updated terms", terms: "Terms of use", privacy: "Privacy policy", support: "Support",
+  terms: "Terms of use", privacy: "Privacy policy", support: "Support",
   termsChanged: "The Terms of use and Privacy policy have changed.",
   termsNew: "Cloud backup now asks you to agree to the Terms of use and Privacy policy.",
   termsAsk: "Please read them and agree to keep cloud backup on.",
   agree: "Agree", notNowSignsOut: "Not now signs you out of cloud backup. Everything stays on this phone.",
   thanks: "Thanks · cloud backup stays on",
-  consentLine: "By signing in you agree to the {terms} and {privacy}.", // {terms}/{privacy} are replaced with links
   // delete account
   deleteTitle: "Delete your account?",
   deleteBody1: "This permanently deletes your Zad cloud backup (everything stored under your account) and your Zad sign-in. It can't be undone.",
@@ -638,7 +637,7 @@ export const HOME_X = {
   celebTitle: "All five prayers, Alhamdulillah", celebSub: n => `${n} ${n === 1 ? "day" : "days"} in a row`,
   wasMissed: p => `${p} was missed`, comesOff: () => "Pray it before Fajr and it comes off your make-ups", plusOne: "+1 make-up",
   prayedLbl: STATUS_EXTRA.prayed, later: "Later",
-  notOpened: "Not opened yet", goldChange: "Gold tiles change each month", afterJumuah: "new set after Jumuʿah",
+  notOpened: "Not opened yet", goldChange: "Gold tiles change each month", newEachSunday: "new set each Sunday",
   arLabel: { ayah: "آية", hadith: "حديث", dua: "دعاء", seerah: "سيرة", sahabi: "صحابي", sunnah: "سنة" },
   mkNotNow: COMMON.notNow, undone: "Undone",
   loggedN: n => `${n} ${n === 1 ? "prayer" : "prayers"} logged`,
@@ -869,7 +868,7 @@ export const FEEDBACK = {
     other: "Write your message",
   },
   reporting: "Reporting", removeItem: "Remove the item from this report",
-  whichFact: "Which fact?", today: "Today",
+  whichFact: "Which fact?", whichPage: "Which page?", today: "Today",
   whatWrong: "What looks wrong?", optional: "(optional)",
   parts: { arabic: "Arabic", qtext: "Arabic text", translit: "Transliteration", translation: "Translation", source: "Narrator or source", text: "Wording", layout: "Page layout", other: "Something else" },
   message: "Your message", messageReport: "What’s wrong?", count: (n, max) => `${n} / ${max}`,
@@ -1032,9 +1031,6 @@ export const CONSENT = {
   reDelete: "Delete my cloud backup instead",
   reThanks: "Thanks · cloud backup is on",
   pausedStatus: email => `Paused · ${email} · waiting for your OK`,
-  // account deletion for Sign in with Apple users: Apple is asked to confirm first (to revoke Zad's access)
-  delConfirm: "Nothing was deleted. To delete your account, confirm your sign-in when asked, then tap Try again.",
-  delConfirmToast: "Account not deleted",
   // crash reports: native-only onboarding step (option A)
   crashEyebrow: "One last thing",
   crashTitle: "Help us fix bugs?",
@@ -1066,4 +1062,6 @@ export const TRAVEL = {
   rowSub: "When Zad opens, it checks where you are and updates prayer times if you've moved more than 25 km.",
   updated: city => `Prayer times updated for ${city}`,
   fallbackLabel: "Current location",
+  // An older saved location (source "unknown") shows this instead of the switch
+  unknownHint: "Tap “Use my current location” to let prayer times follow you when you travel.",
 };

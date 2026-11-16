@@ -21,8 +21,8 @@ export function readingPrefs(answer) {
   return answer === "yes" ? { translit: false, translation: false } : { translit: true, translation: true };
 }
 
-/** Same defaults as views/tools/core.js prefs(). */
-const PREF_DEFAULTS = { translit: false, translation: false, size: 1, evWords: true };
+/** Defaults of the tools' reading switches (S.tools.prefs); views/tools/core.js prefs() starts from a copy of these. */
+export const PREF_DEFAULTS = Object.freeze({ translit: false, translation: false, size: 1, evWords: true });
 
 /** Save the answer and set the tools' transliteration and meaning switches. Caller commits. */
 export function applyReading(S, answer) {

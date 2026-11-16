@@ -3,7 +3,7 @@ import * as store from "../src/store.js";
 import { timesFor } from "../src/times.js";
 import { hijriLabel } from "../src/hijri.js";
 import { PRAYERS, addDays } from "../src/util.js";
-import { buildSnapshot, serializeSnapshot, widgetModel, fmtCountdown, parseDeepLink, deepLink, SNAPSHOT_VERSION, DAY_OFFSETS, MAX_DEEDS } from "../src/widgets.js";
+import { buildSnapshot, serializeSnapshot, snapshotInputSig, linkDeduper, widgetModel, fmtCountdown, parseDeepLink, deepLink, SNAPSHOT_VERSION, DAY_OFFSETS, MAX_DEEDS } from "../src/widgets.js";
 
 const NOW = new Date(2026, 10, 5, 14, 18); // Thu 5 Nov 2026, 2:18 PM local (the mockups' sample day)
 const KEY = "2026-11-05";
@@ -222,5 +222,52 @@ describe("countdown and deep links", () => {
     expect(parseDeepLink("https://example.com/log?p=Asr&d=2026-11-05")).toBeNull();
     expect(parseDeepLink("zad://open?v=<x>")).toBeNull();
     expect(parseDeepLink("not a url")).toBeNull();
+  });
+});
+
+describe("snapshotInputSig (skip rebuilding the snapshot when nothing it reads changed)", () => {
+  it("stays the same across the 20 s tick and a prayer boundary on the same day", () => {
+    const S = fresh();
+    const a = snapshotInputSig(S, NOW);
+    expect(snapshotInputSig(S, new Date(+NOW + 20000))).toBe(a);
+    expect(snapshotInputSig(S, new Date(+T(S).Maghrib + 1000))).toBe(a);
+    // ...and the snapshot really is the same then (generatedAt aside)
+    expect(serializeSnapshot(buildSnapshot(S, new Date(+T(S).Maghrib + 1000))).sig).toBe(serializeSnapshot(buildSnapshot(S, NOW)).sig);
+  });
+  it("changes at the day change", () => {
+    const S = fresh();
+    expect(snapshotInputSig(S, new Date(2026, 10, 6, 0, 0, 5))).not.toBe(snapshotInputSig(S, NOW));
+  });
+  it("changes with a log, a setting that moves the times, the Hijri setting, deeds and make-ups", () => {
+    const S = fresh();
+    const seen = new Set([snapshotInputSig(S, NOW)]);
+    const changed = () => { const s = snapshotInputSig(S, NOW); expect(seen.has(s)).toBe(false); seen.add(s); };
+    store.setPrayer(S, KEY, "Dhuhr", "ontime", NOW); changed();
+    S.settings.location = { lat: 51.5, lng: -0.12, label: "London", source: "city" }; changed();
+    S.settings.method = "MuslimWorldLeague"; changed();
+    S.settings.asr = "shafii"; changed();
+    S.settings.jumuah = false; changed();
+    S.settings.excusedDays = false; changed();
+    S.settings.hijri = { method: "civil", committee: "", adjust: 1 }; changed();
+    store.setAmal(S, KEY, S.amalList[0].id, true, "", NOW); changed();
+    store.setPrayer(S, "2026-11-06", "Fajr", "missed", NOW); changed(); // tomorrow's record, and make-ups
+  });
+  it("ignores days outside the snapshot", () => {
+    const S = fresh(), a = snapshotInputSig(S, NOW);
+    store.setPrayer(S, "2026-10-01", "Fajr", "ontime", NOW);
+    expect(snapshotInputSig(S, NOW)).toBe(a); // an on-time log far back touches nothing the snapshot reads
+  });
+});
+
+describe("linkDeduper (a cold start delivers the widget URL twice)", () => {
+  it("handles a URL once within the window, again after it, and a different URL at once", () => {
+    const first = linkDeduper(2000), url = deepLink.log("Asr", KEY);
+    expect(first(url, 1000)).toBe(true);
+    expect(first(url, 2500)).toBe(false); // appUrlOpen + getLaunchUrl
+    expect(first(deepLink.today(), 2600)).toBe(true);
+    expect(first(url, 2700)).toBe(true);
+    expect(first(url, 4600)).toBe(false);
+    expect(first(url, 2700 + 2000)).toBe(true);
+    expect(first("", 9000)).toBe(false);
   });
 });

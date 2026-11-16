@@ -13,8 +13,8 @@
         <TextView android:id="@+id/zw_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp"
             android:fontFamily="serif" android:text="ʿAsr" android:textColor="@color/zw_on_forest" android:textSize="30sp" android:maxLines="1" android:ellipsize="end" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:baselineAligned="true">
-            <TextView android:id="@+id/zw_countdown" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:fontFamily="serif" android:text="1h 24m" android:textColor="@color/zw_gold_text" android:textSize="24sp" android:textStyle="bold" android:maxLines="1" />
+            <Chronometer android:id="@+id/zw_countdown" android:countDown="true" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:fontFamily="serif" android:textColor="@color/zw_gold_text" android:textSize="24sp" android:textStyle="bold" android:maxLines="1" />
             <TextView android:id="@+id/zw_countdown_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="5dp"
                 android:text="left" android:textColor="@color/zw_on_forest_dim" android:textSize="11sp" android:maxLines="1" />
         </LinearLayout>

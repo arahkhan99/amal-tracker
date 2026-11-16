@@ -100,3 +100,71 @@ describe("provisions UI: wording", () => {
     expect(PROVISIONS.niyyahSrc).toBe("al-Bukhārī 1");
   });
 });
+
+describe("provisions UI: scoring settings changes are recorded silently (no level-up)", () => {
+  it("turning on 'Prayer at home counts in full' re-counts the history without a level-up", () => {
+    const S = fresh(back(60)); fill(S, 8, "ontime"); // 8 × 15 = 120 → Level 1
+    pv.turnOn(S, TODAY);
+    expect(S.settings.provisions.best).toBe(1);
+    S.settings.provisions.homeFull = true; // 8 × 25 = 200 → Level 2, nothing new was done
+    expect(pv.checkLevelUp(S, TODAY)).toBe(0);
+    expect(S.settings.provisions.best).toBe(2); // recorded, so it never shows later either
+    expect(pv.checkLevelUp(S, TODAY)).toBe(0);
+    // a real level reached afterwards still shows
+    fill(S, 24, "ontime"); // 24 × 25 = 600 → Level 3
+    expect(pv.checkLevelUp(S, TODAY)).toBe(3);
+  });
+  it("choosing sister (applyGender sets homeFull) doesn't show a level-up", () => {
+    const S = fresh(back(60)); fill(S, 8, "ontime");
+    pv.turnOn(S, TODAY);
+    store.applyGender(S, "f", { todayKey: TODAY }, NOW);
+    expect(S.settings.provisions.homeFull).toBe(true);
+    expect(pv.checkLevelUp(S, TODAY)).toBe(0);
+    expect(S.settings.provisions.best).toBe(2);
+  });
+  it("a new weights version is a settings change too; an older save without a signature starts from its first check", () => {
+    const S = fresh(back(60)); fill(S, 7); pv.turnOn(S, TODAY); // 175
+    S.settings.provisions.weights = "v9"; // unknown versions fall back to v1: the signature still changed
+    expect(pv.checkLevelUp(S, TODAY)).toBe(0);
+    const T = fresh(back(60)); fill(T, 7); pv.turnOn(T, TODAY);
+    delete T.settings.provisions.sig; // saved before the signature existed
+    fill(T, 8); // 200 → Level 2, earned
+    expect(pv.checkLevelUp(T, TODAY)).toBe(2);
+  });
+});
+
+describe("provisions UI: one count per state (memo on the app's revision)", () => {
+  it("repeated calls with the same revision reuse the count; a new revision, day, started list or setting re-counts", () => {
+    const S = fresh(back(60)); fill(S, 4); pv.turnOn(S, TODAY); // 100
+    const c1 = { rev: 1, started: PRAYERS };
+    expect(pv.pvSummary(S, TODAY, c1).total).toBe(100);
+    fill(S, 5); // +25, but the app's revision hasn't moved (as with touched(): tool counters only)
+    expect(pv.pvSummary(S, TODAY, c1).total).toBe(100); // reused, not re-scored
+    expect(pv.checkLevelUp(S, TODAY, c1)).toBe(0);
+    expect(pv.pvSummary(S, TODAY, { rev: 2, started: PRAYERS }).total).toBe(125);
+    expect(pv.pvSummary(S, back(-1), { rev: 2, started: PRAYERS }).total).toBe(125); // another today: re-counted (same here)
+    // same revision, but a scoring setting changed: re-counted
+    const T = fresh(back(60)); fill(T, 2, "ontime"); pv.turnOn(T, TODAY);
+    const c = { rev: 7, started: PRAYERS };
+    expect(pv.pvSummary(T, TODAY, c).total).toBe(30);
+    T.settings.provisions.homeFull = true;
+    expect(pv.pvSummary(T, TODAY, c).total).toBe(50);
+    // without a revision (tests, one-off callers) nothing is reused
+    fill(T, 3, "ontime");
+    expect(pv.pvSummary(T, TODAY).total).toBe(75);
+  });
+  it("today's excused prayers wait for their time (ctx.started), and a new started list re-counts", () => {
+    const S = fresh(back(60)); pv.turnOn(S, TODAY);
+    store.setExcusedDay(S, TODAY, true, NOW);
+    expect(pv.pvSummary(S, TODAY, { rev: 1, started: ["Fajr", "Dhuhr"] }).total).toBe(6);
+    expect(pv.pvSummary(S, TODAY, { rev: 1, started: ["Fajr", "Dhuhr", "Asr"] }).total).toBe(9);
+    expect(pv.trackerDay(S, TODAY, TODAY, { started: ["Fajr"] })).toBeNull(); // tracker chip off
+    S.settings.provisions.tracker = true;
+    expect(pv.trackerDay(S, TODAY, TODAY, { started: ["Fajr"] }).total).toBe(3);
+  });
+  it("pvSummary's level is points.displayLevel (never below the best shown)", () => {
+    const S = fresh(back(60)); fill(S, 2); pv.turnOn(S, TODAY);
+    S.settings.provisions.best = 5;
+    expect(pv.pvSummary(S, TODAY).level).toBe(5);
+  });
+});

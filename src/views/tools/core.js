@@ -1,10 +1,11 @@
 /* Shared bits for the Tools screens: router state, saved progress, icons, small helpers. */
 import { S, A, $, NOW, todayKey, openSheet, closeSheet, toast, touched } from "../../app.js";
 import * as store from "../../store.js";
-import { esc, dkey, addDays } from "../../util.js";
+import { esc, dkey, addDays, topIn, zoomOf } from "../../util.js";
 import { gloss } from "../../glossary.js";
 import { APP, COMMON } from "../../strings.js";
 import { weekKey } from "../../times.js";
+import { PREF_DEFAULTS } from "../../guide.js";
 
 export { esc, A, $, S, NOW, todayKey, openSheet, closeSheet, toast, APP, COMMON };
 
@@ -24,7 +25,7 @@ export function tl() { return (S.tools ||= {}); }
 export function part(k, init = {}) { const t = tl(); return (t[k] ||= init); }
 /** Save without redrawing (tap counters, scroll position). Cloud sync still hears about it (debounced there). */
 export function persist() { S.updatedAt = Date.now(); store.save(S); touched(); }
-export function prefs() { return part("prefs", { translit: false, translation: false, size: 1, evWords: true }); }
+export function prefs() { return part("prefs", { ...PREF_DEFAULTS }); } // a copy: part() stores the object it is given
 
 /** Keep only the newest `n` keys of an object keyed by date or week. */
 export function prune(obj, n = 40) {
@@ -39,7 +40,7 @@ export function tickAmal(id, key = todayKey(), detail = "") {
   const day = store.ensureDay(S, key);
   if (day.amal[id]?.done) return false;
   day.amal[id] = { done: true, detail, auto: true };
-  store.markLogged(day, NOW());
+  // Ticked by the app when a reader is finished, not logged by the user: day.first isn't stamped (store.markLogged)
   day.u = Date.now();
   return true;
 }
@@ -112,4 +113,4 @@ export function head({ title, ar = "", sub = "", right = "", back = "A.tlBack()"
     <div class="tl-pt"><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ""}</div>${right}</div>`;
 }
 
-export { dkey, addDays, weekKey, store };
+export { dkey, addDays, weekKey, store, topIn, zoomOf };

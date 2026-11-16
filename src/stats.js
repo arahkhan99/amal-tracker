@@ -1,5 +1,5 @@
 import { PRAYERS, dkey, addDays, monIdx, ymKey, parseKey } from "./util.js";
-import { getDay, lastDetail, statusOf, isPrayed, amalForDay, sunnahOpts } from "./store.js";
+import { getDay, lastDetail, statusOf, isPrayed, amalForDay, sunnahOpts, genderOf } from "./store.js";
 import { madhhabOf, sunnahFor, sunnahAllowed, measureTarget, measuredItems, chipLabel, tierLabel, getMadhhab, isFriday } from "./rules/madhhab.js";
 import { startedPrayers, weekDates } from "./times.js";
 import { INSIGHT, PRAYER_NAME } from "./strings.js";
@@ -382,8 +382,8 @@ export function insights(S, now = new Date()) {
   // Strongest jamāʿah habit this week
   const cong = perPrayer(S, "congregation", 7, now);
   const bestCong = PRAYERS.map(p => [p, cong.c[p]]).sort((a, b) => b[1] - a[1])[0];
-  // (left out for sisters: profile.gender "f"; the Jamāʿah chapter itself stays in Progress)
-  if (bestCong && bestCong[1] >= 2 && S.profile?.gender !== "f") good.push({ title: INSIGHT.congTitle(name(bestCong[0]), bestCong[1], cong.days), sub: INSIGHT.congSub });
+  // (left out for sisters: genderOf "f"; the Jamāʿah chapter itself stays in Progress)
+  if (bestCong && bestCong[1] >= 2 && genderOf(S) !== "f") good.push({ title: INSIGHT.congTitle(name(bestCong[0]), bestCong[1], cong.days), sub: INSIGHT.congSub });
 
   // Qurʾān streak
   const qs = amalStreak(S, "quran", now);

@@ -62,7 +62,7 @@ The app writes the snapshot after every redraw (`app.js` `onRender`). That cover
   - `ZadSmall`/`ZadMedium`/`ZadLargeWidgetProvider`: classic `AppWidgetProvider`s with RemoteViews, not Glance, so no Kotlin or Compose is needed.
   - `WidgetRenderer` fills the layouts.
   - `WidgetUpdater` redraws all the widgets and arms the next tick.
-  - `WidgetTickReceiver` handles the minute tick and clock/time-zone changes.
+  - `WidgetTickReceiver` handles the boundary tick, clock/time-zone changes and the exact-alarm permission changing.
 - Resources, all prefixed `zw_`:
   - `res/layout/zw_widget_*.xml`. The sample text in them doubles as the widget-picker preview (`previewLayout`).
   - `res/xml/zw_widget_*_info.xml`
@@ -71,7 +71,7 @@ The app writes the snapshot after every redraw (`app.js` `onRender`). That cover
 - Manifest:
   - three widget receivers and the tick receiver
   - a `zad` scheme intent-filter on `MainActivity` (`launchMode="singleTask"`, so a tap while the app is open arrives as `appUrlOpen`)
-- **Countdown refresh.** `WidgetUpdater` sets an inexact **RTC (non-wakeup) alarm** for the start of the next minute, or the next prayer boundary if sooner. While the phone sleeps, the alarm waits and fires when the screen comes on, so it costs no background wake-ups. `updatePeriodMillis` (30 min) re-arms it after a reboot. The app doesn't need `SCHEDULE_EXACT_ALARM` for this.
+- **Countdown refresh.** The countdown is a count-down `Chronometer` (`setChronometer` + `setChronometerCountDown`), so it ticks by itself. `WidgetUpdater` only redraws at the next boundary (a prayer starts or its window ends, sunrise, middle of the night, midnight) with an **RTC (non-wakeup) alarm**: exact (`setExactAndAllowWhileIdle`) when `canScheduleExactAlarms()` is true (the app already declares `SCHEDULE_EXACT_ALARM` for the reminders; `USE_EXACT_ALARM` is not used), otherwise `setWindow` from the boundary (Android 12+ stretches it to its minimum). While the phone sleeps, the alarm waits and fires when the screen comes on, so it costs no background wake-ups. `updatePeriodMillis` (30 min) re-arms it after a reboot.
 - **Fonts.** The prayer names use the system `serif` and the rest the system sans. RemoteViews can't load Amiri or Manrope from the `.woff2` files the web app bundles. To get Amiri, add a TTF under `res/font/` and set `android:fontFamily="@font/amiri"` (Android 8+).
 
 ### Build
@@ -113,7 +113,7 @@ The widget extension's sources are in `ios/App/ZadWidget/`:
 
 ### iOS notes
 
-- **Countdown.** Each timeline holds one entry per minute for 3 hours (policy `.atEnd`). Every entry recomputes the model from the snapshot, so it stays right without the app. The app also calls `reloadAllTimelines()` on every change.
+- **Countdown.** The countdown is `Text(timerInterval:countsDown:)` and the lock-screen bar `ProgressView(timerInterval:)`, which update themselves. Each timeline holds one entry now and one just after each boundary for the next day (policy `.atEnd`). Every entry recomputes the model from the snapshot, so it stays right without the app. The app also calls `reloadAllTimelines()` on every change.
 - **Taps.**
   - Small: the whole widget is one `widgetURL`. iOS doesn't allow separate links on small widgets.
   - Medium and Large: each tile, the hero, the make-ups chip and the deeds use `Link`s.

@@ -142,7 +142,6 @@ export const TT = {
   khatmTitle: "Khatm complete",
   khatmBody: n => `All seven manzils this week. Khatm number ${n}.`,
   khatmDua: "Make duʿāʾ. This is a good moment for it.",
-  nextWeek: "A new week starts on Saturday",
   pickthallHere: "Pickthall",
   wholeAyah: "Pickthall, whole āyah",
   hizbBy: "Nomani edition",

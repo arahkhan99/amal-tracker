@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-/** Minute tick (from WidgetUpdater's alarm) and clock / time-zone changes: redraw the widgets. */
+/** Boundary tick (from WidgetUpdater's alarm), clock / time-zone changes and the exact-alarm permission changing: redraw the widgets (and re-arm the alarm). */
 public class WidgetTickReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {

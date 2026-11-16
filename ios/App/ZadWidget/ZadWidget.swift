@@ -32,19 +32,25 @@ struct ZadProvider: TimelineProvider {
         completion(ZadEntry(date: now, model: model, staleLabel: WidgetModel.label("stale", SnapshotStore.labels())))
     }
 
-    /// One entry per minute for the next 3 hours (the countdown shows whole minutes). Each entry recomputes
-    /// the model from the same snapshot, so the next prayer and its countdown change on their own.
-    /// The app also reloads the timelines whenever its data changes.
+    /// One entry now and one just after each boundary (a prayer starts or its window ends, sunrise, the middle
+    /// of the night, midnight), up to a day ahead. The countdown is a self-updating timer (Text(timerInterval:)
+    /// and ProgressView(timerInterval:)), so no per-minute entries are needed. Each entry recomputes the model
+    /// from the same snapshot, so the next prayer changes on its own. The app also reloads the timelines
+    /// whenever its data changes.
     func getTimeline(in context: Context, completion: @escaping (Timeline<ZadEntry>) -> Void) {
         let snap = SnapshotStore.load()
         let stale = WidgetModel.label("stale", snap?.labels ?? [:])
         let now = Date()
-        let start = Calendar.current.date(bySetting: .second, value: 0, of: now) ?? now
-        let first = start > now ? start.addingTimeInterval(-60) : start
-        var entries: [ZadEntry] = [ZadEntry(date: now, model: WidgetModel.build(snap, now: now), staleLabel: stale)]
-        for i in 1...180 {
-            let d = first.addingTimeInterval(Double(i) * 60)
-            entries.append(ZadEntry(date: d, model: WidgetModel.build(snap, now: d), staleLabel: stale))
+        let firstModel = WidgetModel.build(snap, now: now)
+        var entries: [ZadEntry] = [ZadEntry(date: now, model: firstModel, staleLabel: stale)]
+        let horizon = now.addingTimeInterval(24 * 3600)
+        var next: Date? = firstModel?.nextChange
+        while let at = next, at <= horizon, entries.count < 24 {
+            let d = at.addingTimeInterval(1) // just after the boundary, so the new window is in
+            guard d > (entries.last?.date ?? now) else { break }
+            let model = WidgetModel.build(snap, now: d)
+            entries.append(ZadEntry(date: d, model: model, staleLabel: stale))
+            next = model?.nextChange
         }
         completion(Timeline(entries: entries, policy: .atEnd))
     }
@@ -220,7 +226,7 @@ struct SmallView: View {
             }
             Text(m.focusName).font(Z.serif(30)).foregroundColor(Z.ivory).lineLimit(1).minimumScaleFactor(0.7).padding(.top, 2)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(m.countdown(at: now)).font(Z.serif(24, .bold)).foregroundColor(Z.goldText).lineLimit(1).minimumScaleFactor(0.7)
+                Text(timerInterval: m.timerRange(at: now), countsDown: true).font(Z.serif(24, .bold)).foregroundColor(Z.goldText).lineLimit(1).minimumScaleFactor(0.7)
                 Text(m.isNow ? m.countdownLabel : m.label("left")).font(Z.sans(11)).foregroundColor(Z.ivory.opacity(0.72)).lineLimit(1)
             }
             Spacer(minLength: 6)
@@ -251,7 +257,7 @@ struct MediumView: View {
                     Text(m.focusName).font(Z.serif(21)).foregroundColor(Z.ivory).lineLimit(1)
                     Text(WidgetModel.fmt12(m.focusTime)).font(Z.sans(12, .medium)).foregroundColor(Z.ivory.opacity(0.72)).lineLimit(1)
                     Spacer(minLength: 4)
-                    Text(m.countdown(at: now)).font(Z.serif(21, .bold)).foregroundColor(Z.goldText).lineLimit(1)
+                    Text(timerInterval: m.timerRange(at: now), countsDown: true).font(Z.serif(21, .bold)).foregroundColor(Z.goldText).lineLimit(1)
                 }
             }
             HStack(spacing: 6) {
@@ -297,7 +303,7 @@ struct LargeView: View {
                     HStack(alignment: .firstTextBaseline) {
                         Text(m.focusName).font(Z.serif(30)).foregroundColor(Z.ivory).lineLimit(1)
                         Spacer()
-                        Text(m.countdown(at: now)).font(Z.serif(28, .bold)).foregroundColor(Z.goldText).lineLimit(1)
+                        Text(timerInterval: m.timerRange(at: now), countsDown: true).font(Z.serif(28, .bold)).foregroundColor(Z.goldText).lineLimit(1)
                     }
                     HStack {
                         Text(WidgetModel.fmt12(m.focusTime)).font(Z.sans(12, .medium)).foregroundColor(Z.ivory.opacity(0.72))
@@ -409,7 +415,7 @@ struct ZadLockView: View {
                             Spacer(minLength: 4)
                             Text(WidgetModel.fmt12(m.focusTime)).font(Z.sans(16, .bold)).lineLimit(1)
                         }
-                        ProgressView(value: m.progress(at: entry.date)).tint(.primary).widgetAccentable()
+                        ProgressView(timerInterval: m.progressRange, countsDown: false, label: { EmptyView() }, currentValueLabel: { EmptyView() }).tint(.primary).widgetAccentable()
                     }
                 default:
                     PrayersRing(prayed: m.prayed, label: m.label("prayers"))

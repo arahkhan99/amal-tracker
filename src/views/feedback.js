@@ -7,12 +7,12 @@ import { cloud, sendFeedback } from "../cloud.js";
 import { esc, MON } from "../util.js";
 import { FEEDBACK as F, COMMON, WEEK_UI } from "../strings.js";
 import { thisWeek, contentReady, loadContent } from "../content.js";
-import { TYPES, LIMITS, FEEDBACK_EMAIL, FLAG_SVG, itemId, buildPayload, buildMailto, deviceLabel, validEmail, clip } from "../feedback.js";
+import { TYPES, LIMITS, FEEDBACK_EMAIL, FLAG_SVG, itemId, buildPayload, buildMailto, deviceLabel, validEmail, clip, quranItem, sendGate } from "../feedback.js";
 import { T } from "./tools/core.js";
 import { TT } from "./tools/strings-tools.js";
 import { autoSet } from "./tools/adhkar.js";
 import { manzilToday } from "./tools/hizb.js";
-import { quranMushaf, mushafName } from "./tools/quran.js";
+import { quranMushaf, mushafName, quranShown } from "./tools/quran.js";
 
 const APP_VERSION = typeof __APP_VERSION__ === "undefined" ? "dev" : __APP_VERSION__;
 const svg = d => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
@@ -43,6 +43,9 @@ const PARTS = {
 // item: { id, short, title, kind, parts[], facts?[{ n, label }], fact? } ; parts: chosen part keys
 let st = null;
 let busy = false;
+// Each opening of the sheet gets a new token (stamped on the form as data-fb); a send only updates the screen
+// if its token is still current and that same form is still open.
+const gate = sendGate();
 
 const device = () => deviceLabel(navigator.userAgent || "", Capacitor.getPlatform());
 const signedIn = () => !!cloud.user;
@@ -50,20 +53,25 @@ const signedIn = () => !!cloud.user;
 function fresh(item = null) {
   st = { type: item ? "content" : "idea", item, parts: [], message: "", email: (!cloud.user?.relay && cloud.user?.email) || "", includeDevice: true, error: "" };
   busy = false;
+  gate.open();
 }
+/** The form opened with `token` is the one on screen. */
+const formOpen = token => gate.isCurrent(token) && $("#scrim")?.classList.contains("on") && $("#sheet .fb")?.dataset.fb === String(token);
 
 /* ---------- the sheet ---------- */
 function formHTML() {
   const it = st.item, out = !signedIn();
   const chips = TYPES.map(k => `<button type="button" class="fb-chip${k === st.type ? " on" : ""}" role="radio" aria-checked="${k === st.type}" data-t="${k}" onclick="A.fbType('${k}')">${esc(F.types[k])}</button>`).join("");
   const facts = it?.facts?.length > 1 ? `<div class="field fb-fact"><label for="fbFact">${esc(F.whichFact)}</label><select id="fbFact" onchange="A.fbFact(this.value)">${it.facts.map(f => `<option value="${f.n}"${f.n === it.fact ? " selected" : ""}>${esc(f.label)}</option>`).join("")}</select></div>` : "";
-  const itemBox = it ? `<div class="fb-item"><span class="fb-item-ic">${FLAG_SVG}</span><div class="t"><small>${esc(F.reporting)}</small><b id="fbItemT">${esc(it.title)}</b></div><button type="button" class="fb-x" aria-label="${esc(F.removeItem)}" onclick="A.fbClearItem()">${svg(ICON.x)}</button></div>${facts}` : "";
+  // a two-page spread on a tablet: which of the two pages is wrong
+  const pages = it?.pages?.length > 1 ? `<div class="fb-lab" id="fbPageL">${esc(F.whichPage)}</div><div class="fb-chips sm" role="radiogroup" aria-labelledby="fbPageL">${it.pages.map(n => `<button type="button" class="fb-chip${n === it.page ? " on" : ""}" role="radio" aria-checked="${n === it.page}" data-pg="${n}" onclick="A.fbPage(${n})">${esc(F.page(n))}</button>`).join("")}</div>` : "";
+  const itemBox = it ? `<div class="fb-item"><span class="fb-item-ic">${FLAG_SVG}</span><div class="t"><small>${esc(F.reporting)}</small><b id="fbItemT">${esc(it.title)}</b></div><button type="button" class="fb-x" aria-label="${esc(F.removeItem)}" onclick="A.fbClearItem()">${svg(ICON.x)}</button></div>${facts}${pages}` : "";
   const parts = it?.parts?.length ? `<div class="fb-lab" id="fbPartsL">${esc(F.whatWrong)} <span>${esc(F.optional)}</span></div><div class="fb-chips sm" role="group" aria-labelledby="fbPartsL">${it.parts.map(p => `<button type="button" class="fb-chip${st.parts.includes(p) ? " on" : ""}" aria-pressed="${st.parts.includes(p)}" onclick="A.fbPart(this,'${p}')">${esc(F.parts[p])}</button>`).join("")}</div>` : "";
   const types = it ? "" : `<div class="fb-lab" id="fbTypeL">${esc(F.about)}</div><div class="fb-chips" role="radiogroup" aria-labelledby="fbTypeL">${chips}</div>`;
   const email = out ? "" : `<div class="field"><label for="fbEmail">${esc(F.email)} <span>${esc(F.optional)}</span></label><input id="fbEmail" type="email" inputmode="email" autocomplete="email" maxlength="${LIMITS.email}" placeholder="name@example.com" value="${esc(st.email)}" aria-describedby="fbEmailH" oninput="A.fbEmail(this.value)"><small class="fb-hint" id="fbEmailH">${esc(F.emailHint)}</small></div>`;
   const so = out ? `<div class="fb-so">${svg(ICON.info)}<span>${F.signedOut} ${esc(FEEDBACK_EMAIL)}.</span></div>` : "";
   const btn = out ? `${svg(ICON.mail)}${esc(F.openMail)}` : `${svg(ICON.send)}${esc(busy ? F.sending : F.send)}`;
-  return `<div class="fb"><div class="sheet-head"><h3>${esc(it ? F.reportTitle : F.title)}</h3><button type="button" class="link-btn" onclick="A.closeSheet()">${esc(COMMON.cancel)}</button></div>
+  return `<div class="fb" data-fb="${gate.token()}"><div class="sheet-head"><h3>${esc(it ? F.reportTitle : F.title)}</h3><button type="button" class="link-btn" onclick="A.closeSheet()">${esc(COMMON.cancel)}</button></div>
   <p>${esc(it ? F.reportLead : F.lead)}</p>
   ${itemBox}${types}${parts}
   <div class="field"><label for="fbMsg">${esc(it ? F.messageReport : F.message)}</label><textarea id="fbMsg" maxlength="${LIMITS.message}" placeholder="${esc(F.placeholder[st.type])}" aria-describedby="fbCount" oninput="A.fbInput(this.value)">${esc(st.message)}</textarea><div class="fb-count" id="fbCount" aria-live="polite">${esc(F.count(st.message.length, LIMITS.message))}</div></div>
@@ -117,6 +125,12 @@ A.fbFact = n => {
   Object.assign(it, sahabiItemFields(it.sb, f.n));
   const t = $("#fbItemT"); if (t) t.textContent = it.title;
 };
+A.fbPage = n => {
+  const it = st.item; if (!it?.pages?.includes(n)) return;
+  Object.assign(it, quranItem(it.mushaf, n, it.labels));
+  const t = $("#fbItemT"); if (t) t.textContent = it.title;
+  document.querySelectorAll("#sheet .fb-chip[data-pg]").forEach(b => { const on = +b.dataset.pg === n; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
+};
 
 function input() {
   return { type: st.type, message: st.message, item: st.item, parts: st.parts, email: st.email.trim(), includeDevice: st.includeDevice,
@@ -137,6 +151,7 @@ A.fbSend = async () => {
   if (st.email.trim() && !validEmail(st.email.trim())) { showError(F.emailBad); $("#fbEmail")?.focus(); return; }
   const data = buildPayload(input());
   if (!data) return;
+  const token = gate.token(), mine = st;
   busy = true; showError("");
   const b = sendBtn(); if (b) { b.disabled = true; b.lastChild.textContent = F.sending; }
   const write = sendFeedback(data);
@@ -145,9 +160,12 @@ A.fbSend = async () => {
   // Online: wait for the server (up to 8 s; a slow network counts as queued).
   const wait = navigator.onLine === false ? 0 : 8000;
   const how = await Promise.race([write.then(() => "sent"), new Promise(r => setTimeout(() => r("queued"), wait))]).catch(() => "error");
+  // The sheet was closed (and maybe a new form opened, with its own st and busy) meanwhile: leave it alone
+  if (!gate.isCurrent(token) || st !== mine) return;
   busy = false;
+  if (!formOpen(token)) return;
   if (how === "error") { if (b?.isConnected) { b.lastChild.textContent = F.send; refreshBtn(); } showError(F.failed); return; }
-  if ($("#scrim").classList.contains("on") && $("#fbMsg")) openSheet(thanksHTML(how));
+  openSheet(thanksHTML(how));
 };
 
 /* ---------- items for "Report a mistake" ---------- */
@@ -230,10 +248,9 @@ A.fbAaRow = tool => {
 A.fbReportTool = tool => { const it = lastReader[tool] || readerItem(tool); if (it) A.feedback(it); };
 
 /** The Qurʾān page menu's Report button: the page and muṣḥaf on screen. */
+/** On a tablet's two-page spread both pages are on screen: the sheet asks which one (A.fbPage), the page the reader is on first. */
 A.fbReportQuran = () => {
-  const m = quranMushaf(), p = T.page || 1;
-  const surah = document.querySelector("#v-tools .tl-qt b")?.textContent.trim() || "";
-  const it = mk("quran", m, "p" + p, "");
-  const title = clip([F.kind.quran, F.page(p), surah, mushafName(m)].filter(Boolean).join(" · "), LIMITS.itemTitle);
-  A.feedback({ ...it, short: `${F.kind.quran} · ${F.page(p)}`, title });
+  const m = quranMushaf(), ps = quranShown(), p = ps.includes(T.page) ? T.page : ps[0] || 1;
+  const labels = { surah: document.querySelector("#v-tools .tl-qt b")?.textContent.trim() || "", mushafLabel: mushafName(m) };
+  A.feedback({ ...quranItem(m, p, labels), parts: PARTS.quran, mushaf: m, labels, pages: ps.length > 1 ? ps : null });
 };

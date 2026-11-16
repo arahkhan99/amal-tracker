@@ -57,6 +57,21 @@ describe("gender: applyGender", () => {
     expect(S.settings.provisions.homeFull).toBe(true);
     expect(store.applyGender(S, "anything", {}, NOW)).toBe(null);
   });
+  it("onboarding Skip after tapping Sister takes back the home-in-full default (undoHomeFull)", () => {
+    const S = fresh();
+    expect(S.settings.provisions.homeFull).toBe(false);
+    store.applyGender(S, "f", {}, NOW);
+    expect(S.settings.provisions.homeFull).toBe(true);
+    store.applyGender(S, null, { undoHomeFull: true }, NOW);
+    expect(S.profile.gender).toBe(null);
+    expect(S.settings.provisions.homeFull).toBe(false);
+    expect(S.settings.excusedDays).toBe(true);
+    expect(S.settings.jumuah).toBe(true);
+    // without the flag (Settings → "Prefer not to say") a switch the user has is kept
+    const T = fresh(); T.settings.provisions.homeFull = true;
+    store.applyGender(T, null, {}, NOW);
+    expect(T.settings.provisions.homeFull).toBe(true);
+  });
   it("each setting keeps its own switch after", () => {
     const S = fresh(); store.applyGender(S, "f", {}, NOW);
     S.settings.jumuah = true;
@@ -119,5 +134,23 @@ describe("gender: Progress insight", () => {
     expect(has(S)).toBe(true);
     store.applyGender(S, "f", {}, NOW);
     expect(has(S)).toBe(false);
+  });
+});
+
+import { excusedSoFar, timesFor } from "../src/times.js";
+
+describe("excusedSoFar (Home's End and Settings → brother share it)", () => {
+  const day = new Date(2026, 10, 5);
+  const settings = { ...store.defaultState(day).settings, location: { lat: 41.88, lng: -87.63, label: "Chicago", source: "city" } };
+  const t = timesFor(day, settings);
+  it("today's begun prayers, minus the one still open", () => {
+    expect(excusedSoFar(new Date(+t.Asr + 60000), settings)).toEqual(["Fajr", "Dhuhr"]); // ʿAṣr is open
+    expect(excusedSoFar(new Date(+t.Isha + 60000), settings)).toEqual(["Fajr", "Dhuhr", "Asr", "Maghrib"]);
+  });
+  it("between sunrise and Dhuhr nothing is open, so Fajr counts", () => {
+    expect(excusedSoFar(new Date(+t.Sunrise + 60000), settings)).toEqual(["Fajr"]);
+  });
+  it("before Fajr: none (last night's ʿIshāʾ belongs to yesterday)", () => {
+    expect(excusedSoFar(new Date(+t.Fajr - 60000), settings)).toEqual([]);
   });
 });

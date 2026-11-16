@@ -99,4 +99,17 @@ describe("Sign in with Apple (native plugin)", () => {
     expect(h.log.slice(-2)).toEqual(["plugin revoke auth-code", "deleteUser ios1"]);
     expect(h.plugin.signOut).toHaveBeenCalled();
   });
+
+  it("if the Apple confirmation fails (e.g. cancelled), the account is still deleted, without revoking", async () => {
+    await signIn({ provider: "apple", consent: true });
+    h.log = [];
+    h.plugin.signInWithApple.mockRejectedValueOnce(Object.assign(new Error("The user canceled the sign-in flow."), { code: "1001" }));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await deleteAccount();
+    warn.mockRestore();
+    expect(h.log.some(l => l.includes("revoke"))).toBe(false);
+    expect(h.log.at(-1)).toBe("deleteUser ios1");
+    expect(h.docs.has("users/ios1")).toBe(false);
+    expect(cloud.user).toBeNull();
+  });
 });

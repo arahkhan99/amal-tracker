@@ -5,8 +5,9 @@
  * P4/P4b Settings rows · P5 Home "Lv N" chip · P6 calm level-up sheet · P7/P7b Tracker "+N provisions".
  * Pure logic lives in ../provisions.js; the numbers come from ../points.js.
  */
-import { S, A, $, todayKey, commit, onCommit, openSheet, closeSheet, toast, go } from "../app.js";
+import { S, A, $, NOW, todayKey, commit, onCommit, openSheet, closeSheet, toast, go, revision } from "../app.js";
 import * as store from "../store.js";
+import { startedPrayers } from "../times.js";
 import { DOW, MON, parseKey, esc } from "../util.js";
 import { WEIGHTS, CURRENT } from "../points.js";
 import { pvOn, homeChipOn, offerDue, pvSummary, turnOn, turnOff, dismissOffer, checkLevelUp, trackerDay } from "../provisions.js";
@@ -14,6 +15,9 @@ import { isOn } from "../features.js";
 import { PROVISIONS as P, PRAYER_NAME, COMMON } from "../strings.js";
 
 const W = WEIGHTS[CURRENT];
+// What ../provisions.js needs from the clock and the app: today's prayers already begun (an excused prayer
+// counts once its time has come) and the change counter, so one render's chip, card and rows share one count.
+const ctx = () => { const now = NOW(); return { started: startedPrayers(now, now, S.settings), rev: revision() }; };
 const fmt = n => Number(n || 0).toLocaleString("en-GB");
 const ICON = {
   x: '<path d="M6 6l12 12M18 6L6 18"/>', chev: '<path d="M9 6l6 6-6 6"/>',
@@ -40,7 +44,7 @@ const dua = () => `<div class="pv-dua"><div class="ar" lang="ar" dir="rtl">${P.d
 /* ---------- P1: Progress card ---------- */
 export function progressCard() {
   if (!pvOn(S)) return "";
-  const s = pvSummary(S, todayKey()), pct = Math.round(s.frac * 100);
+  const s = pvSummary(S, todayKey(), ctx()), pct = Math.round(s.frac * 100);
   return `<section class="pv-card" id="pv-card" aria-label="${esc(P.title)}"><button type="button" class="pv-i" aria-label="${esc(P.how)}" onclick="A.pvInfo()">i</button>
   <div class="pv-top">${ring(s.level, s.frac)}<div class="pv-main"><div class="pv-k">${esc(P.title)}</div><b class="pv-big">${fmt(s.total)} <span>${esc(P.gathered)}</span></b>
   <div class="pv-bar" role="progressbar" aria-label="${esc(P.toLevelPlain(fmt(s.toNext), s.next))}" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${(s.frac * 100).toFixed(1)}%"></i></div>
@@ -88,7 +92,7 @@ export function homeOffer() {
 }
 A.pvNotNow = () => { dismissOffer(S); commit(); };
 A.pvTurnOn = () => {
-  const s = turnOn(S, todayKey());
+  const s = turnOn(S, todayKey(), ctx());
   commit();
   historySheet(s);
 };
@@ -104,7 +108,7 @@ function historySheet(s) {
 /* ---------- P5: Home header chip ---------- */
 export function homeChip() {
   if (!homeChipOn(S)) return "";
-  const s = pvSummary(S, todayKey());
+  const s = pvSummary(S, todayKey(), ctx());
   return `<button type="button" class="pv-chip" aria-label="${esc(P.chipLabel(s.level, fmt(s.toNext), s.next))}" onclick="A.pvOpen()">${miniRing(s.frac)}${esc(P.lv(s.level))}</button>`;
 }
 A.pvOpen = () => {
@@ -123,7 +127,7 @@ export function featureRow(tile) {
 /** The small Provisions group, only when on. */
 export function settingsGroup(chev) {
   if (!pvOn(S)) return "";
-  const p = S.settings.provisions, lv = pvSummary(S, todayKey()).level;
+  const p = S.settings.provisions, lv = pvSummary(S, todayKey(), ctx()).level;
   const row = (k, title, sub) => `<div class="srow"><div class="srow-main static"><span class="t"><b>${esc(title)}</b><small>${esc(sub)}</small></span>${sw(!!p[k], title, `A.pvOpt('${k}')`)}</div></div>`;
   return `<section class="sgroup" id="pv-sub"><h2>${esc(P.group)}</h2><div class="card scard">
   ${row("home", P.homeOpt, P.homeOptSub(lv))}${row("tracker", P.trackerOpt, P.trackerOptSub)}${row("homeFull", P.homeFullOpt, P.homeFullOptSub)}
@@ -143,13 +147,13 @@ A.pvOpt = k => {
 /* ---------- P7 / P7b: Tracker ---------- */
 /** "+N provisions" for the day summary (put through home.js zz, so classes become z-pvday). */
 export function trackerChip(key) {
-  const d = trackerDay(S, key, todayKey());
+  const d = trackerDay(S, key, todayKey(), ctx());
   if (!d) return "";
   return `<button type="button" class="pvday" onclick="A.pvDay('${key}')">${esc(P.plusNPlain(fmt(d.total)))}</button>`;
 }
 const LONG_DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 A.pvDay = key => {
-  const d = trackerDay(S, key, todayKey()); if (!d) return;
+  const d = trackerDay(S, key, todayKey(), ctx()); if (!d) return;
   const dt = parseKey(key), title = key === todayKey() ? P.todayTitle : P.dayTitle(LONG_DOW[dt.getDay()]);
   const line = x => {
     if (x.kind === "fard") return tr2(PRAYER_NAME[x.id] || x.id, x.remember ? P.st.excusedRem : P.st[x.status] || "", x.n);
@@ -171,16 +175,19 @@ const getPending = () => { try { return Number(localStorage.getItem(PENDING)) ||
 const setPending = n => { try { if (n) localStorage.setItem(PENDING, String(n)); else localStorage.removeItem(PENDING); } catch (e) { /* private mode */ } };
 
 // After each change: a new best level is stored at once (levels never go down) and shown at the next open,
-// never mid-logging and never as a toast.
+// never mid-logging and never as a toast. A change of scoring settings (home in full, sister, weights) is
+// recorded without a level-up (checkLevelUp). touched() (tool counters) doesn't bump the revision, so the
+// count is reused and nothing is re-scored.
+const pvStored = () => { const p = S.settings?.provisions; return p ? `${p.best}|${p.sig}` : ""; };
 onCommit(() => {
-  const lv = checkLevelUp(S, todayKey());
-  if (!lv) return;
-  setPending(Math.max(lv, getPending()));
-  store.save(S);
+  const was = pvStored();
+  const lv = checkLevelUp(S, todayKey(), ctx());
+  if (lv) setPending(Math.max(lv, getPending()));
+  if (lv || pvStored() !== was) store.save(S);
 });
 
 function levelUpSheet(level) {
-  const s = pvSummary(S, todayKey());
+  const s = pvSummary(S, todayKey(), ctx());
   openSheet(`<div class="pv-calm">${ring(level, level === s.level ? s.frac : 0, 112, 8, "lg")}<h3>${esc(P.level(level))}</h3>
   <p class="lead">${P.levelUpLead(fmt(s.total))}</p>
   ${dua()}<p class="note">${esc(P.niyyahLine)}</p></div><div class="cta"><button type="button" class="btn primary" onclick="A.closeSheet()">${esc(COMMON.done)}</button></div>`);
@@ -189,8 +196,8 @@ function levelUpSheet(level) {
 export function pvOnOpen() {
   if (!S.profile?.onboarded || !pvOn(S)) { setPending(0); return; }
   if ($("#scrim")?.classList.contains("on")) return; // another sheet first; try at the next open
-  const now = checkLevelUp(S, todayKey());
-  if (now) store.save(S);
+  const was = pvStored(), now = checkLevelUp(S, todayKey(), ctx());
+  if (now || pvStored() !== was) store.save(S);
   const lv = Math.max(now, getPending());
   if (!lv) return;
   setPending(0);

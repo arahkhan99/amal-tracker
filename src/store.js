@@ -38,7 +38,7 @@ export function defaultState(now = new Date()) {
       method: "Karachi", // new installs; saved states keep their method (the old default was "NorthAmerica")
       madhhab: DEFAULT_MADHHAB, // "hanafi" | "shafii" | "maliki" | "hanbali"
       asr: asrMethod(DEFAULT_MADHHAB), // "hanafi" | "shafi"; follows the madhhab unless the user overrides it
-      location: null, // {lat, lng, label, source: "gps" | "city"}
+      location: null, // {lat, lng, label, source: "gps" | "city" | "unknown" (older saves)}
       autoLocation: true, // "Update location when I travel" (src/travel.js); only for source "gps"
       carryQuran: true, reflection: true, seerah: false, lock: false,
       jumuah: true, // on Friday, Dhuhr shows the Jumu'ah sunnah list
@@ -62,7 +62,8 @@ export function defaultState(now = new Date()) {
  * Provisions & levels settings (see points.js). on: the Features switch; homeFull: "Prayer at home counts
  * in full" (sisters: on time earns the jamāʿah amount); home / tracker: the Home chip and Tracker chip;
  * best: the highest level ever shown (levels never go down); weights: the WEIGHTS version; offered: the
- * one-time Home offer has been shown.
+ * one-time Home offer has been shown. sig (set later, absent by default): the scoring settings the level was
+ * last checked with (provisions.scoringSig), so a re-count caused by a settings change isn't a level-up.
  */
 export function defaultProvisions() {
   return { on: false, homeFull: false, home: false, tracker: false, best: 1, weights: "v1", offered: false };
@@ -107,6 +108,8 @@ function migrateMadhhab(raw, out) {
   }
 }
 
+const LOC_SOURCES = ["gps", "city", "unknown"];
+
 /** Fill in anything missing from older or partial saves, and migrate older versions. Never drops fields. */
 export function normalize(s, now = new Date()) {
   const d = defaultState(now);
@@ -122,10 +125,10 @@ export function normalize(s, now = new Date()) {
   out.settings.provisions = normalizeProvisions(out.settings.provisions);
   // Only approximate location is kept (about 1 km); round anything saved before that rule
   const loc = out.settings.location;
-  // source: older saves didn't record how the location was chosen. It can't be told apart afterwards,
-  // so a missing source counts as "gps" (most people allow location at set-up). Searching a city again
-  // sets "city" and stops the travel check (src/travel.js).
-  if (loc && typeof loc.lat === "number") out.settings.location = { ...loc, lat: roundCoord(loc.lat), lng: roundCoord(loc.lng), source: loc.source === "city" ? "city" : "gps" };
+  // source: older saves didn't record how the location was chosen and it can't be told apart afterwards, so a
+  // missing source is "unknown": the travel check (src/travel.js) leaves it alone, since it may be a hand-picked
+  // city. "Use my current location" sets "gps" (travel updates on), searching a city sets "city".
+  if (loc && typeof loc.lat === "number") out.settings.location = { ...loc, lat: roundCoord(loc.lat), lng: roundCoord(loc.lng), source: LOC_SOURCES.includes(loc.source) ? loc.source : "unknown" };
   out.settings.autoLocation = out.settings.autoLocation !== false;
   out.qada = { ...d.qada, ...(s.qada || {}) };
   if (!out.qada.dayLog || typeof out.qada.dayLog !== "object") out.qada.dayLog = {};
@@ -160,12 +163,17 @@ export function needsDataConsent(profile, version) {
   const c = profile?.dataConsent;
   return !c || c.scope !== DATA_CONSENT_SCOPE || typeof c.version !== "string" || c.version < version;
 }
-/** The newer of two consent records ({ version, at }); version first, then time. */
-function newerConsent(a, b) {
-  if (!a?.version) return b?.version ? b : a ?? b ?? null;
-  if (!b?.version) return a;
-  if (a.version !== b.version) return a.version > b.version ? a : b;
-  return String(b.at || "") > String(a.at || "") ? b : a;
+/** The better of two consent records ({ version, at, scope? }): one with a version and (when `scope` is given) that
+ *  scope first, then the newer version, then the later time. Ties keep `a`. */
+function newerConsent(a, b, scope = "") {
+  if (!a || !b) return a || b || null;
+  const rank = c => {
+    const v = typeof c.version === "string";
+    return [v && (!scope || c.scope === scope) ? 1 : 0, v ? 1 : 0, v ? c.version : "", String(c.at || "")];
+  };
+  const ra = rank(a), rb = rank(b);
+  for (let i = 0; i < ra.length; i++) if (ra[i] !== rb[i]) return rb[i] > ra[i] ? b : a;
+  return a;
 }
 
 export function load(storage = globalThis.localStorage) {
@@ -218,10 +226,13 @@ export const genderOf = S => (GENDERS.includes(S?.profile?.gender) ? S.profile.g
  * - "f" (sister): excused days on, Jumuʿah off, "prayer at home counts in full" (provisions) on.
  * - "m" (brother): excused days off, Jumuʿah on, home-in-full off. Excused mode is ended (today is unflagged);
  *   past excused days are never unflagged (they stay out of the stats as before).
- * - null (prefer not to say): today's behaviour, excused days and Jumuʿah on; home-in-full is left as it is.
+ * - null (prefer not to say): today's behaviour, excused days and Jumuʿah on; home-in-full is left as it is,
+ *   because by then it is the user's own switch (Settings → "Prefer not to say" must not quietly undo it).
+ *   undoHomeFull: true turns it off as well: onboarding passes it when its own Sister tap had switched it on
+ *   and the user then pressed Skip, so a skipped question leaves no sister default behind.
  * Logs are never changed except ending excused mode. Returns the value stored.
  */
-export function applyGender(S, g, { todayKey: key, excusedPrayers = [] } = {}, now = new Date()) {
+export function applyGender(S, g, { todayKey: key, excusedPrayers = [], undoHomeFull = false } = {}, now = new Date()) {
   const v = GENDERS.includes(g) ? g : null;
   S.profile.gender = v;
   const st = S.settings;
@@ -230,7 +241,7 @@ export function applyGender(S, g, { todayKey: key, excusedPrayers = [] } = {}, n
   else if (v === "m") {
     st.excusedDays = false; st.jumuah = true; prov.homeFull = false;
     if (S.excusedMode?.since) endExcused(S, key || dkey(now), { excusedPrayers }, now);
-  } else { st.excusedDays = true; st.jumuah = true; }
+  } else { st.excusedDays = true; st.jumuah = true; if (undoHomeFull) prov.homeFull = false; }
   return v;
 }
 
@@ -245,15 +256,18 @@ export function applyGender(S, g, { todayKey: key, excusedPrayers = [] } = {}, n
  *   witrAuto?: true                    // Witr was marked missed automatically because ʿIshāʾ was missed
  *   excused?: true                     // excused day (hayd / nifas): unlogged prayers count as excused
  *   remember?: { Fajr: true, ... }     // remembrance at prayer time, only on excused prayers (setRemember)
- *   first?: ms                         // when anything was first logged for this day; set once (markLogged)
+ *   first?: ms                         // when the user first logged anything for this day; set once (markLogged)
  *   u: ms                              // last edit, for cloud merges
  * }
  */
 
 /**
- * Stamp day.first the first time anything is logged for the day (a prayer status, Witr, a sunnah chip,
+ * Stamp day.first the first time the user logs anything for the day (a prayer status, Witr, a sunnah chip,
  * a good deed, remembrance). Never overwritten; only viewing a day never sets it. The cloud merge keeps
  * the earlier of two copies' stamps.
+ * Kept for the planned leaderboard's rule that a day counts only if it was logged within 2 days, so only an
+ * explicit user log stamps it: writes the app makes on its own (endExcused storing "excused", a reader ticking
+ * its good deed, Witr marked missed with ʿIshāʾ) pass { auto: true } to the setters and leave it alone.
  */
 export function markLogged(day, now = new Date()) {
   if (day && !(day.first > 0)) day.first = now.getTime();
@@ -281,9 +295,10 @@ function qadaAdd(S, k, n, now) {
  * - Made up / On time / In jamāʿah / Excused never touch make-ups.
  * - Hanafi: marking ʿIshāʾ missed also marks an unlogged Witr missed (owed); undone if ʿIshāʾ changes back.
  * Sunnah logs are kept as they are; reads filter them by status (a missed fard's chips don't count).
+ * opts.auto: the app writes it on its own (not the user), so day.first isn't stamped (markLogged).
  * Returns the previous stored status.
  */
-export function setPrayer(S, key, p, status, now = new Date()) {
+export function setPrayer(S, key, p, status, now = new Date(), { auto = false } = {}) {
   const day = ensureDay(S, key);
   const was = day.prayers[p] || null;
   if (was === "missed" && status !== "missed") qadaAdd(S, p, -1, now);
@@ -291,7 +306,7 @@ export function setPrayer(S, key, p, status, now = new Date()) {
   if (status) {
     day.prayers[p] = status;
     (day.at ||= {})[p] = now.getTime();
-    markLogged(day, now);
+    if (!auto) markLogged(day, now);
   } else {
     delete day.prayers[p];
     if (day.at) delete day.at[p];
@@ -301,27 +316,29 @@ export function setPrayer(S, key, p, status, now = new Date()) {
   return was;
 }
 
+// Witr follows ʿIshāʾ on its own (auto): only ʿIshāʾ's own setPrayer stamps day.first, if the user made it.
 function linkWitr(S, key, day, was, status, now) {
   if (status === "missed" && was !== "missed" && !day.witr && witrInQada(madhhabOf(S))) {
-    setWitr(S, key, "missed", now);
+    setWitr(S, key, "missed", now, { auto: true });
     day.witrAuto = true;
   } else if (was === "missed" && status !== "missed" && day.witrAuto) {
-    setWitr(S, key, null, now);
+    setWitr(S, key, null, now, { auto: true });
   } else if (status === "excused" && day.witr === "missed") {
-    setWitr(S, key, null, now);
+    setWitr(S, key, null, now, { auto: true });
   }
 }
 
 /**
  * Log Witr for a day: "done" | "madeup" | "missed" | null.
  * Missed adds one to make-ups (qada.Witr) only where Witr is owed (Hanafi: wājib); changing away removes it.
+ * opts.auto: as setPrayer (day.first isn't stamped).
  */
-export function setWitr(S, key, status, now = new Date()) {
+export function setWitr(S, key, status, now = new Date(), { auto = false } = {}) {
   const day = ensureDay(S, key);
   const was = day.witr || null;
   if (was === "missed" && status !== "missed" && day.witrQ) { qadaAdd(S, "Witr", -1, now); delete day.witrQ; }
   if (status === "missed" && was !== "missed" && witrInQada(madhhabOf(S))) { qadaAdd(S, "Witr", 1, now); day.witrQ = true; }
-  if (status) { day.witr = status; markLogged(day, now); } else delete day.witr;
+  if (status) { day.witr = status; if (!auto) markLogged(day, now); } else delete day.witr;
   delete day.witrAuto;
   day.u = Date.now();
   return was;
@@ -441,7 +458,7 @@ export function syncExcusedMode(S, todayKey) {
 export function endExcused(S, key, { excusedPrayers = [] } = {}, now = new Date()) {
   S.excusedMode = null;
   const day = ensureDay(S, key);
-  for (const p of excusedPrayers) if (!day.prayers[p]) setPrayer(S, key, p, "excused", now);
+  for (const p of excusedPrayers) if (!day.prayers[p]) setPrayer(S, key, p, "excused", now, { auto: true }); // not the user's log: no day.first
   setExcusedDay(S, key, false, now);
 }
 
@@ -449,13 +466,16 @@ export const isExcusedDay = (S, key) => !!S.days[key]?.excused;
 
 /**
  * Tick (or untick) "Remembrance at prayer time" for one prayer: wuḍūʾ and dhikr in the prayer place,
- * about the length of the prayer. Only allowed while that prayer's status is excused (statusOf);
- * unticking is always allowed. Returns false when refused.
+ * about the length of the prayer. Only allowed while that prayer's status is excused (statusOf) and, since
+ * the store can't work out prayer times, while the caller's opts.allowed says its time has begun: a boolean,
+ * or a function (key, p) => boolean (logging.canLog bound to S and now); left out, nothing extra is checked.
+ * Unticking is always allowed. Returns false when refused.
  */
-export function setRemember(S, key, p, on, now = new Date()) {
+export function setRemember(S, key, p, on, now = new Date(), { allowed } = {}) {
   if (!PRAYERS.includes(p)) return false;
   if (on) {
     if (statusOf(S.days[key], p) !== "excused") return false;
+    if (allowed === false || (typeof allowed === "function" && !allowed(key, p))) return false; // not begun yet
     const day = ensureDay(S, key);
     (day.remember ||= {})[p] = true;
     markLogged(day, now);
@@ -554,12 +574,28 @@ export function lastDetail(S, id, beforeKey, strict = true) {
  */
 export function mergeStates(local, remote) {
   if (!remote) return local;
-  return keepNewestConsent(mergeCore(local, remote), local, remote);
+  return keepDeviceLocation(keepNewestConsent(mergeCore(local, remote), local, remote), local);
+}
+/**
+ * A location from "Use my current location" (source "gps") belongs to the phone that read it: two signed-in
+ * phones in different places must not keep flipping each other's prayer times (travel.js updates it per
+ * phone). So this phone keeps its own GPS location whatever the cloud copy says, and never takes another
+ * phone's GPS fix over the location it already has. A searched city (source "city") still syncs as before,
+ * and a phone with no location yet takes the cloud copy's (travel updates correct it later).
+ */
+function keepDeviceLocation(out, local) {
+  if (out === local || !local.profile?.onboarded) return out;
+  const mine = local.settings?.location, theirs = out.settings?.location;
+  const hasMine = !!mine && typeof mine.lat === "number";
+  const keep = hasMine && (mine.source === "gps" || theirs?.source === "gps");
+  if (!keep || JSON.stringify(mine) === JSON.stringify(theirs)) return out;
+  return { ...out, settings: { ...out.settings, location: { ...mine } } };
 }
 /** Consent records never go backwards: an older phone or an older cloud copy can't remove or downgrade them. */
 function keepNewestConsent(out, local, remote) {
   for (const k of ["consent", "dataConsent"]) {
-    const best = newerConsent(newerConsent(local.profile?.[k], remote.profile?.[k]), out.profile?.[k]);
+    const scope = k === "dataConsent" ? DATA_CONSENT_SCOPE : "";
+    const best = newerConsent(newerConsent(local.profile?.[k], remote.profile?.[k], scope), out.profile?.[k], scope);
     if (!best || JSON.stringify(best) === JSON.stringify(out.profile?.[k])) continue;
     if (out === local) out = { ...local, profile: { ...local.profile } };
     out.profile = { ...out.profile, [k]: JSON.parse(JSON.stringify(best)) };

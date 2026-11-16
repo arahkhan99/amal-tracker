@@ -12,7 +12,7 @@ vi.mock("@capacitor/geolocation", () => ({ Geolocation: geo }));
 
 const platform = await import("../src/platform.js");
 const store = await import("../src/store.js");
-const { checkTravel, distanceKm, travelEnabled, _resetTravel, TRAVEL_THROTTLE_MS } = await import("../src/travel.js");
+const { checkTravel, distanceKm, travelEnabled, _resetTravel, TRAVEL_THROTTLE_MS, heldToast } = await import("../src/travel.js");
 const { timesFor, currentWindow, nextPrayer } = await import("../src/times.js");
 const { dkey, PRAYERS } = await import("../src/util.js");
 
@@ -159,10 +159,23 @@ describe("when it runs", () => {
 });
 
 describe("migration of older settings", () => {
-  it("a saved location without a source counts as GPS, and the switch defaults on", () => {
+  it("a saved location without a source is \"unknown\" (may be a hand-picked city): the travel check leaves it alone", async () => {
     const S = store.normalize({ profile: { onboarded: true }, settings: { method: "Karachi", location: { lat: 41.8781, lng: -87.6298, label: "Chicago, IL" } } });
-    expect(S.settings.location).toEqual({ lat: 41.88, lng: -87.63, label: "Chicago, IL", source: "gps" });
+    expect(S.settings.location).toEqual({ lat: 41.88, lng: -87.63, label: "Chicago, IL", source: "unknown" });
     expect(S.settings.autoLocation).toBe(true);
+    expect(travelEnabled(S.settings)).toBe(false);
+    geo.pos = north(5000);
+    const d = deps();
+    expect(await checkTravel(S, d)).toBe(false);
+    expect(S.settings.location.label).toBe("Chicago, IL");
+    expect(geo.getCurrentPosition).not.toHaveBeenCalled();
+    expect(d.commit).not.toHaveBeenCalled();
+  });
+  it("keeps a gps or unknown source through another normalize; anything else becomes unknown", () => {
+    const n = source => store.normalize({ settings: { location: { lat: 1, lng: 2, label: "X", source } } }).settings.location.source;
+    expect(n("gps")).toBe("gps");
+    expect(n("unknown")).toBe("unknown");
+    expect(n("weird")).toBe("unknown");
   });
   it("keeps a city source and an off switch", () => {
     const S = store.normalize({ settings: { autoLocation: false, location: { lat: 1, lng: 2, label: "X", source: "city" } } });
@@ -201,5 +214,78 @@ describe("time zones (a traveler's phone changes zone)", () => {
     expect(dkey(moment)).toBe("2026-11-05");
     process.env.TZ = "Asia/Tokyo";
     expect(dkey(moment)).toBe("2026-11-06");
+  });
+});
+
+describe("a GPS location is per phone (cloud merge)", () => {
+  // Two signed-in phones in different places: neither may flip the other's location (store.mergeStates)
+  const MKE = { lat: 43.04, lng: -87.91, label: "Milwaukee, WI", source: "gps" };
+  const MECCA = { lat: 21.42, lng: 39.83, label: "Makkah", source: "city" };
+  const LON = { lat: 51.5, lng: -0.12, label: "London", source: "city" };
+  const phone = (loc, updatedAt) => { const S = setup(loc); S.updatedAt = updatedAt; if (!loc) S.settings.location = null; return S; };
+
+  it("keeps this phone's GPS location when the other phone (also GPS) saved last", () => {
+    const m = store.mergeStates(phone(HOME, 10), phone(MKE, 20));
+    expect(m.settings.location).toEqual(HOME);
+  });
+  it("keeps this phone's GPS location when the cloud copy is newer for other reasons", () => {
+    const remote = phone(MKE, 20); remote.settings.method = "MuslimWorldLeague";
+    const m = store.mergeStates(phone(HOME, 10), remote);
+    expect(m.settings.method).toBe("MuslimWorldLeague"); // the rest still syncs
+    expect(m.settings.location).toEqual(HOME);
+  });
+  it("keeps this phone's GPS location over a newer searched city from another phone", () => {
+    expect(store.mergeStates(phone(HOME, 10), phone(MECCA, 20)).settings.location).toEqual(HOME);
+  });
+  it("never takes another phone's GPS fix over a city chosen here", () => {
+    expect(store.mergeStates(phone(LON, 10), phone(MKE, 20)).settings.location).toEqual(LON);
+  });
+  it("still syncs a searched city between phones that both use a city", () => {
+    expect(store.mergeStates(phone(LON, 10), phone(MECCA, 20)).settings.location).toEqual(MECCA);
+    expect(store.mergeStates(phone(MECCA, 20), phone(LON, 10)).settings.location).toEqual(MECCA);
+  });
+  it("a phone with no location yet takes the cloud copy's, GPS or not", () => {
+    expect(store.mergeStates(phone(null, 10), phone(MKE, 20)).settings.location).toEqual(MKE);
+    expect(store.mergeStates(phone(null, 10), phone(MECCA, 20)).settings.location).toEqual(MECCA);
+  });
+  it("a fresh install (not set up yet) restores the cloud copy as it is", () => {
+    const local = phone(HOME, 10); local.profile.onboarded = false;
+    expect(store.mergeStates(local, phone(MKE, 20)).settings.location).toEqual(MKE);
+  });
+  it("doesn't change the local state object", () => {
+    const local = phone(HOME, 10), before = JSON.stringify(local);
+    store.mergeStates(local, phone(MKE, 20));
+    expect(JSON.stringify(local)).toBe(before);
+  });
+});
+
+describe("travel toast waits for the app lock (heldToast)", () => {
+  it("shows at once when unlocked, queues while locked and shows in order on unlock", () => {
+    let locked = true;
+    const shown = [];
+    const t = heldToast(() => locked, (m, o) => shown.push([m, o]));
+    t.toast("Location updated to Milwaukee, WI");
+    t.toast("second", { undo: 1 });
+    expect(shown).toEqual([]);
+    t.flush(); // still locked (e.g. a failed unlock): nothing yet
+    expect(shown).toEqual([]);
+    locked = false;
+    t.flush();
+    expect(shown).toEqual([["Location updated to Milwaukee, WI", undefined], ["second", { undo: 1 }]]);
+    t.flush();
+    expect(shown.length).toBe(2);
+    t.toast("now");
+    expect(shown.at(-1)).toEqual(["now", undefined]);
+  });
+  it("checkTravel's toast goes through it", async () => {
+    let locked = true;
+    const show = vi.fn();
+    const held = heldToast(() => locked, show);
+    const S = setup(), d = deps({ toast: held.toast });
+    expect(await checkTravel(S, d)).toBe(true);
+    expect(d.commit).toHaveBeenCalled(); // the times are updated under the lock...
+    expect(show).not.toHaveBeenCalled(); // ...but the toast waits
+    locked = false; held.flush();
+    expect(show).toHaveBeenCalledWith(expect.stringContaining("Milwaukee"), undefined);
   });
 });

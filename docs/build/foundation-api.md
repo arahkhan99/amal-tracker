@@ -259,7 +259,7 @@ There is ONE file for every UI label. Every group below is a named export, and a
 | `FEATURE`, `TOOL_NAME`, `TOOL_SUB`, `TOOLS_UI`, `WEEK_UI`, `WEEK_LETTERS_SAT`, `WEEK_LETTERS_MON` | Features, Tools and This week. |
 | `NOTIFY`, `SETTINGS`, `SETUP` | Notifications, Settings and setup. |
 
-All the current strings from `src/views/*.js` are already in it, reworded (Good Deeds, Make-ups, light transliteration). Strings that take values are functions, for example `LOG.missedToast("ʿAsr")`. `SETTINGS.consentLine` holds `{terms}` and `{privacy}` placeholders for the links.
+All the current strings from `src/views/*.js` are already in it, reworded (Good Deeds, Make-ups, light transliteration). Strings that take values are functions, for example `LOG.missedToast("ʿAsr")`.
 
 **Spelling choices for the user to confirm:**
 - Duʿāʾ, istighfār, adhkār, durūd, salawāt;

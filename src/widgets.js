@@ -88,6 +88,37 @@ export function buildSnapshot(S, now = new Date()) {
   };
 }
 
+/**
+ * A cheap signature of everything buildSnapshot reads, so the bridge can skip rebuilding it on redraws that
+ * change nothing (the 20 s tick, view switches). Same signature means the same snapshot, generatedAt aside.
+ * Covers: today's date (day change), the settings (location, method, ʿAsr, madhhab, Jumuʿah, excused days,
+ * Hijri, features, sunnah options), the four days' records, the deeds list, make-ups, and the Hijri labels
+ * (a moon-sighting committee's months can arrive without S changing). The snapshot has no time-of-day
+ * content (the widgets work out now / next from its times), so nothing else changes at a prayer boundary.
+ * Keep this in step with buildSnapshot when it starts reading something new.
+ */
+export function snapshotInputSig(S, now = new Date()) {
+  const dates = DAY_OFFSETS.map(off => addDays(now, off));
+  return JSON.stringify([
+    SNAPSHOT_VERSION, dkey(now), S.settings ?? null, S.amalList ?? null, S.qada ?? null,
+    dates.map(d => S.days?.[dkey(d)] ?? null), dates.map(d => hijriLabel(d)),
+  ]);
+}
+
+/**
+ * Remembers the last deep link handled, so the same URL arriving twice within `windowMs` (a cold start
+ * delivers it through appUrlOpen and App.getLaunchUrl) is handled once. Returns (url, nowMs) => true to handle.
+ */
+export function linkDeduper(windowMs = 2000) {
+  let last = "", at = -Infinity;
+  return (url, now = Date.now()) => {
+    if (!url) return false;
+    if (url === last && now - at < windowMs) return false;
+    last = url; at = now;
+    return true;
+  };
+}
+
 /** The snapshot as the JSON string stored natively, and a signature that ignores generatedAt (to skip no-op writes). */
 export function serializeSnapshot(snap) {
   const json = JSON.stringify(snap);

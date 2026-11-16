@@ -119,6 +119,15 @@ export function startedPrayers(date, now, settings) {
   return PRAYERS.filter(p => t[p] <= now);
 }
 
+/**
+ * When excused mode ends now (Home's "End", or Settings switching to brother): today's prayers already begun,
+ * minus the one whose window is still open, since she can still pray it. store.endExcused stores these as "excused".
+ */
+export function excusedSoFar(now, settings) {
+  const key = dkey(now), cur = currentWindow(now, settings);
+  return startedPrayers(now, now, settings).filter(p => !(cur && dkey(cur.date) === key && cur.p === p));
+}
+
 /* ---------- weeks (Sunday first) ----------
  * Zad's weeks (This week on Home, Progress, the weekly content rotation) start on Sunday (user, 14 Nov 2026).
  * Day index within the week: Sun 0, Mon 1, … Sat 6.

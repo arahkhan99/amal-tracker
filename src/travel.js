@@ -5,7 +5,10 @@
  * location access is already allowed: this never asks for permission. If the phone is more than 25 km
  * from the saved point, save the new (rounded) location with its city name and commit, which recalculates
  * the times, redraws Home and the widget snapshot and reschedules the reminders.
- * A searched city (source "city") never changes on its own. Errors are swallowed and nothing about the
+ * A searched city (source "city") and an older save that didn't record how it was chosen (source "unknown")
+ * never change on their own. A "gps" location is per phone: the cloud merge (store.mergeStates) keeps each
+ * phone's own, so two signed-in phones in different places don't flip each other's times; a searched city
+ * still syncs. The "Location updated" toast waits for the app lock (heldToast). Errors are swallowed and nothing about the
  * location is logged (crash reports must never carry it).
  */
 import { TRAVEL } from "./strings.js";
@@ -24,7 +27,20 @@ export function distanceKm(a, b) {
 /** Whether the travel check applies to these settings at all. */
 export function travelEnabled(settings) {
   const loc = settings?.location;
-  return settings?.autoLocation !== false && !!loc && typeof loc.lat === "number" && (loc.source || "gps") === "gps";
+  return settings?.autoLocation !== false && !!loc && typeof loc.lat === "number" && loc.source === "gps";
+}
+
+/**
+ * A toast that waits while `isHeld()` (the app lock is up), so "Location updated" never shows over the lock
+ * screen. Returns { toast(msg, opts), flush() }: toast shows now or queues; flush (call it on unlock) shows
+ * what was queued, in order, if nothing holds it any more.
+ */
+export function heldToast(isHeld, show) {
+  const queue = [];
+  return {
+    toast(msg, opts) { if (isHeld()) queue.push([msg, opts]); else show(msg, opts); },
+    flush() { while (queue.length && !isHeld()) show(...queue.shift()); },
+  };
 }
 
 let lastCheck = 0;

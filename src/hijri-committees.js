@@ -54,7 +54,14 @@ export function putMonth(id, hy, hm, startDate, calc, note = "") {
   save();
 }
 
-const sorted = months => Object.entries(months).map(([id, v]) => ({ id, ...parseMonthId(id), start: dayNum(v.startDate) })).sort((a, b) => a.start - b.start);
+// The parsed, start-ordered months, cached per months object (storeCommittee and putMonth always build a new
+// object, so a cached list never goes stale); committeeParts runs on every Hijri label, this keeps it from re-sorting.
+const SORTED = new WeakMap();
+const sorted = months => {
+  let list = SORTED.get(months);
+  if (!list) { list = Object.entries(months).map(([id, v]) => ({ id, ...parseMonthId(id), start: dayNum(v.startDate) })).sort((a, b) => a.start - b.start); SORTED.set(months, list); }
+  return list;
+};
 
 /**
  * How many days to add to a calculated date so it lines up with a committee start.
@@ -100,6 +107,17 @@ export function monthToSet(parts) {
   return { y, m };
 }
 
+/**
+ * The editor sheet's month choices around today's committee date: { t (preselected), months: [prev, t, next] }.
+ * Pass the committee's date without the editor's own ± adjustment. Null when there is no date (no Intl calendar).
+ */
+export function editorMonths(today) {
+  if (!today || !today.y || !today.m || !today.d) return null;
+  const t = monthToSet(today);
+  const prev = t.m === 1 ? { y: t.y - 1, m: 12 } : { y: t.y, m: t.m - 1 }, next = t.m === 12 ? { y: t.y + 1, m: 1 } : { y: t.y, m: t.m + 1 };
+  return { t, months: [prev, t, next] };
+}
+
 /** Does `key` (the 1st) lie within 3 days of the calculated 1st of that month? A typo guard for the editor sheet. */
 export function plausibleStart(key, hy, hm, calc) {
   if (!validKey(key)) return false;
@@ -108,10 +126,35 @@ export function plausibleStart(key, hy, hm, calc) {
   return false;
 }
 
-/** Suggested method for a region: US and Canada get the CHC; everyone else gets calculated + manual adjustment. */
+/** IANA zones of the US and Canada (America/* zones of other countries, e.g. America/Mexico_City or America/Sao_Paulo, are not). */
+const US_CA_TZ = /^(America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage|Detroit|Boise|Indiana\/.+|Indianapolis|Fort_Wayne|Knox_IN|Kentucky\/.+|Louisville|North_Dakota\/.+|Menominee|Juneau|Sitka|Metlakatla|Yakutat|Nome|Adak|Atka|Shiprock|Toronto|Montreal|Vancouver|Edmonton|Winnipeg|Halifax|St_Johns|Regina|Swift_Current|Moncton|Glace_Bay|Goose_Bay|Nipigon|Thunder_Bay|Rainy_River|Atikokan|Coral_Harbour|Creston|Dawson|Dawson_Creek|Fort_Nelson|Yellowknife|Inuvik|Cambridge_Bay|Rankin_Inlet|Resolute|Iqaluit|Pangnirtung|Whitehorse)|Pacific\/Honolulu|US\/.+|Canada\/.+|EST5EDT|CST6CDT|MST7MDT|PST8PDT)$/;
+/** A zone that says nothing about where the device is (unset, UTC, Etc/*): the language region decides instead. */
+const VAGUE_TZ = /^(|UTC|GMT|UCT|Universal|Zulu|Etc\/.*)$/;
+
+/**
+ * Suggested method: the US and Canada get the CHC; everyone else gets calculated + manual adjustment.
+ * The time zone decides (an en-US phone set to Europe/London is in the UK); the language region
+ * (en-US, fr-CA) is used only when the time zone is missing or vague.
+ */
 export function suggestedHijri({ lang = "", tz = "" } = {}) {
   const region = (lang.split(/[-_]/)[1] || "").toUpperCase();
-  const northAm = /^(America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage|Detroit|Boise|Indiana\/|Kentucky\/|Toronto|Vancouver|Edmonton|Winnipeg|Halifax|St_Johns|Regina|Moncton|Glace_Bay|Montreal|Nipigon|Thunder_Bay|Yellowknife|Whitehorse|Iqaluit|Juneau|Sitka|Menominee|North_Dakota\/)|Pacific\/Honolulu|US\/|Canada\/)/.test(tz);
-  if (region === "US" || region === "CA" || northAm) return { method: "committee", committee: "chc-na" };
+  const northAm = VAGUE_TZ.test(tz || "") ? region === "US" || region === "CA" : US_CA_TZ.test(tz);
+  if (northAm) return { method: "committee", committee: "chc-na" };
   return { method: "umalqura", committee: "" };
+}
+
+/**
+ * suggestedHijri for this device, worked out once and then reused (it backs every Hijri label until the user
+ * picks a method, so reading the time zone each time is wasted work). `env()` returns { lang, tz }.
+ * reset() forgets it, e.g. when the app comes back to the foreground after a trip across time zones.
+ */
+export function regionCache(env) {
+  let memo = null;
+  return {
+    get() {
+      if (!memo) { let e = {}; try { e = env() || {}; } catch (err) { /* no Intl / navigator: language-free default */ } memo = suggestedHijri(e); }
+      return memo;
+    },
+    reset() { memo = null; },
+  };
 }

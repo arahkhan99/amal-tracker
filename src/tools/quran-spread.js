@@ -38,3 +38,10 @@ export function stepSpread(n, d, total, first = 1) {
 
 /** True when page n is on screen in the spread that starts at (or holds) page start. */
 export const inSpread = (n, start, total, first = 1) => spreadPages(start, total, first).includes(n);
+
+/** The reader's state for a chosen page: the chosen page itself (kept as is: it is what gets saved, bookmarked
+ *  and shown as "last read") and the pages drawn with it. Picking page 4 in a landscape spread draws 3|4 but stays page 4. */
+export function readerPages(chosen, total, first = 1, spread = false) {
+  const page = clamp(chosen, total);
+  return { page, shown: spread ? spreadPages(page, total, first) : [page] };
+}

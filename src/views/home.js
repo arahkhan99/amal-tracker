@@ -4,12 +4,13 @@
 import { S, UI, A, $, NOW, todayKey, onRender, commit, render, toast, openSheet, closeSheet, go } from "../app.js";
 import * as store from "../store.js";
 import { PRAYERS, DOW, MON, fmt12, dkey, parseKey, addDays, esc } from "../util.js";
-import { timesFor, currentWindow, nextPrayer, windowEnd, ishaBestBefore, madeUpDeadline, canStillMakeUp, startedPrayers, notStarted, weekIndex, METHOD_SHORT, FALLBACK_LOCATION } from "../times.js";
+import { timesFor, currentWindow, nextPrayer, windowEnd, ishaBestBefore, madeUpDeadline, canStillMakeUp, excusedSoFar, weekIndex, METHOD_SHORT, FALLBACK_LOCATION } from "../times.js";
+import { canLog, logAllowed } from "../logging.js";
 import { hijriLabel } from "../hijri.js";
 import * as st from "../stats.js";
 import { isOn, toolVisible } from "../features.js";
 import { madhhabOf, tierLabel, TIERS, itemById } from "../rules/madhhab.js";
-import { thisWeek, pastSahabi, setSahabiStart, monthIndex, contentReady, loadContent } from "../content.js";
+import { thisWeek, pastSahabi, setSahabiStart, monthIndex, contentReady, loadContent, whenContent } from "../content.js";
 import { gloss } from "../glossary.js";
 import * as T from "../strings.js";
 import { HOME_X, NOT_YET } from "../strings.js";
@@ -119,18 +120,23 @@ export function chipsFor(p, key, opts = {}) {
 }
 export const chipLegend = () => `<div class="slg"><span><i class="lmu"></i>${TIER.muakkadah.name}${xi("sunnahMuakkadah")}</span><span><i class="lgm"></i>${TIER.ghayr.short}${xi("ghayrMuakkadah")}</span><span><i class="lwj"></i>${T.WITR_UI.rowLabel[madhhabOf(S)] || "Witr"}${xi("witr")}</span></div>`;
 
+/** Toast for a log refused because its prayer hasn't begun (logging.js). */
+const notYetToast = (p, key) => toast(NOT_YET.body(pName(p, key)));
+
 function toggleChip(el) {
-  const key = el.dataset.key;
+  const key = el.dataset.key, now = NOW();
   const owner = el.dataset.witr ? "Isha" : itemById(el.dataset.chip, madhhabOf(S))?.prayer;
-  if (owner && PRAYERS.includes(owner) && notStarted(parseKey(key), owner, settings(), NOW())) { toast(NOT_YET.body(pName(owner, key))); return; }
   if (el.dataset.witr) {
     const w = store.witrChip(S, key);
-    store.setWitr(S, key, w.status === "done" ? null : "done", NOW());
+    const next = w.status === "done" ? null : "done";
+    if (!logAllowed(S, key, "Isha", next, now)) { notYetToast("Isha", key); return; } // unticking is always allowed
+    store.setWitr(S, key, next, now);
     commit(); return;
   }
   const id = el.dataset.chip;
   const was = store.sunnahDone(S, key, id);
-  if (!store.setSunnah(S, key, id, !was)) { toast(SUNNAH_UI.notAfterMissed); return; }
+  if (!logAllowed(S, key, owner, !was, now)) { notYetToast(owner, key); return; } // unticking is always allowed
+  if (!store.setSunnah(S, key, id, !was, now)) { toast(SUNNAH_UI.notAfterMissed); return; }
   commit();
 }
 
@@ -181,7 +187,9 @@ document.addEventListener("click", e => {
 
 /* ---------- logging a prayer ---------- */
 export function applyStatus(p, key, status, { close = true } = {}) {
-  if (status && notStarted(parseKey(key), p, settings(), NOW())) return; // no logging before the prayer's time begins
+  // No logging before the prayer's time begins (clearing is always allowed). Never a silent no-op: say why,
+  // and redraw an open log sheet so it shows "Begins at …" instead of the status tiles.
+  if (!logAllowed(S, key, p, status, NOW())) { notYetToast(p, key); refreshLive(); return; }
   const snap = snapshot(key);
   if (key < S.createdKey) S.createdKey = key; // backfilling an earlier day extends the tracked range
   const was = store.setPrayer(S, key, p, status, NOW());
@@ -215,8 +223,9 @@ function rememberTick(p, key, day) {
     <p class="gdh-n">${T.GENDER.rememberNote}</p>`;
 }
 A.rememberAt = (p, key = todayKey()) => {
-  const on = !store.remembered(store.getDay(S, key), p);
-  if (!store.setRemember(S, key, p, on, NOW())) return;
+  const on = !store.remembered(store.getDay(S, key), p), now = NOW();
+  if (!logAllowed(S, key, p, on, now)) { notYetToast(p, key); return; } // unticking is always allowed
+  if (!store.setRemember(S, key, p, on, now)) return;
   commit();
 };
 
@@ -225,7 +234,14 @@ const madeUpOffered = (p, key, cur) => cur === "madeup" || NOW() < madeUpDeadlin
 A.prayerSheet = (p, key = todayKey()) => showSheet(() => {
   const d = parseKey(key), day = store.getDay(S, key), cur = store.prayerStatus(S, key, p);
   const t = timesFor(d, settings())[p], end = windowEnd(d, p, settings());
-  if (!cur && notStarted(d, p, settings(), NOW())) return `<div class="sh"><div class="lhd"><div><h3>${esc(pName(p, key))}</h3><p class="sub">${esc(longDate(d))} · ${esc(NOT_YET.begins(fmt12(t)))}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div><p class="note">${esc(NOT_YET.body(pName(p, key)))}</p><div class="shfoot"><button class="pbtn" onclick="A.closeSheet()">${esc(COMMON.done)}</button></div></div>`;
+  // Not begun yet (also when it already has a status: an excused day, or a travel / method change moved its
+  // start later): only "Begins at …", plus Clear when a status is stored, since removing a log is always allowed.
+  if (!canLog(S, key, p, NOW())) {
+    const stored = !!day.prayers?.[p];
+    return `<div class="sh"><div class="lhd"><div><h3>${esc(pName(p, key))}</h3><p class="sub">${esc(longDate(d))} · ${esc(NOT_YET.begins(fmt12(t)))}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div><p class="note">${esc(NOT_YET.body(pName(p, key)))}</p>
+    ${stored ? `<p class="fine"><button class="link" onclick="A.setPrayer('${p}',null,'${key}')" style="font-weight:700;color:var(--z-ink2)">${COMMON.clear}</button></p>` : ""}
+    <div class="shfoot"><button class="pbtn" onclick="A.closeSheet()">${esc(COMMON.done)}</button></div></div>`;
+  }
   let sub = `${dayLabel(key)}${fmt12(t)}`;
   if (cur === "madeup" && day.at?.[p]) sub += ` · ${HOME.madeUpAt(fmt12(new Date(day.at[p])))}`;
   else if (cur === "missed" || NOW() >= end) sub += ` · ${HOME.endedAt(fmt12(end))}`;
@@ -425,9 +441,7 @@ function heroBlock(now, key, day) {
 A.endExcusedMode = () => {
   const now = NOW(), key = todayKey();
   const snap = snapshot(key);
-  const cur = currentWindow(now, S.settings);
-  const prayers = startedPrayers(now, now, S.settings).filter(p => !(cur && dkey(cur.date) === key && cur.p === p));
-  store.endExcused(S, key, { excusedPrayers: prayers }, now);
+  store.endExcused(S, key, { excusedPrayers: excusedSoFar(now, S.settings) }, now);
   commit(); toast(EXCUSED.end, undoable(snap));
 };
 
@@ -516,7 +530,8 @@ function catchHTML() {
 A.cuPick = (p, k) => { if (cu.sel[p] === k) delete cu.sel[p]; else cu.sel[p] = k; refreshLive(); };
 A.cuSave = () => {
   const now = NOW(), yk = dkey(addDays(now, -1)), snap = snapshot(yk);
-  const entries = Object.entries(cu.sel); if (!entries.length) return;
+  // Yesterday's prayers have all begun; the shared rule (logging.js) still guards every write that adds a log
+  const entries = Object.entries(cu.sel).filter(([p, k]) => logAllowed(S, yk, p, k, now)); if (!entries.length) return;
   if (yk < S.createdKey) S.createdKey = yk;
   for (const [p, k] of entries) store.setPrayer(S, yk, p, k, now);
   closeSheet(); commit(); toast(X.loggedN(entries.length), undoable(snap));
@@ -538,7 +553,7 @@ function weekTiles(now) {
   if (!Number.isInteger(S.settings.sahabiStart)) { S.settings.sahabiStart = monthIndex(now); commit(); }
   setSahabiStart(S.settings.sahabiStart);
   // The approved sets are a separate chunk (content.js starts loading it at once); draw again when it lands.
-  if (!contentReady()) loadContent().then(() => render()).catch(e => console.warn("content", e));
+  if (!contentReady()) whenContent(render); // one pending load and one redraw, however often Home renders meanwhile
   const c = thisWeek(now), opened = readOpened(), mk = `${now.getFullYear()}-${now.getMonth()}`;
   const tiles = [
     ["ayah", c.ayah.title || c.ayah.en, 0], ["hadith", c.hadith.title || c.hadith.en, 0], ["dua", c.dua.title || c.dua.en, 0],
@@ -550,7 +565,7 @@ function weekTiles(now) {
     const fact = id === "sahabi" ? `<div class="fx">${esc(c.sahabi.recap ? WEEK_UI.recapTile : c.sahabi.fact)}</div>` : "";
     return `<button class="wt ${monthly ? "mo" : ""} ${fact ? "hasfx" : ""}" onclick="A.weekItem('${id}')"><div class="k"><b>${names[id]}</b><span>${X.arLabel[id]}</span></div><div class="ti">${esc(title)}</div>${fact}<span class="dt ${ok ? "" : "new"}">${ok ? ic("check", "") : ""}</span></button>`;
   }).join("");
-  return `<section class="sec"><h2>${HOME.thisWeek}</h2><p class="wsub">${esc(c.rangeLabel)} · ${X.afterJumuah}</p><div class="wgrid">${html}</div><div class="wleg"><span><i></i>${X.notOpened}</span><span>${X.goldChange}</span></div></section>`;
+  return `<section class="sec"><h2>${HOME.thisWeek}</h2><p class="wsub">${esc(c.rangeLabel)} · ${X.newEachSunday}</p><div class="wgrid">${html}</div><div class="wleg"><span><i></i>${X.notOpened}</span><span>${X.goldChange}</span></div></section>`;
 }
 const sahabiKick = () => WEEK_UI.sahabi("").replace(/ · $/, "");
 /** Sahabi of the month: today's fact, then the earlier facts of this month (newest first), then Past months. */

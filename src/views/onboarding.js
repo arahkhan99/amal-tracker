@@ -195,9 +195,14 @@ A.obNext = () => {
   if (i < list.length - 1) A.obGo(list[i + 1]);
 };
 /** Brother / sister on the name screen: sets the defaults (store.applyGender); keeps the name typed so far. */
+// true while "prayer at home counts in full" is on only because Sister was tapped on this screen
+let obHomeFull = false;
 A.obGender = g => {
   S.profile.name = ($("#obName")?.value ?? S.profile.name ?? "").trim();
-  store.applyGender(S, g, { todayKey: todayKey() }, NOW());
+  const was = !!S.settings.provisions?.homeFull;
+  // Skip after tapping Sister: take back the sister default this screen switched on
+  store.applyGender(S, g, { todayKey: todayKey(), undoHomeFull: g == null && obHomeFull }, NOW());
+  obHomeFull = g === "f" ? obHomeFull || !was : false;
   drawn = ""; commit();
 };
 A.obMadhhab = m => { store.setMadhhab(S, m); commit(); };

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { hijriLabel, hijriParts, hijriMonth, calcParts, calendarAvailable, normalizeHijri, setHijriSource, CALENDARS } from "../src/hijri.js";
 import {
   dayNum, keyOfDayNum, startOffset, committeeParts, storeCommittee, putMonth, committeeData, resetCommitteeCache,
-  monthToSet, plausibleStart, suggestedHijri, monthId,
+  monthToSet, plausibleStart, suggestedHijri, monthId, editorMonths, regionCache,
 } from "../src/hijri-committees.js";
 
 const UQ = n => calcParts(n, CALENDARS.umalqura);
@@ -154,8 +154,70 @@ describe("helpers", () => {
     expect(suggestedHijri({ lang: "en-GB", tz: "Europe/London" }).method).toBe("umalqura");
     expect(suggestedHijri({ lang: "ar-SA", tz: "Asia/Riyadh" }).method).toBe("umalqura");
   });
+  it("the time zone wins over the language region; the region is used only without a clear zone", () => {
+    // an en-US / fr-CA phone living elsewhere
+    expect(suggestedHijri({ lang: "en-US", tz: "Europe/London" }).method).toBe("umalqura");
+    expect(suggestedHijri({ lang: "en-US", tz: "Asia/Karachi" }).method).toBe("umalqura");
+    expect(suggestedHijri({ lang: "fr-CA", tz: "Europe/Paris" }).method).toBe("umalqura");
+    // America/* outside the US and Canada
+    expect(suggestedHijri({ lang: "en-US", tz: "America/Mexico_City" }).method).toBe("umalqura");
+    expect(suggestedHijri({ lang: "es", tz: "America/Sao_Paulo" }).method).toBe("umalqura");
+    // a US / Canadian zone with any language
+    expect(suggestedHijri({ lang: "en-GB", tz: "America/New_York" }).committee).toBe("chc-na");
+    expect(suggestedHijri({ lang: "ur-PK", tz: "America/Chicago" }).committee).toBe("chc-na");
+    expect(suggestedHijri({ lang: "en", tz: "America/Indiana/Indianapolis" }).committee).toBe("chc-na");
+    expect(suggestedHijri({ lang: "en", tz: "America/Vancouver" }).committee).toBe("chc-na");
+    expect(suggestedHijri({ lang: "en", tz: "Pacific/Honolulu" }).committee).toBe("chc-na");
+    // no zone, or a vague one: the language region decides
+    expect(suggestedHijri({ lang: "en-US", tz: "" }).committee).toBe("chc-na");
+    expect(suggestedHijri({ lang: "en-CA", tz: "UTC" }).committee).toBe("chc-na");
+    expect(suggestedHijri({ lang: "en-GB", tz: "Etc/UTC" }).method).toBe("umalqura");
+    expect(suggestedHijri().method).toBe("umalqura");
+  });
   it("committeeParts works with plain data too", () => {
     const d = { months: { "1445-09": { startDate: "2024-03-12" } }, offset: null };
     expect(committeeParts(d, dayNum("2024-03-12"), UQ)).toMatchObject({ m: 9, d: 1 });
+  });
+});
+
+describe("editor sheet months (review fix)", () => {
+  it("is null when there is no Hijri date, instead of crashing", () => {
+    expect(editorMonths(null)).toBe(null);
+    expect(editorMonths({})).toBe(null);
+  });
+  it("offers the previous, this and next month around the month to set", () => {
+    expect(editorMonths({ y: 1448, m: 5, d: 10 })).toEqual({ t: { y: 1448, m: 5 }, months: [{ y: 1448, m: 4 }, { y: 1448, m: 5 }, { y: 1448, m: 6 }] });
+    expect(editorMonths({ y: 1448, m: 12, d: 27 }).t).toEqual({ y: 1449, m: 1 });
+    expect(editorMonths({ y: 1449, m: 1, d: 3 }).months[0]).toEqual({ y: 1448, m: 12 });
+  });
+  it("uses the committee's date without the editor's own adjustment", () => {
+    storeCommittee("chc-na", [{ id: "1445-09", startDate: "2024-03-12" }], UQ);
+    const st = { method: "committee", committee: "chc-na", adjust: 2 };
+    // on 6 Apr 2024 (26 Ramadan by the committee) the month to set is Shawwal; with +2 the editor's own label says 28 Ramadan
+    expect(editorMonths(hijriParts("2024-04-06", { ...st, adjust: 0 })).t).toEqual({ y: 1445, m: 10 });
+    expect(hijriParts("2024-04-06", st)).toMatchObject({ m: 9, d: 28 });
+  });
+});
+
+describe("caches (review fix): same results, less work", () => {
+  it("the region suggestion is worked out once until reset", () => {
+    let calls = 0;
+    const r = regionCache(() => { calls++; return { lang: "en-US", tz: "America/Chicago" }; });
+    expect(r.get().committee).toBe("chc-na");
+    r.get(); r.get();
+    expect(calls).toBe(1);
+    r.reset();
+    expect(r.get().committee).toBe("chc-na");
+    expect(calls).toBe(2);
+    expect(regionCache(() => { throw new Error("no Intl"); }).get().method).toBe("umalqura");
+  });
+  it("committee dates are unchanged after putMonth replaces the cached months", () => {
+    storeCommittee("chc-na", [{ id: "1445-09", startDate: "2024-03-12" }], UQ);
+    const st = { method: "committee", committee: "chc-na", adjust: 0 };
+    expect(hijriParts("2024-04-09", st)).toMatchObject({ m: 9, d: 29 });
+    expect(hijriParts("2024-04-09", st)).toMatchObject({ m: 9, d: 29 }); // cached list, same answer
+    putMonth("chc-na", 1445, 10, "2024-04-10", UQ);
+    expect(hijriParts("2024-04-10", st)).toMatchObject({ m: 10, d: 1, source: "committee" });
+    expect(hijriParts("2024-04-09", st)).toMatchObject({ m: 9, d: 29, source: "committee" });
   });
 });

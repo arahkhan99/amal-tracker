@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { spreadPages, stepSpread, spreadFirst, inSpread } from "../src/tools/quran-spread.js";
+import { spreadPages, stepSpread, spreadFirst, inSpread, readerPages } from "../src/tools/quran-spread.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = path.join(ROOT, "public/quran");
@@ -88,4 +88,16 @@ describe("spreadFirst per mushaf", () => {
       expect(ix.surahStartPage[1]).toBe(2);
     });
   }
+});
+
+describe("readerPages: the chosen page is kept, the spread is only drawn", () => {
+  it("an even (left-hand) page stays the chosen page in a spread", () => {
+    expect(readerPages(4, 610, 1, true)).toEqual({ page: 4, shown: [3, 4] });
+    expect(readerPages(3, 610, 1, true)).toEqual({ page: 3, shown: [3, 4] });
+    expect(readerPages(610, 610, 1, true)).toEqual({ page: 610, shown: [609, 610] });
+  });
+  it("one page outside a spread; junk is clamped", () => {
+    expect(readerPages(4, 610)).toEqual({ page: 4, shown: [4] });
+    expect(readerPages(0, 610, 1, true)).toEqual({ page: 1, shown: [1, 2] });
+  });
 });

@@ -3,7 +3,7 @@ import { S, UI, A, $, $$, NOW, onRender, commit, toast, openSheet, closeSheet, r
 import * as store from "../store.js";
 import { PRAYERS, esc, dkey, addDays } from "../util.js";
 import { METHODS, METHOD_SHORT, FALLBACK_LOCATION } from "../times.js";
-import { isNative, currentPosition, cityName, searchCity, saveFile, pickFile, biometryAvailable, authenticate } from "../platform.js";
+import { isNative, pageUrl, currentPosition, cityName, searchCity, saveFile, pickFile, biometryAvailable, authenticate } from "../platform.js";
 import { cloud, signIn, signOut, sync, deleteAccount, keepAccount } from "../cloud.js";
 import { signInSheetHtml, consentTicked, signInError } from "./consent.js"; // also registers A.consentSheet (c3)
 import { CONSENT } from "../strings.js";
@@ -16,12 +16,12 @@ import {
   STATUS, prayerName, WITR_STATUS, DEED_NAME, NAV,
 } from "../strings.js";
 import { SETTINGS_X, GUIDE, GENDER, TRAVEL } from "../strings.js";
-import { currentWindow, startedPrayers } from "../times.js";
+import { excusedSoFar } from "../times.js";
 import { helpPage } from "./help.js";
 import { featureRow as pvFeatureRow, settingsGroup as pvGroup, pvIcon } from "./provisions.js";
 import { helpIsNew } from "../guide.js";
 import { setHijriSource, currentHijri, normalizeHijri, hijriLabel, hijriParts, calendarAvailable, calcParts, CALENDARS, HIJRI_MONTHS } from "../hijri.js";
-import { COMMITTEES, committeeById, committeeData, suggestedHijri, monthToSet, plausibleStart, monthId } from "../hijri-committees.js";
+import { COMMITTEES, committeeById, committeeData, regionCache, editorMonths, plausibleStart, monthId } from "../hijri-committees.js";
 import { hijriEditors, refreshHijriCommittee, saveCommitteeMonth } from "../cloud.js";
 import { setCrashReporting } from "../crash.js";
 
@@ -145,13 +145,12 @@ A.setGender = k => {
   const g = k === "f" || k === "m" ? k : null;
   if (g === store.genderOf(S)) return; // same choice: leave the switches as the user set them
   // A brother in excused mode: end it like Home's "End" button (prayers already started today stay excused)
-  const now = NOW(), key = dkey(now), cur = currentWindow(now, S.settings);
-  const excusedPrayers = startedPrayers(now, now, S.settings).filter(p => !(cur && dkey(cur.date) === key && cur.p === p));
-  store.applyGender(S, g, { todayKey: key, excusedPrayers }, now);
+  const now = NOW();
+  store.applyGender(S, g, { todayKey: dkey(now), excusedPrayers: excusedSoFar(now, S.settings) }, now);
   commit(); A.genderSheet(); toast(GENDER.setToast[g || "n"]);
 };
-A.jumuahToggle = () => { S.settings.jumuah = S.settings.jumuah === false; commit(); };
-A.autoLocationToggle = () => { S.settings.autoLocation = S.settings.autoLocation === false; commit(); };
+// The Jumuʿah and travel switches use A.toggle: both settings are always stored as true/false (defaultState
+// and normalize), so flipping !S.settings[k] is the same as their old "=== false" toggles.
 
 /* ---------- location ---------- */
 A.locationSheet = () => {
@@ -210,13 +209,17 @@ const H = {
   editorRow: "Update this month's start",
   edTitle: "Update this month's start", edLead: "Pick the Gregorian date of the 1st of the month, as decided by the committee.",
   edMonth: "Month", edDate: "Date of the 1st", edNote: "Note (optional)", edSaved: "Month start saved", edFailed: "Couldn't save. Check your connection.", edBad: "That date is more than 3 days from the calculated start. Check it.", edNeedDate: "Pick a date.",
+  edUnavailable: "This device can't work out today's Hijri date, so the month to update can't be chosen here.",
 };
 const hijriSummary = () => {
   const h = currentHijri();
   const base = h.method === "committee" ? (committeeById(h.committee)?.short || "Committee") : H.methods[h.method][0];
   return h.adjust ? `${base}, ${h.adjust > 0 ? "+" : "−"}${Math.abs(h.adjust)}` : base;
 };
-const hijriRegion = () => { try { return suggestedHijri({ lang: navigator.language || "", tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "" }); } catch (e) { return suggestedHijri(); } };
+// worked out once per session (it backs every Hijri label until a method is picked); re-read on return to the app
+const REGION = regionCache(() => ({ lang: navigator.language || "", tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "" }));
+const hijriRegion = () => REGION.get();
+if (typeof document !== "undefined") document.addEventListener("visibilitychange", () => { if (!document.hidden) REGION.reset(); });
 function hijriSourceNote() {
   const h = currentHijri();
   if (h.method !== "committee") return "";
@@ -252,9 +255,10 @@ A.setHijriAdjust = n => saveHijri({ adjust: n });
 A.hijriEditorSheet = () => {
   const h = currentHijri(), c = committeeById(h.committee);
   if (h.method !== "committee" || !cloud.user || !hijriEditors[h.committee]) return;
-  const t = monthToSet(hijriParts(new Date()));
-  const prev = t.m === 1 ? { y: t.y - 1, m: 12 } : { y: t.y, m: t.m - 1 }, next = t.m === 12 ? { y: t.y + 1, m: 1 } : { y: t.y, m: t.m + 1 };
-  const months = [prev, t, next], known = committeeData(h.committee).months, cur = known[monthId(t.y, t.m)];
+  // the committee's own date for today, without this editor's personal ± adjustment
+  const em = editorMonths(hijriParts(new Date(), { ...h, adjust: 0 }));
+  if (!em) { openSheet(`<h3>${esc(H.edTitle)}</h3><p>${esc(H.edUnavailable)}</p><div class="cta"><button class="btn primary" onclick="A.hijriSheet(false)">${esc(COMMON.done)}</button></div>`); return; }
+  const { t, months } = em, known = committeeData(h.committee).months, cur = known[monthId(t.y, t.m)];
   openSheet(`<h3>${esc(H.edTitle)}</h3><p>${esc(c.name)}. ${esc(H.edLead)}</p>
     <div class="field"><label for="hjMonth">${esc(H.edMonth)}</label><select id="hjMonth" onchange="A.hijriEdMonth()">${months.map(x => `<option value="${x.y}-${x.m}" ${x === t ? "selected" : ""}>${esc(HIJRI_MONTHS[x.m - 1])} ${x.y}</option>`).join("")}</select></div>
     <div class="field"><label for="hjDate">${esc(H.edDate)}</label><input id="hjDate" type="date" value="${esc(cur?.startDate || "")}"></div>
@@ -401,7 +405,8 @@ A.cloudSignIn = async (provider = "google") => {
 };
 A.cloudSync = async () => { await sync(); closeSheet(); toast(cloud.error || T.syncedToast); };
 A.cloudSignOut = async () => { await signOut(); closeSheet(); toast(T.signedOutToast); };
-A.keepAccount = async () => { closeSheet(); await keepAccount(); toast(cloud.error || T.syncBackOn); };
+// Without a current consent keepAccount opens the re-consent sheet instead, and sync isn't back on yet
+A.keepAccount = async () => { closeSheet(); if (await keepAccount()) toast(cloud.error || T.syncBackOn); };
 
 /* ---------- terms + data consent: A.consentSheet / A.consentAgree / A.consentLater live in views/consent.js ---------- */
 
@@ -424,10 +429,10 @@ A.deleteAccount = async () => {
   catch (e) {
     console.warn("delete account", e);
     go.disabled = false; go.textContent = T.tryAgain;
-    err.textContent = e.step === "confirm" ? CONSENT.delConfirm : e.step === "auth"
+    err.textContent = e.step === "auth"
       ? (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request" || /cancel/i.test(e.message) ? T.delAuthCancelled : T.delAuthFailed)
       : T.delDataFailed;
-    toast(e.step === "auth" ? T.delAuthToast : e.step === "confirm" ? CONSENT.delConfirmToast : T.delToast);
+    toast(e.step === "auth" ? T.delAuthToast : T.delToast);
     return;
   }
   closeSheet();
@@ -436,12 +441,8 @@ A.deleteAccount = async () => {
 };
 
 /* ---------- about ---------- */
-const SITE = "https://arahkhan99.github.io/amal-tracker/";
-export const pageUrl = p => (isNative() ? SITE + p : p);
 const link = (page, label) => `<a href="${pageUrl(page)}" target="_blank" rel="noopener">${esc(label)}</a>`;
 const links = () => `${link("terms.html", T.terms)} · ${link("privacy.html", T.privacy)}`;
-/** The line shown before every Google sign-in (HTML with links). */
-export const consentLine = () => T.consentLine.replace("{terms}", link("terms.html", T.terms)).replace("{privacy}", link("privacy.html", T.privacy));
 export const APP_VERSION = typeof __APP_VERSION__ === "undefined" ? "dev" : __APP_VERSION__;
 
 /* ---------- on-time reminders (Android 12+) ---------- */
@@ -516,11 +517,13 @@ function mainPage() {
   g.push(group(T.groups.prayer, [
     navRow({ icon: "user", tone: "green", title: GENDER.row, value: genderVal(store.genderOf(S)), onclick: "A.genderSheet()" }),
     navRow({ icon: "book", tone: "green", title: MADHHAB_UI.title, sub: info.summary, value: info.name, onclick: "A.madhhabSheet()", gl: "" }),
-    switchRow({ icon: "mosque", tone: "green", title: GENDER.jumuah, sub: GENDER.jumuahSub, key: "jumuah", on: st.jumuah !== false, fn: "A.jumuahToggle()" }),
+    switchRow({ icon: "mosque", tone: "green", title: GENDER.jumuah, sub: GENDER.jumuahSub, key: "jumuah", on: st.jumuah !== false }),
     ...(isOnF("sunnah") ? [navRow({ icon: "layers", tone: "green", title: SUNNAH_UI.pageTitle, value: SUNNAH_UI.tiersOn(sunnahTiers), onclick: "A.settingsPage('sunnah')" })] : []),
     navRow({ icon: "pin", tone: "green", title: T.location, value: loc ? loc.label : "", sub: loc ? "" : T.locNotSet(FALLBACK_LOCATION.label), onclick: "A.locationSheet()" }),
-    // Only for a location from "Use my current location"; a searched city never changes on its own
-    ...(loc && loc.source !== "city" ? [switchRow({ icon: "refresh", tone: "green", title: TRAVEL.row, sub: TRAVEL.rowSub, key: "autoLocation", on: st.autoLocation !== false, fn: "A.autoLocationToggle()" })] : []),
+    // Only for a location from "Use my current location"; a searched city never changes on its own. An older save
+    // that didn't record its source gets a hint (opening the location sheet) instead of the switch.
+    ...(loc?.source === "gps" ? [switchRow({ icon: "refresh", tone: "green", title: TRAVEL.row, sub: TRAVEL.rowSub, key: "autoLocation", on: st.autoLocation !== false })]
+      : loc?.source === "unknown" ? [navRow({ icon: "refresh", tone: "green", title: TRAVEL.row, sub: TRAVEL.unknownHint, onclick: "A.locationSheet()" })] : []),
     navRow({ icon: "compass", tone: "green", title: T.method, value: METHOD_SHORT[st.method] || st.method, onclick: "A.methodSheet()" }),
     navRow({ icon: "sun", tone: "green", title: ASR_UI.title, value: st.asr === "hanafi" ? ASR_UI.hanafi : ASR_UI.standard, onclick: "A.asrSheet()" }),
   ]));

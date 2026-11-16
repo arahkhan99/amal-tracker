@@ -121,6 +121,12 @@ struct WidgetModel {
 
     func countdown(at now: Date) -> String { WidgetModel.fmtCountdown(countdownTo.timeIntervalSince(now)) }
 
+    /// now...countdownTo for the self-updating countdown (Text(timerInterval:)); never an inverted range.
+    func timerRange(at now: Date) -> ClosedRange<Date> { now...max(now, countdownTo) }
+
+    /// windowStart...countdownTo for the self-updating lock-screen bar (ProgressView(timerInterval:)).
+    var progressRange: ClosedRange<Date> { windowStart...max(windowStart, countdownTo) }
+
     /// 0...1 of the way from windowStart to countdownTo.
     func progress(at now: Date) -> Double {
         let total = countdownTo.timeIntervalSince(windowStart)

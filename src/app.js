@@ -26,11 +26,20 @@ const commitHooks = [];
 /** Run after every user change (cloud sync listens here). */
 export function onCommit(fn) { commitHooks.push(fn); }
 
-/** A change saved without a redraw (tool counters, reading position): only tell the listeners (cloud sync). */
+/**
+ * A change saved without a redraw (tool counters, reading position): only tell the listeners (cloud sync).
+ * Only for S.tools / reader prefs: anything that changes the log, settings or make-ups goes through commit().
+ */
 export function touched() { for (const h of commitHooks) h(); }
+
+// Bumped by commit() and applyState() (not touched()), so a view can reuse work done for the same state
+// (views/provisions.js keeps the provisions count until the log or settings change).
+let rev = 0;
+export const revision = () => rev;
 
 /** Persist, refresh reminders and redraw. */
 export function commit() {
+  rev++;
   S.updatedAt = Date.now();
   store.save(S);
   reschedule(S);
@@ -46,6 +55,7 @@ export function replaceState(next) {
 
 /** Swap in a new state without counting it as a user change (used when merging the cloud copy). */
 export function applyState(next) {
+  rev++;
   for (const k of Object.keys(S)) delete S[k];
   Object.assign(S, next);
   store.save(S);
@@ -68,9 +78,11 @@ export function applyTheme() {
 darkQuery?.addEventListener?.("change", () => { applyTheme(); render(); });
 /** Light status-bar icons on dark backdrops: Home, onboarding, and every view in dark mode. */
 let sbSig = "";
-function syncStatusBar() {
+/** Pick the status-bar icon colour for the current view and theme. force: set it again even if unchanged
+ *  (main.js does this once after start-up, when Capacitor has injected the safe-area insets). */
+export function syncStatusBar({ force = false } = {}) {
   const dark = UI.view === "home" || UI.view === "onboard" || resolvedTheme() === "dark";
-  if (String(dark) === sbSig) return;
+  if (!force && String(dark) === sbSig) return;
   sbSig = String(dark);
   setStatusBar(dark);
 }

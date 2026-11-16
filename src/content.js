@@ -39,11 +39,45 @@ const EPOCH = new Date(2026, 0, 4); // Sun 4 Jan 2026
 
 /* ---------- approved sets (src/content/, a lazy chunk) ---------- */
 let D = null, loading = null;
-/** Loads the approved sets once; resolves to the module. */
+let importer = () => import("./content/index.js");
+// Views that want to redraw when the sets land (a Set, so a view that asks on every render is called once).
+const waiting = new Set();
+// After a failed import: no new attempt from renders; retry after a back-off (60 s, doubling to 10 min) or when back online.
+const RETRY_MS = 60000, RETRY_MAX = 600000;
+let fails = 0, retryT = 0;
+const onOnline = () => retryNow();
+function retryNow() {
+  clearTimeout(retryT); retryT = 0;
+  if (typeof window !== "undefined") window.removeEventListener?.("online", onOnline);
+  ensure();
+}
+function scheduleRetry() {
+  if (retryT) return;
+  retryT = setTimeout(retryNow, Math.min(RETRY_MAX, RETRY_MS * 2 ** Math.max(0, fails - 1)));
+  if (typeof window !== "undefined") window.addEventListener?.("online", onOnline);
+}
+/** Loads the approved sets once; resolves to the module. A direct call (a tap) always tries, even during a back-off. */
 export function loadContent() {
-  return loading ||= import("./content/index.js").then(m => (D = m)).catch(e => { loading = null; throw e; });
+  return loading ||= importer().then(m => {
+    D = m; fails = 0; clearTimeout(retryT); retryT = 0;
+    const fns = [...waiting]; waiting.clear();
+    for (const fn of fns) { try { fn(); } catch (e) { console.warn("content", e); } }
+    return m;
+  }).catch(e => { loading = null; fails++; scheduleRetry(); throw e; });
+}
+/** Start loading unless it is loaded, in flight or waiting out a back-off. */
+function ensure() { if (!D && !loading && !retryT) loadContent().catch(e => console.warn("content", e)); }
+/** Call fn (once) when the sets have loaded; safe to call on every render. */
+export function whenContent(fn) {
+  if (D) return;
+  waiting.add(fn);
+  ensure();
 }
 export const contentReady = () => !!D;
+/** For tests: swap the chunk loader and forget the loaded state. */
+export function _resetContent(fn = () => import("./content/index.js")) {
+  importer = fn; D = null; loading = null; fails = 0; clearTimeout(retryT); retryT = 0; waiting.clear();
+}
 loadContent().catch(() => {});
 
 const NONE = { title: "", en: "", text: "", src: "" };

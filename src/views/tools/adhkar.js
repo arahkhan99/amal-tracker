@@ -1,5 +1,5 @@
 /* Morning and evening adhkār reader (AR1: list with tap counters). */
-import { A, S, $, NOW, todayKey, esc, I, T, open, redraw, part, persist, prune, prefs, tickAmal, untickAmal, amalIs, toast, openSheet, headWords, markSwaps, info, store, COMMON, APP } from "./core.js";
+import { A, S, $, NOW, todayKey, esc, I, T, open, redraw, part, persist, prune, prefs, tickAmal, untickAmal, amalIs, toast, openSheet, headWords, markSwaps, info, store, COMMON, APP, topIn } from "./core.js";
 import { ADHKAR, VIRTUES_APPROVED, partText } from "../../tools/data/adhkar.js";
 import { timesFor } from "../../times.js";
 import { fmt12 } from "../../util.js";
@@ -186,7 +186,7 @@ A.tlTap = n => {
   redraw();
   if (doneNow) {
     const next = document.querySelector("#v-tools .tl-ad.now");
-    if (next) $("#screen").scrollTop = Math.max(0, next.offsetTop - 70); else $("#screen").scrollTop = y;
+    if (next) $("#screen").scrollTop = Math.max(0, topIn(next, $("#screen")) - 70); else $("#screen").scrollTop = y;
   }
 };
 A.tlUntick = set => {

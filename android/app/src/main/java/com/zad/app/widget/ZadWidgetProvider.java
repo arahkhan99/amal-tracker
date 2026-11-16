@@ -9,7 +9,7 @@ public abstract class ZadWidgetProvider extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context context, AppWidgetManager manager, int[] ids) {
-        // Redraws every Zad widget (all sizes) and re-arms the minute tick
+        // Redraws every Zad widget (all sizes) and re-arms the boundary tick
         WidgetUpdater.updateAll(context);
     }
 

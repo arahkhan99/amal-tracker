@@ -13,11 +13,11 @@ import "./css/settings.css";
 import "./css/tour.css";
 import "./css/gender.css";
 
-import { S, UI, A, $, go, render, tick, closeSheet, commit, todayKey, toast } from "./app.js";
+import { S, UI, A, $, go, render, tick, closeSheet, commit, todayKey, toast, syncStatusBar } from "./app.js";
 import { syncExcusedMode } from "./store.js";
 import { reschedule } from "./notify.js";
-import { isNative, authenticate, onBackButton, setStatusBar, locationGranted, quietPosition, cityName } from "./platform.js";
-import { checkTravel } from "./travel.js";
+import { isNative, authenticate, onBackButton, locationGranted, quietPosition, cityName } from "./platform.js";
+import { checkTravel, heldToast } from "./travel.js";
 import "./views/home.js";
 import "./views/tracker.js";
 import "./views/qada.js";
@@ -72,8 +72,10 @@ setInterval(() => {
 
 /* ---------- app lock (Android) ---------- */
 let hiddenAt = 0;
+// Toasts that must not show over the lock screen (travel's "Location updated") wait here until unlock
+const afterUnlock = heldToast(() => !$("#lock").hidden, toast);
 A.unlock = async () => {
-  try { await authenticate(); $("#lock").hidden = true; } catch (e) { /* stay locked */ }
+  try { await authenticate(); $("#lock").hidden = true; afterUnlock.flush(); } catch (e) { /* stay locked */ }
 };
 function lockIfNeeded() {
   if (isNative() && S.settings.lock) { $("#lock").hidden = false; A.unlock(); }
@@ -90,7 +92,8 @@ document.addEventListener("visibilitychange", () => {
 /* ---------- travel: prayer times follow where you are (src/travel.js; throttled to once per 30 min) ---------- */
 function travelCheck() {
   if (!S.profile.onboarded) return;
-  checkTravel(S, { locationGranted, quietPosition, cityName, commit, toast }).catch(() => {});
+  // Its toast waits for unlock when the app lock is up (the check itself runs, so times are right on unlock)
+  checkTravel(S, { locationGranted, quietPosition, cityName, commit, toast: afterUnlock.toast }).catch(() => {});
 }
 
 /* ---------- start ---------- */
@@ -108,7 +111,7 @@ initCloud().then(render).catch(e => console.warn("cloud", e));
 // Home-screen widgets: keep their snapshot current and open the log sheet from a widget tap
 initWidgets();
 // Capacitor injects the safe-area insets shortly after load; re-pick the status bar icon colour then
-setTimeout(() => setStatusBar(UI.view === "home" || UI.view === "onboard"), 1500);
+setTimeout(() => syncStatusBar({ force: true }), 1500);
 
 // Ask the browser not to evict our data under storage pressure
 navigator.storage?.persist?.().catch(() => {});

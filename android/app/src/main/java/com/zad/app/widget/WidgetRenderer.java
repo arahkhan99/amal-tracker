@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Paint;
 import android.net.Uri;
+import android.os.SystemClock;
 import android.view.View;
 import android.widget.RemoteViews;
 import com.zad.app.MainActivity;
@@ -59,12 +60,15 @@ final class WidgetRenderer {
         v.setTextViewText(R.id.zw_tag, m.label(now ? "now" : "next"));
         v.setTextViewText(R.id.zw_name, m.focusName);
         v.setTextViewText(R.id.zw_time, m.focusTimeLabel);
-        v.setTextViewText(R.id.zw_countdown, m.countdown);
+        // A count-down Chronometer ticks by itself (API 24+, minSdk 24), so the widget only needs a redraw at
+        // prayer boundaries (WidgetUpdater). Its base is on the elapsed-realtime clock.
+        v.setChronometer(R.id.zw_countdown, SystemClock.elapsedRealtime() + Math.max(0, m.countdownTo - m.builtAt), null, true);
+        v.setChronometerCountDown(R.id.zw_countdown, true);
         if (hasButton) {
             v.setTextViewText(R.id.zw_button, "✓  " + m.label(now ? "prayed" : "logToday"));
             v.setOnClickPendingIntent(R.id.zw_button, link(c, heroUrl(m)));
         }
-        v.setContentDescription(R.id.zw_root, m.label(now ? "now" : "next") + " " + m.focusName + ", " + m.focusTimeLabel + ", " + m.countdown + " " + m.countdownLabel);
+        v.setContentDescription(R.id.zw_root, m.label(now ? "now" : "next") + " " + m.focusName + ", " + m.focusTimeLabel); // the countdown ticks on its own, so a number here would go stale
     }
 
     private static int statusIcon(String state, boolean onForest) {
