@@ -15,6 +15,7 @@ import {
   WEEK_LETTERS_SUN, prayerName,
 } from "../strings.js";
 import { PROGRESS_L } from "../strings.js";
+import { progressCard } from "./provisions.js";
 
 /* Progress-only labels (strings.js PROGRESS_L). */
 const L = PROGRESS_L;
@@ -386,7 +387,7 @@ function head(P, list) {
   const seg = ["week", "month", "year"].map(r => `<button class="${r === P.r ? "on" : ""}" aria-pressed="${r === P.r}" onclick="A.pgRange('${r}')">${PROGRESS.ranges[r]}</button>`).join("");
   const nav = `<div class="pnav"><button class="arr ${P.prev ? "" : "off"}" ${P.prev ? "" : "disabled"} aria-label="${esc(COMMON.back)}" onclick="A.pgOff(-1)">${ICON.chevL}</button><div style="text-align:center">${P.title}<small>${P.sub}</small></div><button class="arr ${P.off ? "" : "off"}" ${P.off ? "" : "disabled"} aria-label="${esc(COMMON.continue)}" onclick="A.pgOff(1)">${ICON.chevR}</button></div>`;
   const jump = `<nav class="jump2 jump" aria-label="${L.chips}"><div class="jt">${list.map(id => `<a class="${id === V.chapter ? "on" : ""}" data-ch="${id}" role="button" tabindex="0" onclick="A.pgGo('${id}')">${CH_NAME(id)}</a>`).join("")}</div></nav>`;
-  return { top: `<div class="top"><h1>${PROGRESS.title}</h1><p>${L.sub}</p></div><div class="seg">${seg}</div>${nav}`, jump };
+  return { top: `<div class="top"><h1>${PROGRESS.title}</h1><p>${L.sub}</p></div><!--pvcard--><div class="seg">${seg}</div>${nav}`, jump };
 }
 function heroWeek(P, c) {
   const prev = weekDates(NOW(), -P.off - 1), c2 = st.statusCountsRange(S, prev[0], prev[6], addDays(prev[6], 1));
@@ -556,7 +557,7 @@ function renderProgress() {
   const P = period(), list = chapters();
   if (!list.includes(V.chapter)) V.chapter = "salah";
   const h = head(P, list);
-  const key = ""; const html = cls(`${h.top}${h.jump}<div class="pgbody">${body(P, list)}</div>`) + `<!--${todayKey()}-->`;
+  const key = ""; const html = cls(`${h.top}${h.jump}<div class="pgbody">${body(P, list)}</div>`).replace("<!--pvcard-->", () => progressCard()) + `<!--${todayKey()}-->`; // P1: lifetime, so above Week / Month / Year
   const norm = html.replace(/class="pg-on" data-ch/g, 'class="" data-ch');
   if (norm === lastHTML && sec.childElementCount) return;
   lastHTML = norm;

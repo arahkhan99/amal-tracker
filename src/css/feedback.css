@@ -1,0 +1,71 @@
+/* Send feedback / Report a mistake (views/feedback.js). Theme tokens only, so light and dark follow theme.css. */
+
+/* ---- the sheet ---- */
+.fb .sheet-head h3{font-size:26px}
+.fb-lab{font-size:12px;font-weight:600;color:var(--ink2);margin-top:16px;margin-bottom:8px}
+.fb-lab span,.fb .field label span{font-weight:500;color:var(--ink3)}
+.fb-chips{display:flex;flex-wrap:wrap;gap:8px}
+.fb-chip{font-size:14px;font-weight:600;padding:9px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface2);color:var(--ink)}
+.fb-chip.on{border-color:var(--btn-bg);background:var(--btn-bg);color:var(--btn-fg)}
+.fb-chips.sm .fb-chip{font-size:13px;padding:7px 12px}
+.fb-chips.sm .fb-chip.on{background:var(--ok-bg);color:var(--ok-fg);border-color:var(--link)}
+.fb .field{margin-top:14px}
+.fb .field textarea{min-height:104px;line-height:1.45;color:var(--ink)}
+.fb .field input,.fb .field select{color:var(--ink)}
+.fb .field textarea::placeholder,.fb .field input::placeholder{color:var(--ink3)}
+.fb-count{font-size:11.5px;color:var(--ink3);text-align:right;margin-top:4px}
+.fb-hint{display:block;font-size:12px;color:var(--ink3);margin-top:5px}
+.fb .chk{margin-top:12px;padding:12px 14px}
+.fb .chk input{accent-color:var(--leaf)}
+.fb .chk b{font-size:14px}
+.fb .cta{margin-top:16px}
+.fb .btn.primary{display:flex;align-items:center;justify-content:center;gap:8px}
+.fb .btn.primary[disabled]{opacity:.45;cursor:default}
+.fb .btn.primary svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.fb .note{text-align:center}
+.fb .note.err{margin-top:12px}
+.fb .note.fb-mailto{margin-top:4px}
+.fb .note.fb-mailto a{color:var(--link);font-weight:600}
+
+/* the item being reported (pre-filled from a content sheet or reader) */
+.fb-item{display:flex;align-items:center;gap:12px;margin-top:14px;padding:11px 12px;border-radius:14px;background:var(--gold-bg);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent)}
+.fb-item-ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;background:var(--paper);color:var(--gold-fg)}
+.fb-item-ic svg,.fb-x svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.fb-item .t{flex:1;min-width:0}
+.fb-item small{display:block;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-fg)}
+.fb-item b{display:block;font-size:14.5px;font-weight:700;color:var(--ink);line-height:1.3;margin-top:1px}
+.fb-x{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--ink2);flex:none}
+.fb-fact select{appearance:auto}
+
+/* signed out: the email-app fallback */
+.fb-so{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:12px 14px;border-radius:14px;background:var(--inset);font-size:13px;line-height:1.45;color:var(--ink2)}
+.fb-so svg{width:18px;height:18px;flex:none;margin-top:1px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.fb-so b{color:var(--ink);font-weight:700}
+
+/* thank-you state */
+.fb-done{text-align:center;padding:18px 6px 4px}
+.fb-done-ic{width:64px;height:64px;border-radius:50%;margin:0 auto 12px;display:grid;place-items:center;background:var(--ok-bg);color:var(--ok-fg)}
+.fb-done-ic svg{width:32px;height:32px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.fb-done h3{font-size:30px}
+.sheet .fb-done p{font-size:15px;line-height:1.5;margin:8px auto 0;max-width:300px}
+.sheet .fb-done p b{color:var(--ink)}
+.sheet .fb-done p.sm{font-size:13px;color:var(--ink3)}
+
+/* ---- "Report a mistake" under a Home content sheet (Home prefixes classes with z-) ---- */
+.z-fb-rep{display:flex;align-items:center;justify-content:center;gap:7px;margin:16px auto 0;padding:8px 12px;font-size:13.5px;font-weight:600;color:var(--ink2)}
+.z-fb-rep svg{width:16px;height:16px}
+.z-fb-rep span{text-decoration:underline;text-decoration-color:var(--ring);text-underline-offset:3px}
+
+/* ---- in a reader's Aa sheet ---- */
+.fb-aarow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin-top:14px;padding:14px 0 2px;border-top:1px solid var(--line)}
+.fb-aarow .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;background:var(--inset);color:var(--ink2)}
+.fb-aarow svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.fb-aarow .t{flex:1;min-width:0}
+.fb-aarow b{display:block;font-size:15px;font-weight:600;color:var(--ink)}
+.fb-aarow small{display:block;font-size:12px;color:var(--ink2);margin-top:1px}
+.fb-aarow .chev{color:var(--ink3);display:grid}
+
+/* ---- Qurʾān page menu with a fifth action (Report) ---- */
+.tl-qact.five{grid-template-columns:repeat(5,1fr);gap:2px}
+.tl-qact.five i{width:46px}
+.tl-qact.five button{font-size:12px}

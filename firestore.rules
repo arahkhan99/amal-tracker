@@ -29,5 +29,38 @@ service cloud.firestore {
           && request.resource.data.get('note', '').size() <= 200;
       }
     }
+
+    // In-app feedback and "Report a mistake" (src/feedback.js, cloud.sendFeedback). Signed-in users can create one
+    // document at a time and never change one. They can read and delete only their own, so "Delete account" can find
+    // and remove them. The team reads them in the Firebase console (the console bypasses these rules).
+    match /feedback/{id} {
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['type', 'message', 'itemId', 'itemTitle', 'parts', 'email',
+                                                 'appVersion', 'platform', 'device', 'createdAt', 'uid'])
+        && request.resource.data.keys().hasAll(['type', 'message', 'createdAt', 'uid'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.type in ['idea', 'bug', 'content', 'other']
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 2000
+        && request.resource.data.get('itemId', '') is string
+        && request.resource.data.get('itemId', '').size() <= 40
+        && request.resource.data.get('itemId', '').matches('^([a-z]+:[A-Za-z0-9_.#-]+)?$')
+        && request.resource.data.get('itemTitle', '') is string
+        && request.resource.data.get('itemTitle', '').size() <= 160
+        && request.resource.data.get('parts', []) is list
+        && request.resource.data.get('parts', []).size() <= 6
+        && request.resource.data.get('parts', []).hasOnly(['arabic', 'qtext', 'translit', 'translation', 'source', 'text', 'layout', 'other'])
+        && request.resource.data.get('email', '') is string
+        && request.resource.data.get('email', '').size() <= 254
+        && request.resource.data.get('appVersion', '') is string
+        && request.resource.data.get('appVersion', '').size() <= 20
+        && request.resource.data.get('platform', 'web') in ['android', 'ios', 'web']
+        && request.resource.data.get('device', '') is string
+        && request.resource.data.get('device', '').size() <= 80;
+      allow read, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow update: if false;
+    }
   }
 }

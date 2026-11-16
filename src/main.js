@@ -11,11 +11,13 @@ import "./css/home.css";
 import "./css/progress.css";
 import "./css/settings.css";
 import "./css/tour.css";
+import "./css/gender.css";
 
-import { S, UI, A, $, go, render, tick, closeSheet, commit, todayKey } from "./app.js";
+import { S, UI, A, $, go, render, tick, closeSheet, commit, todayKey, toast } from "./app.js";
 import { syncExcusedMode } from "./store.js";
 import { reschedule } from "./notify.js";
-import { isNative, authenticate, onBackButton, setStatusBar } from "./platform.js";
+import { isNative, authenticate, onBackButton, setStatusBar, locationGranted, quietPosition, cityName } from "./platform.js";
+import { checkTravel } from "./travel.js";
 import "./views/home.js";
 import "./views/tracker.js";
 import "./views/qada.js";
@@ -25,6 +27,12 @@ import "./views/settings.js";
 import "./views/tools/index.js";
 // Home tour (coach marks), after Home so its overlay finds the drawn cards
 import "./views/tour.js";
+// Send feedback / Report a mistake (one sheet, opened from Help & tour, the content sheets and the readers)
+import "./views/feedback.js";
+import "./css/feedback.css";
+// Provisions & levels (off by default; nothing shows unless Settings → Features turns it on)
+import { pvOnOpen } from "./views/provisions.js";
+import "./css/provisions.css";
 import { startOnboarding } from "./views/onboarding.js";
 import { initCloud } from "./cloud.js";
 import { initWidgets } from "./widget-bridge.js";
@@ -75,18 +83,27 @@ document.addEventListener("visibilitychange", () => {
   const newDay = tick();
   if (newDay) { UI.trkDay = 0; UI.selDay = 0; }
   if (syncExcusedMode(S, todayKey())) commit(); else { render(); reschedule(S); }
-  if (Date.now() - hiddenAt > 30000) lockIfNeeded();
+  if (Date.now() - hiddenAt > 30000) { lockIfNeeded(); pvOnOpen(); }
+  travelCheck();
 });
 
+/* ---------- travel: prayer times follow where you are (src/travel.js; throttled to once per 30 min) ---------- */
+function travelCheck() {
+  if (!S.profile.onboarded) return;
+  checkTravel(S, { locationGranted, quietPosition, cityName, commit, toast }).catch(() => {});
+}
+
 /* ---------- start ---------- */
-// Crash reports (native only; Settings → Send crash reports). Keys: app version, view, platform, theme. Nothing personal.
-initCrash({ enabled: S.settings.crashReports !== false, app_version: APP_VERSION, view: UI.view, theme: S.settings.appearance || "system" });
+// Crash reports (native only, opt-in: set-up step or Settings → Send crash reports; undefined = off). Keys: app version, view, platform, theme. Nothing personal.
+initCrash({ enabled: S.settings.crashReports === true, app_version: APP_VERSION, view: UI.view, theme: S.settings.appearance || "system" });
 onRender(() => { crashView(UI.view); crashTheme(S.settings.appearance || "system"); });
 // If excused mode is on, flag every day from its start to today
 if (syncExcusedMode(S, todayKey())) commit();
 if (S.profile.onboarded) go("home"); else startOnboarding();
 lockIfNeeded();
+pvOnOpen(); // the calm level-up sheet, once, if a new level was reached last time
 reschedule(S);
+travelCheck();
 initCloud().then(render).catch(e => console.warn("cloud", e));
 // Home-screen widgets: keep their snapshot current and open the log sheet from a widget tap
 initWidgets();

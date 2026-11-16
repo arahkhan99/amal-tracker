@@ -254,7 +254,7 @@ describe("approximate location", () => {
     expect(roundCoord(41.878114)).toBe(41.88);
     expect(roundCoord(-87.629798)).toBe(-87.63);
     const N = store.normalize({ days: {}, qada: {}, settings: { location: { lat: 51.5071983, lng: -0.1275983, label: "London" } } });
-    expect(N.settings.location).toEqual({ lat: 51.51, lng: -0.13, label: "London" });
+    expect(N.settings.location).toEqual({ lat: 51.51, lng: -0.13, label: "London", source: "gps" });
     // worst case error stays under 1 km
     const km = (a, b, c, d) => { const R = 6371, r = Math.PI / 180; const x = (d - b) * r * Math.cos((a + c) / 2 * r), y = (c - a) * r; return Math.hypot(x, y) * R; };
     expect(km(51.505, -0.125, roundCoord(51.505), roundCoord(-0.125))).toBeLessThan(1);

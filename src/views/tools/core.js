@@ -39,6 +39,7 @@ export function tickAmal(id, key = todayKey(), detail = "") {
   const day = store.ensureDay(S, key);
   if (day.amal[id]?.done) return false;
   day.amal[id] = { done: true, detail, auto: true };
+  store.markLogged(day, NOW());
   day.u = Date.now();
   return true;
 }

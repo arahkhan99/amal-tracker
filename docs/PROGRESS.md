@@ -659,3 +659,75 @@ User's big message (soft launch Dec, public launch end Jan before Ramadan; premi
 - 15 Nov: ✅ feedback mockups (agent 3): design-review/mockups2/feedback/, published https://claude.ai/artifact/FBDqQsCLuN3wRNMUXLFy1e. Recommend A+B, Firestore create-only for signed-in + mailto signed-out. 10 open questions on the page.
 - 15 Nov: ✅ privacy audit (agent 2): docs/legal/privacy-audit.md; public/privacy.html, terms.html, delete-account.html rewritten; docs/privacy-answers.md updated. KEY: hayd/nifās = health data (GDPR Art.9, Washington MHMDA). Must-fix before Dec (A1–A8): explicit unticked consent before first sync (settings.js A.cloudSheet, onboarding A.obRestore, A.consentSheet; cloud.js signIn must recordConsent before sync; profile.dataConsent), bump TERMS_VERSION, declare health data in store forms/xcprivacy, fix false strings (calcNote, permLocBody, cloudPrivate, privateNote), fill {{DEVELOPER_NAME}}/{{DEVELOPER_COUNTRY}}/{{GOVERNING_LAW}}, accept Firebase data processing terms, deploy pages. Before Jan: crash reports off by default (ask in onboarding), Sign in with Apple, WA health policy, self-host fonts on policy pages, etc. Needs user answers: legal name, country, governing law; OK to build A1 consent (mockup first).
 - 15 Nov late: helpers launched for provisions mockups, gender mockups, Ramadan spec+duas. Consent mockups published https://claude.ai/artifact/X6ChmGvQ6Htr4gUGeiiVuu. See plan doc §13.
+- 15 Nov evening: ✅ PUSHED commit 5414edf (everything except public/privacy.html, terms.html, delete-account.html — held back until consent ships; docs/plan + docs/legal kept local via .git/info/exclude because the repo is public). CI: Android App Distribution, iPhone (unsigned) build, Pages.
+- User answers: individual dev accounts in own name OK; legal name Abdul Khan, United States (filled in policy drafts; {{GOVERNING_LAW}} still needs the US state); iPhone builds via GitHub (ios.yml already exists; TestFlight upload job turns on with IOS_UPLOAD_ENABLED once Apple account + API key exist, docs/ios-setup.md) — user needs step-by-step help; feedback A+B with easiest defaults (BUILDING); Sign in with Apple YES (build together with consent step once approved — both touch sign-in); leaderboard = PREMIUM; provisions + engine approved (engine + day.first BUILDING; UI awaits mockup approval); Ramadan all + duʿās (agent running); CHC rules later.
+- Review pages: provisions https://claude.ai/artifact/NkEkUHzmtzyNBR99u62egD · brother/sister https://claude.ai/artifact/7JpfbCDP16gCVb4ptpayyH · consent https://claude.ai/artifact/X6ChmGvQ6Htr4gUGeiiVuu · feedback https://claude.ai/artifact/FBDqQsCLuN3wRNMUXLFy1e
+- 15 Nov: ✅ Ramadan spec docs/plan/ramadan.md + content docs/content/ramadan.md (6 duʿās: 3 found, 2 ifṭār duʿās NOT in approved books (Maʿārif vol 4 missing), 1 intention note; 30 daily cards; 2 Eid). 11 scholar decisions listed there. Review page being built: design-review/ramadan-review/.
+- 15 Nov: ✅ provisions engine (no UI): src/points.js, store.js day.first/markLogged, setRemember/remembered, qada.dayLog, settings.provisions + recordLevel; tests/points.test.js; 217 passed. Uncommitted. Excused weights still DRAFT.
+- Ramadan review page: https://claude.ai/artifact/NFmfUG4J767t6fXZgWX4Mw (design-review/ramadan-review/build.cjs). User reviews with Approve/Change/Drop and pastes 'Copy my review'.
+- 15 Nov: user approved consent (c1-c3 + crash option A), provisions (as recommended), brother/sister ON THE NAME SCREEN (g1d). Governing law Illinois (filled). Building: consent+Sign in with Apple, gender, provisions UI (parallel agents).
+
+## ▶ RESUME HERE (saved 15 Nov 2026, evening, at the usage limit) — LATEST
+Read this first. All plans and decisions are in `docs/plan/launch-and-premium.md` (sections 1–14). The Ramadan spec is in `docs/plan/ramadan.md`. Both `docs/plan/` and `docs/legal/` stay LOCAL: they're excluded via `.git/info/exclude` because the repo is public.
+
+**Pushed to main:** 5414edf (all earlier work, minus the policy pages) and 6cae25a (CI time-zone fix). All 3 CI runs are green, and the Android test build went to the user through App Distribution.
+
+**Uncommitted, not pushed:**
+- `src/points.js`, plus store.js changes: day.first, setRemember, qada.dayLog, settings.provisions
+- `tests/points.test.js`
+- `public/privacy.html`, `terms.html`, `delete-account.html`: rewritten, with Abdul Khan / United States / Illinois filled in. Hold them until consent ships.
+- `docs/privacy-answers.md`
+
+**4 build agents were RUNNING when the session ended. Check their output and re-run any that are incomplete, using the same brief.**
+1. **Feedback form A+B:** Firestore `feedback` collection for signed-in users, mailto for signed-out users; Report a mistake on content sheets, the Aa sheet and the Qurʾān menu; feedback deleted with the account; rules in firestore.rules; tests/feedback.test.js; screenshots in design-review/mockups2/feedback/live/.
+2. **Consent + Sign in with Apple:**
+   - Consent: c1–c3 + crash option A per design-review/mockups2/consent/NOTES.md; TERMS_VERSION 2026-11-15; recordConsent before sync; crashReports === true is the only "on"; Crashlytics auto-collection off in the manifest and Info.plist.
+   - A4 string fixes, and the privacy.html comments removed.
+   - Apple provider, entitlement, and docs/build/apple-sign-in.md.
+   - Screenshots in design-review/mockups2/consent/live/.
+3. **Brother/Sister ON THE NAME SCREEN (g1d):** profile.gender, applyGender, Jumuʿah switch, In jamāʿah first for brothers, remembrance tick in the status sheet, Settings "Set up for" row, tests/gender.test.js, screenshots in design-review/mockups2/gender/live/.
+4. **Provisions UI** (P1–P7 per design-review/mockups2/provisions/): src/css/provisions.css, tests/provisions-ui.test.js, screenshots in design-review/mockups2/provisions/live/. Excused amounts approved (3 base, 5 with remembrance). Cite "al-Bukhārī 1" with no "Ṣaḥīḥ".
+
+To check them: `git status`; look for the files and screenshots named above; run `npx vitest run` (it was 217 passed / 18 skipped before these four agents) and `npm run build`. Compare the live screenshots with the mockups. Then show the user, ask to push, and push. The test time zone is pinned to America/Chicago in vite.config.js.
+
+**After the next push:**
+- Deploy the Firestore rules (hijriCommittees + feedback). The user runs `! npx firebase-tools login` first, then we run `npx firebase-tools deploy --only firestore:rules`.
+- Then walk the user through the CHC editor setup (plan doc §11).
+
+**User decisions on 15 Nov (all in the plan doc):**
+- Soft launch in December (the Play closed test with 12 testers for 14 days, plus TestFlight). Public launch around 20–25 Jan 2027, before Ramadan (about 8 Feb).
+- Individual developer accounts in the user's own name; the user will create them and needs step-by-step help.
+- iPhone builds go through GitHub Actions: `ios.yml` exists, and the TestFlight upload job turns on with the repo variable IOS_UPLOAD_ENABLED once the Apple account and API key exist (docs/ios-setup.md). No Mac needed.
+- Premium (later): Mentor, Family, Circles and the Leaderboard (the leaderboard is PREMIUM; totals only; anonymous; weekly or monthly).
+- Provisions and levels are free and opt-in.
+- Weekly āyāt approved and loaded. Gold tiles change with the calendar month.
+- Legal name Abdul Khan, US, Illinois law.
+
+**Waiting on the user:**
+- Ramadan content review: https://claude.ai/artifact/NFmfUG4J767t6fXZgWX4Mw (13 decisions; the user pastes "Copy my review").
+- Developer accounts; Crashlytics Enable in the Firebase console; Firebase data processing terms (audit A6); Firebase login for the rules deploy.
+- Testing the new build on the phone.
+
+**Next to build after the 4 agents:**
+- Ramadan features per docs/plan/ramadan.md (mockups first, in design-review/mockups2/ramadan/), once the content review is back.
+- Store listings and screenshots.
+- Then the remaining privacy-audit items for January: B2–B14 in docs/legal/privacy-audit.md.
+
+**Review pages:**
+
+| Page | Link |
+|---|---|
+| Feedback | https://claude.ai/artifact/FBDqQsCLuN3wRNMUXLFy1e |
+| Consent | https://claude.ai/artifact/X6ChmGvQ6Htr4gUGeiiVuu |
+| Provisions | https://claude.ai/artifact/NkEkUHzmtzyNBR99u62egD |
+| Brother/Sister | https://claude.ai/artifact/7JpfbCDP16gCVb4ptpayyH |
+| Ramadan | https://claude.ai/artifact/NFmfUG4J767t6fXZgWX4Mw |
+| Āyāt | https://claude.ai/artifact/2Z3FhPR5cxzfrah9Ekfm4J |
+- 15 Nov late: the 4 build agents hit the usage limit mid-task and were RESUMED with SendMessage (not restarted). If they die again, resume them the same way, or re-run from the briefs in the resume section above.
+- 15 Nov: ✅ Brother/Sister built (name screen g1d; store applyGender/genderOf; Jumuʿah switch; remembrance tick in status sheet; src/css/gender.css; tests/gender.test.js 13). Screens: design-review/mockups2/gender/live/. Consent agent asked to add gender to consent text + privacy.html and fix crash/account tests.
+- 15 Nov: ✅ Provisions UI built (src/provisions.js, src/views/provisions.js, src/css/provisions.css, tests/provisions-ui.test.js 9). Screens design-review/mockups2/provisions/live/. Level-up 'shown' flag is device-local (localStorage).
+- 15 Nov: ✅ USER REQUEST: no logging of prayers before their time begins. times.js notStarted(); home.js A.prayerSheet shows 'Begins at …, you can log it then' (no status tiles) for unlogged not-started prayers; applyStatus refuses; sunnah/Witr chips refuse with a toast. Covers Home, Tracker and Progress (they all go through A.prayerSheet/applyStatus/toggleChip). Strings NOT_YET at end of strings.js. tests/not-started.test.js.
+- 15 Nov: ✅ Feedback form built (src/feedback.js, src/views/feedback.js, src/css/feedback.css, tests/feedback.test.js 18; firestore.rules feedback block; rules tests pass on emulator). Screens design-review/mockups2/feedback/live/. NEEDS firestore rules deploy before signed-in sends work. Consent agent asked to fix feedback privacy text + privacy-answers row.
+- 15 Nov: ✅ Consent + Sign in with Apple built (src/views/consent.js, src/css/consent.css, tests/apple.test.js; TERMS_VERSION 2026-11-15; crash opt-in). Apple button HIDDEN via APPLE_READY=false in src/views/consent.js until console setup (docs/build/apple-sign-in.md). privacy.html now mentions Apple. ALL 4 FEATURES DONE: 279 passed/23 skipped, build OK, assembleDebug OK. Built-screens page https://claude.ai/artifact/L691B8FFFU4La7YVF8Uh5R. NEXT: ask user to push (incl. the policy pages now that consent ships), then rules deploy.
+- 15 Nov: user asked prayer times to follow location when traveling — NOT done before (location fixed). Agent building auto-update (settings.location.source gps|city, settings.autoLocation, check on open/resume, >25 km, tests/travel.test.js, privacy line). Push still awaiting explicit yes. User tried firebase login without '!' prefix.
+- 15 Nov: ✅ Firebase CLI logged in (arah.khan99). ✅ Firestore rules DEPLOYED (hijriCommittees + feedback). User approved push AFTER the travel fix finishes (push everything incl. policy pages; keep docs/plan, docs/legal excluded).

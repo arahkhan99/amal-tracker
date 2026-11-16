@@ -562,7 +562,7 @@ export const SETTINGS = {
   ago: { notYet: "not yet", justNow: "just now", min: m => `${m} min ago`, h: h => `${h} h ago`, days: d => `${plural(d, "day")} ago` },
   cloudLead: "Sign in with Google and your prayers, good deeds, make-ups and settings are saved to your own private space in the cloud. They sync automatically, and signing in on a new phone brings everything back.",
   signInGoogle: "Sign in with Google",
-  cloudPrivate: "Only you can read your data. It is stored in Firebase, Google's app database.",
+  cloudPrivate: "Only your account can open it in the app. It is stored on Google Firebase in the US.",
   signedInAs: email => `Signed in as ${email}.`,
   lastSynced: ago => `Last synced ${ago}.`,
   deletePausedBody: email => `Signed in as ${email}. Deleting your account didn't finish, so sync is paused and nothing is uploaded.`,
@@ -707,7 +707,7 @@ export const SETUP_X = {
   getStarted: "Get started", logIn: "Log in", quote: "“The best provision is taqwā.”", quoteSrc: "Al-Baqarah 2:197",
   loginLead: "Log in with the account you used before. Your prayers, make-ups and settings come back to this phone.",
   welcomeBack: "Welcome back", continueGoogle: "Continue with Google", continueApple: "Continue with Apple",
-  privateNote: "Only you can read your backup. Zad never sees your password and never posts anything.",
+  privateNote: "Only your account can open it in the app. It is stored on Google Firebase in the US.",
   restoredFrom: "Restored from your backup", welcomeBackName: n => n ? `Welcome back, ${n}` : "Welcome back",
   daysOf: n => `${n} ${n === 1 ? "day" : "days"} of prayers and good deeds`, since: d => `Since ${d}`,
   makeupsLeft: n => `Make-ups: ${n.toLocaleString("en")} left`, goalLine: (g, d) => `Goal ${g} a month · ${d} done this month`,
@@ -718,7 +718,7 @@ export const SETUP_X = {
   nameEyebrow: "Welcome", nameTitle: "What should we call you?", nameSub: "Only used for your greeting.", namePlaceholder: "Your name",
   whereEyebrow: "Prayer times", whereTitle: "Where do you pray?", whereLead: "We use this to work out today’s times. You can change it later.",
   change: "Change", looksRight: "Looks right", searchCity: "Search for a city", foundFrom: "Found from your location", setManually: "Set by you",
-  calcNote: "Calculated on your phone. Your location never leaves it.", notSet: "Not set yet",
+  calcNote: "Prayer times are calculated on your phone. Your location is rounded to about 1 km, and is only sent to look up your city’s name, or to your backup if you turn it on.", notSet: "Not set yet",
   madhhabEyebrow: "How you pray", madhhabTitle: "Which madhhab do you follow?", asr: "Asr", continueWith: n => `Continue with ${n}`,
   madhhabNote: "Sets your ʿAsr time, the sunnah prayers we list and Witr in make-ups. Not sure? Keep Hanafī.",
   featEyebrow: "Make it yours", featTitle: "What would you like Zad to help with?", justPrayers: "Just prayers", everything: "Everything",
@@ -730,7 +730,7 @@ export const SETUP_X = {
   perDay: "How many a day?", yourGoal: "your goal", aMonth: n => `${n} a month`,
   fine: "That’s completely fine", fineBody: "You can add an estimate any time from Make-ups. Zad will start counting from today: missed prayers add, made-up ones subtract.",
   start: "Start tracking",
-  permLocTitle: "Find your prayer times?", permLocBody: "Zad uses your location to work out today’s prayer times on your phone. It never leaves your phone.", permLocYes: "Allow location", permLocNo: "Enter a city instead", permLocFoot: "Your phone will ask next. Change any time in Settings.",
+  permLocTitle: "Find your prayer times?", permLocBody: "Zad uses your location to work out today’s prayer times on your phone. It is rounded to about 1 km, and is only sent to look up your city’s name, or to your backup if you turn it on.", permLocYes: "Allow location", permLocNo: "Enter a city instead", permLocFoot: "Your phone will ask next. Change any time in Settings.",
   permNotTitle: "A gentle nudge at each prayer?", permNotBody: "Zad can remind you when each prayer starts, so you can log it on time. One quiet note, no spam.", permNotYes: "Turn on reminders", permNotNo: "Not now", permNotFoot: "Your phone will ask next. Change any time in Settings.",
   notifTitle: "Zad", notifBody: p => `It’s time for ${p}. Tap to mark it prayed.`, now: "now",
   nextIs: p => `next is ${p} at`, lockTouch: "Touch the sensor to unlock", lockPin: "use your PIN", lockOr: "or", unlock: "Unlock",
@@ -854,12 +854,216 @@ export const GUIDE = {
   mkFasts: "Owed fasts are counted the same way, on the Make-ups tab.",
 };
 
+/* ---------- Send feedback / Report a mistake (views/feedback.js, feedback.js) ---------- */
+export const FEEDBACK = {
+  row: "Send feedback", rowSub: "Ideas, problems, or a mistake in the content",
+  title: "Send feedback", reportTitle: "Report a mistake", report: "Report", reportMistake: "Report a mistake",
+  lead: "Ideas, problems, or something that isn’t right. We read every message.",
+  reportLead: "Thank you for helping keep Zad accurate.",
+  about: "What is it about?",
+  types: { idea: "Suggestion", bug: "Something’s not working", content: "Mistake in content", other: "Other" },
+  placeholder: {
+    idea: "What would make Zad better for you?",
+    bug: "What happened, and what did you expect to happen?",
+    content: "What looks wrong, and what should it say? A reference helps if you have one.",
+    other: "Write your message",
+  },
+  reporting: "Reporting", removeItem: "Remove the item from this report",
+  whichFact: "Which fact?", today: "Today",
+  whatWrong: "What looks wrong?", optional: "(optional)",
+  parts: { arabic: "Arabic", qtext: "Arabic text", translit: "Transliteration", translation: "Translation", source: "Narrator or source", text: "Wording", layout: "Page layout", other: "Something else" },
+  message: "Your message", messageReport: "What’s wrong?", count: (n, max) => `${n} / ${max}`,
+  email: "Email for a reply", emailHint: "So we can reply. Clear it to send without one.", emailBad: "Check the email address, or clear it.",
+  device: "Include app version and device", deviceSub: d => `${d}. It helps us find the problem.`,
+  signedOut: "You’re not signed in, so this opens your <b>email app</b> with the message ready to send to",
+  send: "Send", sending: "Sending…", openMail: "Open email app",
+  never: "Your prayer log and notes are never sent.",
+  preferEmail: "Prefer email?",
+  failed: "Couldn’t send. Check your connection and try again.",
+  thanksTitle: "Thank you",
+  thanks: "Jazāk Allāhu khayran. We’ll look into it carefully.",
+  thanksItem: "Jazāk Allāhu khayran for reporting", thanksItemEnd: "We’ll look into it carefully.",
+  thanksReply: "We’ll reply to the email you left.",
+  sent: "Sent to the Zad team.", queued: "You’re offline. It will send when you’re back online.", mailNext: "Press Send in your email app to finish.",
+  // item labels (shown to the user and stored as itemTitle)
+  kind: { ayah: "Āyah", hadith: "Hadith", dua: "Duʿā", seerah: "Sīrah", sunnah: "Sunnah", sahabi: "Companion", adhkar: "Adhkār", aftersalah: "After ṣalāh", durud: "Durūd", hizb: "Hizb", manzil: "Manzil", quran: "Qurʾān" },
+  fact: n => `fact ${n}`, page: n => `Page ${n}`,
+  inDhikr: (n, total, t) => `In this dhikr: ${n} of ${total}${t ? `, ${t}` : ""}`,
+  inItem: t => `In ${t}`,
+  // mailto
+  mailType: "Type", mailItem: "Item", mailParts: "What looks wrong", mailApp: "App", mailDevice: "Device",
+};
+
+/* ---------- Brother / sister (onboarding name screen, Settings "Set up for", remembrance tick) ---------- */
+export const GENDER = {
+  // name screen
+  label: "Set Zad up for a",
+  sister: "Sister", brother: "Brother", skip: "Prefer not to say",
+  why: "Changes Jumuʿah and excused days. You can change it in Settings.",
+  // Settings
+  row: "Set up for", notSet: "Not set",
+  sheetTitle: "Set Zad up for",
+  sheetLead: "Choose who Zad is set up for. It only changes what Zad shows. No logs are changed or deleted.",
+  optSub: { f: "Excused days on · Friday shows Zuhr", m: "Jumuʿah on Fridays · In jamāʿah first", n: "Shows everything, as Zad does now" },
+  boxTitle: { f: "For a sister, Zad", m: "For a brother, Zad", n: "If you prefer not to say, Zad" },
+  box: {
+    f: [["Excused days (hayd, nifās)", "On"], ["On Friday", "Zuhr, 4 before · 2 after"], ["Now card", "Prayed first"], ["Remembrance at prayer time", "On excused days"]],
+    m: [["Excused days", "Off"], ["On Friday", "Jumuʿah, 4 before · 4 after"], ["Now card", "In jamāʿah first"]],
+    n: [["Excused days", "On"], ["On Friday", "Jumuʿah"], ["Now card", "Prayed first"]],
+  },
+  note: "Each of these still has its own switch. Your choice stays on this phone and in your own backup, and is never shown to anyone.",
+  setToast: { f: "Set up for a sister", m: "Set up for a brother", n: "Showing everything" },
+  // Settings: the Jumuʿah switch (none existed before)
+  jumuah: "Jumuʿah on Fridays", jumuahSub: "Friday Zuhr shows as Jumuʿah, with its sunnah",
+  // status sheet on excused prayers
+  rememberAt: p => `At ${p} time`,
+  remember: "Remembrance at prayer time",
+  rememberSub: "Make wuḍūʾ and sit in your prayer place for dhikr, for about the length of the prayer.",
+  rememberNote: "Not a prayer and never counted as one. Only you see it.",
+  // tour: brothers see In jamāʿah first on the Now card
+  prayerPBrother: "Tap <b>In jamāʿah</b> when you have prayed with the congregation, or <b>Prayed</b> if you prayed alone.", // HTML
+};
+
+/* ---------- PROVISIONS: provisions & levels (views/provisions.js, points.js) ----------
+   Wording rules: always "provisions" and "gathered" (never points / earned / won); "Level 4", never a title;
+   never "reward" or "accepted" about the number; the reminder line goes on the card and every sheet. */
+export const PROVISIONS = {
+  title: "Provisions",
+  gathered: "gathered",
+  toLevel: (n, lv) => `<b>${n}</b> provisions to Level ${lv}`,
+  toLevelPlain: (n, lv) => `${n} provisions to Level ${lv}`,
+  thisWeek: "This week so far",
+  plusN: n => `<b>+${n}</b> provisions`,
+  plusNPlain: n => `+${n} provisions`,
+  level: n => `Level ${n}`,
+  lv: n => `Lv ${n}`,
+  ringLabel: "Level",
+  how: "How provisions work",
+  niyyahLine: "A personal tracker for your consistency, not a measure of reward with Allah.",
+  // P2 info sheet
+  lead: "Zād means provision for the journey. As you log your prayers and good deeds, Zad counts provisions to help you see your consistency and keep going.",
+  fardHead: "Fard prayers",
+  inJamaah: "In jamāʿah", onTime: "On time", sisters: "Sisters: 5. Praying at home on time is best for you, so it counts in full.",
+  madeUpSameDay: "Made up the same day", missed: "Missed", neverTaken: "Never taken away.",
+  moreHead: "More worship",
+  witr: "Witr", witrMadeUp: n => `Made up: ${n}`,
+  sunnah: "Sunnah and nafl prayers", deeds: "Good Deeds", makeups: "Make-ups completed",
+  each: n => `${n} each`, upTo: n => `Up to ${n} a day`,
+  excusedHead: "Excused days (hayḍ, nifās)",
+  eachTime: "Each prayer time", eachTimeSub: "Not praying is obedience to Allah on these days.",
+  remembrance: "Remembrance at prayer time",
+  remembranceSub: "Wuḍūʾ, then sitting in your prayer place for dhikr for about the length of the prayer. It keeps the habit of salah.",
+  neverDown: "Levels never go down.", neverDownSub: "A missed day takes nothing away.",
+  limits: "Daily limits", limitsSub: "keep the focus on steady practice, not on piling up extras.",
+  history: "Your whole history counts", historySub: ", from the day you started.",
+  niyyahAr: "إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ",
+  niyyahEn: "“Actions are by intentions.”",
+  niyyahSrc: "al-Bukhārī 1",
+  niyyahBody: "Provisions are a personal tracker to help you stay consistent. They are not a measure of reward with Allah; only He knows what He accepts.",
+  turnOff: "Turn off provisions",
+  turnOffNote: "Turning them off hides them. Your prayer log stays as it is.",
+  offToast: "Provisions turned off",
+  // P3 offer
+  askTitle: "Track your provisions?",
+  askBody: "Zād means provision for the journey. Zad can count what you log as provisions and show your level, to help you stay consistent.",
+  askSmall: "Off unless you turn it on. Your past days count too. You can turn it off any time in Settings.",
+  turnOn: "Turn on", howItWorks: "How it works",
+  // P3b history result / P6 level-up
+  historyLead: (lv, n, since) => `Based on your history, you're at <b>Level ${lv}</b>, with <b>${n}</b> provisions from your logs since ${since}.`,
+  freshLead: lv => `You're at <b>Level ${lv}</b>. Provisions are gathered from what you log, starting today.`,
+  toLevelTile: lv => `to Level ${lv}`,
+  daysLogged: n => (n === 1 ? "day logged" : "days logged"),
+  levelUpLead: n => `You've gathered <b>${n}</b> provisions. May Allah accept them from you and keep you steady.`,
+  duaAr: "رَبَّنَا تَقَبَّلْ مِنَّا إِنَّكَ أَنتَ السَّمِيعُ الْعَلِيمُ",
+  duaEn: "“Our Lord, accept this from us. You are the All-Hearing, the All-Knowing.”",
+  duaSrc: "al-Baqarah 2:127",
+  // P4 Settings
+  feature: "Provisions & levels", featureSub: "Count what you log as provisions and see your level. Off by default.",
+  newTag: "New",
+  group: "Provisions",
+  homeOpt: "Level on Home", homeOptSub: lv => `A small “Lv ${lv}” next to Settings`,
+  trackerOpt: "Provisions in Tracker", trackerOptSub: "“+N provisions” on each day",
+  homeFullOpt: "Prayer at home counts in full", homeFullOptSub: "For sisters: on time counts 5, like jamāʿah",
+  // P5 chip
+  chipLabel: (lv, n, next) => `Level ${lv}, ${n} provisions to Level ${next}`,
+  // P7 / P7b Tracker
+  dayTitle: dow => `${dow}'s provisions`,
+  todayTitle: "Today's provisions",
+  dayLead: date => `${date} · from what you logged`,
+  total: "Total",
+  none: "Nothing logged on this day yet.",
+  st: { congregation: "in jamāʿah", ontime: "on time", madeup: "made up", missed: "missed", excused: "excused", excusedRem: "remembrance" },
+  witrSt: { done: "prayed", madeup: "made up", missed: "missed" },
+  nDone: n => `${n} done`,
+};
+
 /** Everything, for lookups by group name. */
+/* ---------- CONSENT: cloud-backup consent (A1), re-consent (A2), crash-report step (B1), Sign in with Apple ----------
+   Used by views/settings.js (A.cloudSheet, A.consentSheet), views/onboarding.js (sLogin, sCrash) and cloud.js.
+   Wording rules: never "only you", "nobody else" or "anonymous" (privacy audit A4). */
+export const CONSENT = {
+  // the block shown before every sign-in (HTML: <b> only, no user text)
+  what: "To back up and sync, Zad stores your <b>prayer log, good deeds and notes, make-ups, settings</b> (including whether Zad is set up for a brother or sister) and (if you use them) <b>excused days</b> on Google Firebase in the US, linked to your Google or Apple account. Only your account can open them in the app. You can export or delete everything at any time.",
+  policy: "Privacy policy",
+  agree: "I agree that Zad may store this, including religious and health information",
+  terms: "Signing in also means you accept the {terms}.", // {terms} becomes a link
+  termsLink: "Terms of use",
+  settingsLead: "Back up your Zad and keep it in sync between your phones. Signing in on a new phone brings everything back.",
+  notNow: "Not now, keep everything on this phone",
+  tickFirst: "Tick the box first to back up",
+  // Sign in with Apple (Apple's approved titles: "Sign in with Apple" / "Continue with Apple")
+  signInApple: "Sign in with Apple", continueApple: "Continue with Apple",
+  appleHidden: "your Apple ID (email hidden)",
+  otherProvider: "This email already uses a different sign-in. Use the button you signed in with before.",
+  // re-consent for signed-in users, shown when cloud.TERMS_VERSION changes. Bullets are for the 2026-11-15 change
+  // only: replace them (and the version) next time.
+  reVersion: "2026-11-15",
+  reTitle: "We've updated our privacy policy",
+  reLead: "Please have a look before your backup carries on. What's changed:",
+  reBullets: [
+    "We now ask clearly before backing up your prayer records and excused days, because they are religious and health information.",
+    "It says where your backup is kept (Google Firebase, US), that we as the developer could technically open it but don't look unless you ask, and how long copies last after you delete it.",
+    "It explains crash reports, and what your phone's own backups may hold.",
+  ],
+  reWhat: acct => `Your backup holds your <b>prayer log, good deeds and notes, make-ups, settings</b> (including whether Zad is set up for a brother or sister) and (if you use them) <b>excused days</b>, linked to ${acct}. Only your account can open it in the app. You can export or delete everything at any time.`, // acct is escaped by the caller
+  reContinue: "Continue",
+  reSignOut: "Sign out, keep data on this phone",
+  reNote: "Signing out stops syncing. Your cloud copy stays until you delete it.",
+  reDelete: "Delete my cloud backup instead",
+  reThanks: "Thanks · cloud backup is on",
+  pausedStatus: email => `Paused · ${email} · waiting for your OK`,
+  // account deletion for Sign in with Apple users: Apple is asked to confirm first (to revoke Zad's access)
+  delConfirm: "Nothing was deleted. To delete your account, confirm your sign-in when asked, then tap Try again.",
+  delConfirmToast: "Account not deleted",
+  // crash reports: native-only onboarding step (option A)
+  crashEyebrow: "One last thing",
+  crashTitle: "Help us fix bugs?",
+  crashLead: "If Zad crashes or hits an error, it can send us a short technical report so we can fix it. It's up to you.",
+  crashSent: "What's sent", crashSentSub: "Phone model, app version and which part of the app went wrong",
+  crashNever: "Never sent", crashNeverSub: "Your name, account, location, prayers, deeds, notes or excused days",
+  crashLater: "You can change this any time in Settings → Send crash reports.",
+  crashYes: "Yes, send crash reports", crashNo: "No thanks",
+};
+
 export const STR = {
   APP, NAV, COMMON, PRAYER_NAME, STATUS, STATUS_SHORT, STATUS_HELP, STATUS_EXTRA, WITR_STATUS,
   MADHHAB_NAME, MADHHAB_SUMMARY, MADHHAB_UI, ASR_LABEL, ASR_UI, TIER, WITR_TAG, WITR_UI, SUNNAH_NAME, SUNNAH_UI, MEASURE,
   TIMES, HOME, EXCUSED, DEEDS, DEED_NAME, DEED_HINT, TRACKER, LOG, MAKEUPS, PROGRESS, INSIGHT,
   FEATURE, TOOL_NAME, TOOL_SUB, TOOLS_UI, WEEK_UI, WEEK_LETTERS_SUN, WEEK_LETTERS_SAT, WEEK_LETTERS_MON, NOTIFY, SETTINGS, SETUP,
-  HOME_X, PROGRESS_L, MAKEUPS_X, SETUP_X, SETTINGS_X, GUIDE,
+  HOME_X, PROGRESS_L, MAKEUPS_X, SETUP_X, SETTINGS_X, GUIDE, FEEDBACK, CONSENT,
 };
 export default STR;
+
+/* ---------- prayers that haven't started yet (can't be logged ahead of time) ---------- */
+export const NOT_YET = {
+  begins: t => `Begins at ${t}`,
+  body: p => `You can log ${p} once its time begins.`,
+};
+
+/* ---------- travel: prayer times follow where you are (src/travel.js, Settings → Prayer) ---------- */
+export const TRAVEL = {
+  row: "Update location when I travel",
+  rowSub: "When Zad opens, it checks where you are and updates prayer times if you've moved more than 25 km.",
+  updated: city => `Prayer times updated for ${city}`,
+  fallbackLabel: "Current location",
+};

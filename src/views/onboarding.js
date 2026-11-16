@@ -8,9 +8,12 @@ import { FALLBACK_LOCATION, METHODS, METHOD_SHORT, timesFor, nextPrayer } from "
 import { cloud, signIn } from "../cloud.js";
 import { hijriLabel } from "../hijri.js";
 import { madhhabOptions, madhhabOf } from "../rules/madhhab.js";
-import { consentLine } from "./settings.js";
+import { loginBottomHtml, consentTicked, signInError } from "./consent.js";
+import { CONSENT } from "../strings.js";
+import { isNative } from "../platform.js";
+import { setCrashReporting } from "../crash.js";
 import { SETUP, SETTINGS as T, COMMON, MADHHAB_UI, ASR_UI, FEATURE, TIMES, EXCUSED, MAKEUPS as M, APP, prayerName, STATUS } from "../strings.js";
-import { SETUP_X, GUIDE as G } from "../strings.js";
+import { SETUP_X, GUIDE as G, GENDER } from "../strings.js";
 import { applyReading, readingOf, queueTour } from "../guide.js";
 import { readPreview, readCards } from "./help.js";
 import "../css/onboarding.css";
@@ -32,13 +35,14 @@ const ic = {
 };
 const svg = (k, c = "") => `<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${ic[k]}</svg>`;
 const FEAT_ICON = { prayers: "mosque", sunnah: "layers", deeds: "heart", makeups: "refresh", week: "chart", progress: "bars", tools: "grid" };
-const google = `<svg viewBox="0 0 24 24" class="gg" aria-hidden="true"><path fill="#4285F4" d="M22 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.6a4.8 4.8 0 0 1-2.1 3.1v2.6h3.4c2-1.8 3.1-4.5 3.1-7.5z"/><path fill="#34A853" d="M12 22.5c2.8 0 5.2-.9 6.9-2.5l-3.4-2.6c-.9.6-2.1 1-3.5 1a6.1 6.1 0 0 1-5.8-4.2H2.7v2.7A10.5 10.5 0 0 0 12 22.5z"/><path fill="#FBBC05" d="M6.2 14.2a6.2 6.2 0 0 1 0-4V7.5H2.7a10.5 10.5 0 0 0 0 9.4z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.9.5 4 1.6l3-3A10.5 10.5 0 0 0 2.7 7.5l3.5 2.7A6.2 6.2 0 0 1 12 5.9z"/></svg>`;
 
 /* ---------- flow state ---------- */
 // screen: welcome | login | restored | nobackup | name | where | madhhab | read | features | owe
 let screen = "welcome";
 let owe = { mode: "", span: "", goalPerDay: 2, exact: false };
-const stepList = () => ["name", "where", "madhhab", "read", "features", ...(feat.isOn(S, "makeups") ? ["owe"] : [])];
+// askCrash: native builds ask about crash reports once, as the last step (Crashlytics is native only; B1)
+let askCrash = false;
+const stepList = () => ["name", "where", "madhhab", "read", "features", ...(feat.isOn(S, "makeups") ? ["owe"] : []), ...(askCrash ? ["crash"] : [])];
 const SPANS = { none: 0, under: 177, oneTwo: 531, threeFive: 1416 }; // days (a lunar year is ~354 days)
 
 const fmtT = d => `${(d.getHours() % 12) || 12}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -57,12 +61,21 @@ function stepFrame(id, body, btn, eyebrow, title, sub = "") {
 /* ---------- screens ---------- */
 function sWelcome() {
   return frame(`<div class="center-col">${logo(86)}<h1 class="brand-name">${esc(APP.name)}</h1><div class="orn"><i></i><b></b><i></i></div><p class="quote">${esc(X.quote)}</p><p class="quote-src">${esc(X.quoteSrc)}</p></div>`,
-    { cls: "welcome", btn: `${primary(X.getStarted, "A.obStart()")}${cloud.available ? `<button class="btn ghost ob-ghost" onclick="A.obGo('login')">${esc(X.logIn)}</button><p class="small legal">${consentLine()}</p>` : ""}` });
+    { cls: "welcome", btn: `${primary(X.getStarted, "A.obStart()")}${cloud.available ? `<button class="btn ghost ob-ghost" onclick="A.obGo('login')">${esc(X.logIn)}</button>` : ""}` });
 }
+/* c2: consent block, unticked box, Google + Apple (disabled until ticked) and an equal "Not now" (views/consent.js) */
 function sLogin() {
-  return frame(`<div class="center-col top">${logo(80)}<h1 class="login-h">${esc(X.welcomeBack)}</h1><p class="lead c">${esc(X.loginLead)}</p></div>`,
-    { top: `<div class="ob-top"><button class="ob-back" onclick="A.obGo('welcome')" aria-label="${esc(X.back)}">${svg("back")}</button></div>`,
-      btn: `<button class="btn white" onclick="A.obRestore()">${google}${esc(X.continueGoogle)}</button><p class="small legal">${consentLine()}</p><div class="privnote">${svg("lock")}<span>${esc(X.privateNote)}</span></div>` });
+  return frame(`<div class="center-col top cmp">${logo(52)}<h1 class="login-h">${esc(X.welcomeBack)}</h1><p class="lead c">${esc(X.loginLead)}</p></div>`,
+    { cls: "login", top: `<div class="ob-top"><button class="ob-back" onclick="A.obGo('welcome')" aria-label="${esc(X.back)}">${svg("back")}</button></div>`,
+      btn: loginBottomHtml() });
+}
+/* c4: crash reports, a last set-up step on native builds. Two equal buttons, no default (opt-in, B1). */
+const cIcon = { y: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', n: '<path d="M6 6l12 12M18 6L6 18"/>' };
+function sCrash() {
+  const C = CONSENT, row = (k, t, sub) => `<div><i class="${k}"><svg viewBox="0 0 24 24" aria-hidden="true">${cIcon[k]}</svg></i><span><b>${esc(t)}</b><small>${esc(sub)}</small></span></div>`;
+  return stepFrame("crash", `<div class="clist">${row("y", C.crashSent, C.crashSentSub)}${row("n", C.crashNever, C.crashNeverSub)}</div><p class="note-i cl"><span>${esc(C.crashLater)}</span></p>`,
+    `<button class="btn ghost eq2" onclick="A.obCrash(true)">${esc(C.crashYes)}</button><button class="btn ghost eq2" onclick="A.obCrash(false)">${esc(C.crashNo)}</button>`,
+    C.crashEyebrow, C.crashTitle, C.crashLead);
 }
 function sRestored() {
   const days = Object.keys(S.days).length, m = store.monthLog(S, NOW()), loc = S.settings.location;
@@ -86,8 +99,13 @@ function sNoBackup() {
     { btn: `${primary(X.setUp, "A.obStart()")}<button class="btn ghost ob-ghost" onclick="A.obGo('login')">${esc(X.tryAnother)}</button>` });
 }
 function sName() {
-  return stepFrame("name", `<div class="panel"><div class="field"><label for="obName">${esc(SETUP.callYou)}</label><input id="obName" value="${esc(S.profile.name)}" placeholder="${esc(X.namePlaceholder)}" autocomplete="given-name" onkeydown="if(event.key==='Enter')A.obNext()"></div><p class="hint">${esc(X.nameSub)}</p></div>`,
-    primary(COMMON.continue, "A.obNext()"), X.nameEyebrow, SETUP.welcome, SETUP.welcomeLead);
+  // Brother / sister sits on the name screen (scholar's choice, Nov 2026), not a step of its own
+  const g = store.genderOf(S);
+  const gb = (k, t) => `<button class="${g === k ? "on" : ""}" role="radio" aria-checked="${g === k}" onclick="A.obGender('${k}')">${esc(t)}</button>`;
+  const gender = `<div class="gseg-l" id="obGenderL">${esc(GENDER.label)}</div><div class="gseg" role="radiogroup" aria-labelledby="obGenderL">${gb("f", GENDER.sister)}${gb("m", GENDER.brother)}</div>
+    <div class="gseg-f"><span>${esc(GENDER.why)}</span><button onclick="A.obGender(null);A.obNext()">${esc(GENDER.skip)}</button></div>`;
+  return stepFrame("name", `<div class="panel"><div class="field"><label for="obName">${esc(SETUP.callYou)}</label><input id="obName" value="${esc(S.profile.name)}" placeholder="${esc(X.namePlaceholder)}" autocomplete="given-name" onkeydown="if(event.key==='Enter')A.obNext()"></div><p class="hint">${esc(X.nameSub)}</p>${gender}</div>`,
+    primary(COMMON.continue, "A.obNext()"), X.nameEyebrow, SETUP.welcome);
 }
 function sWhere() {
   const loc = S.settings.location, now = NOW(), t = timesFor(now, S.settings), nx = nextPrayer(now, S.settings);
@@ -153,7 +171,7 @@ function draw() {
   const sig = `${screen}|${JSON.stringify(S.settings.location)}|${S.settings.asr}|${S.settings.method}|${JSON.stringify(S.settings.features)}|${cloud.available}|${cloud.user?.email || ""}|${notifOK}|${JSON.stringify(owe)}|${readingOf(S)}`;
   if (sig === drawn && root.firstChild) return;
   drawn = sig;
-  const f = { welcome: sWelcome, login: sLogin, restored: sRestored, nobackup: sNoBackup, name: sName, where: sWhere, madhhab: sMadhhab, read: sRead, features: sFeatures, owe: sOwe }[screen];
+  const f = { welcome: sWelcome, login: sLogin, restored: sRestored, nobackup: sNoBackup, name: sName, where: sWhere, madhhab: sMadhhab, read: sRead, features: sFeatures, owe: sOwe, crash: sCrash }[screen];
   const keep = root.querySelector("input")?.value;
   root.innerHTML = f();
   void keep;
@@ -176,6 +194,12 @@ A.obNext = () => {
   if (screen === "features" && !list.includes("owe")) return A.obFinish();
   if (i < list.length - 1) A.obGo(list[i + 1]);
 };
+/** Brother / sister on the name screen: sets the defaults (store.applyGender); keeps the name typed so far. */
+A.obGender = g => {
+  S.profile.name = ($("#obName")?.value ?? S.profile.name ?? "").trim();
+  store.applyGender(S, g, { todayKey: todayKey() }, NOW());
+  drawn = ""; commit();
+};
 A.obMadhhab = m => { store.setMadhhab(S, m); commit(); };
 A.obRead = k => { applyReading(S, k); commit(); };
 A.obFeat = f => { feat.setFeature(S, f, !feat.isOn(S, f)); commit(); };
@@ -194,7 +218,7 @@ A.obLocateGo = async () => {
   closeSheet(); toast(T.finding);
   try {
     const { lat, lng } = await currentPosition();
-    S.settings.location = { lat, lng, label: await cityName(lat, lng) };
+    S.settings.location = { lat, lng, label: await cityName(lat, lng), source: "gps" };
     commit();
   } catch (e) { toast(SETUP.locFailed); }
 };
@@ -211,27 +235,36 @@ A.obNotifyYes = async () => { const ok = await requestNotifications(); if (ok) S
 A.obNotifyNo = () => { closeSheet(); completeSetup(); };
 A.obTurnOn = async () => { notifOK = await requestNotifications(); if (notifOK) { S.settings.prayerAlerts = true; toast(X.remindersOn); } drawn = ""; commit(); };
 
-A.obRestore = async () => {
+A.obRestore = async (provider = "google") => {
+  if (!consentTicked()) { toast(CONSENT.tickFirst); return; } // consent before any upload
   try {
-    await signIn();
+    await signIn({ provider, consent: true });
     notifOK = await notificationsGranted();
     screen = S.profile.onboarded ? "restored" : "nobackup";
     drawn = ""; commit();
-  } catch (e) { console.warn("restore", e); toast(T.signInFailed); }
+  } catch (e) { console.warn("restore", e); toast(signInError(e)); }
 };
 A.obOpen = () => { screen = "welcome"; drawn = ""; go("home"); toast(SETUP.welcomeBack); };
 
 A.obFinish = () => {
-  // Apply the make-ups answer, then ask about reminders (PM1) before opening Home
-  if (screen === "owe" || owe.mode) {
+  // Apply the make-ups answer, then (native) ask about crash reports, then about reminders (PM1) before opening Home
+  if (screen !== "crash" && (screen === "owe" || owe.mode)) {
     if (owe.mode === "yes") {
       if (owe.exact) { for (const p of [...store.qadaKeys(S), "fasts"]) S.qada[p] = Math.max(0, parseInt($(`#ob_${p}`)?.value) || 0); }
       else { const e = estimate(); for (const p of store.qadaKeys(S)) S.qada[p] = Math.round(e.days); S.qada.fasts = e.fasts; }
       S.qada.goal = owe.goalPerDay * 30;
     }
   }
+  if (askCrash && screen !== "crash") { A.obGo("crash"); return; }
   if (isNativeAsk()) { notifSheet(); return; }
   completeSetup();
+};
+/** Crash-report step: true is the only "on"; native collection starts right away (crash.js). */
+A.obCrash = yes => {
+  S.settings.crashReports = !!yes;
+  setCrashReporting(!!yes);
+  commit();
+  A.obFinish();
 };
 const isNativeAsk = () => true; // always show our pre-ask; the system prompt follows only on "Turn on reminders"
 function completeSetup() {
@@ -250,6 +283,8 @@ function completeSetup() {
 export function startOnboarding() {
   if (!S.profile.onboarded && !S.settings.methodChosen && S.settings.method === "NorthAmerica") S.settings.method = "Karachi";
   screen = "welcome"; owe = { mode: "", span: "", goalPerDay: 2, exact: false }; drawn = "";
+  // Ask about crash reports once, on native builds, if never answered (dev-only flag lets the screenshot script show it on the web)
+  askCrash = S.settings.crashReports === undefined && (isNative() || !!(import.meta.env?.DEV && globalThis.__zadAskCrash));
   go("onboard");
 }
 A.startOnboarding = startOnboarding;

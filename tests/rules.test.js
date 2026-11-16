@@ -4,7 +4,7 @@
 import { describe, it, beforeAll, afterAll, beforeEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { initializeTestEnvironment, assertSucceeds, assertFails } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, serverTimestamp, query, where } from "firebase/firestore";
 
 const emulator = process.env.FIRESTORE_EMULATOR_HOST;
 
@@ -128,6 +128,49 @@ describe.skipIf(!emulator)("firestore.rules", () => {
       await assertFails(setDoc(doc(alice(), "hijriCommittees/chc-na/months/1448-06"), month("alice", { startDate: "tomorrow" })));
       await assertFails(setDoc(doc(alice(), "hijriCommittees/chc-na/months/1448-06"), month("alice", { updatedBy: "bob" })));
       await assertFails(setDoc(doc(alice(), "hijriCommittees/chc-na/months/1448-06"), month("alice", { extra: 1 })));
+    });
+  });
+
+  describe("feedback", () => {
+    const fb = (uid, extra = {}) => ({ type: "content", message: "The page number looks wrong.", itemId: "hadith:H45", itemTitle: "Hadith H45 · More pleased than the traveller",
+      parts: ["source"], email: "a@b.co", appVersion: "2026.11.15", platform: "android", device: "Android 15 · Pixel 8", createdAt: serverTimestamp(), uid, ...extra });
+    const seed = () => env.withSecurityRulesDisabled(async ctx => {
+      await setDoc(doc(ctx.firestore(), "feedback/a1"), { type: "idea", message: "hi", createdAt: 1, uid: "alice" });
+      await setDoc(doc(ctx.firestore(), "feedback/b1"), { type: "idea", message: "hi", createdAt: 1, uid: "bob" });
+    });
+    it("a signed-in user can send feedback as themselves, with or without the optional fields", async () => {
+      await assertSucceeds(setDoc(doc(alice(), "feedback/n1"), fb("alice")));
+      await assertSucceeds(setDoc(doc(alice(), "feedback/n2"), { type: "idea", message: "x", createdAt: serverTimestamp(), uid: "alice" }));
+    });
+    it("signed-out users cannot send (they use the email app)", async () => {
+      await assertFails(setDoc(doc(anon(), "feedback/n1"), fb("alice")));
+    });
+    it("rejects another uid, unknown fields, bad types and oversized values", async () => {
+      await assertFails(setDoc(doc(alice(), "feedback/n1"), fb("bob")));
+      await assertFails(setDoc(doc(alice(), "feedback/n1"), fb("alice", { extra: 1 })));
+      await assertFails(setDoc(doc(alice(), "feedback/n1"), fb("alice", { type: "spam" })));
+      await assertFails(setDoc(doc(alice(), "feedback/n1"), fb("alice", { message: "" })));
+      await assertFails(setDoc(doc(alice(), "feedback/n1"), fb("alice", { message: "x".repeat(2001) })));
+      await assertFails(setDoc(doc(alice(), "feedback/n1"), fb("alice", { itemId: "H45" })));
+      await assertFails(setDoc(doc(alice(), "feedback/n1"), fb("alice", { itemTitle: "x".repeat(161) })));
+      await assertFails(setDoc(doc(alice(), "feedback/n1"), fb("alice", { parts: ["log"] })));
+      await assertFails(setDoc(doc(alice(), "feedback/n1"), fb("alice", { platform: "windows" })));
+      await assertFails(setDoc(doc(alice(), "feedback/n1"), fb("alice", { device: "x".repeat(81) })));
+      await assertFails(setDoc(doc(alice(), "feedback/n1"), fb("alice", { createdAt: 5 })));
+    });
+    it("nobody can change feedback once sent", async () => {
+      await seed();
+      await assertFails(updateDoc(doc(alice(), "feedback/a1"), { message: "changed" }));
+      await assertFails(setDoc(doc(alice(), "feedback/a1"), fb("alice")));
+    });
+    it("the sender can read and delete only their own (for Delete account)", async () => {
+      await seed();
+      await assertSucceeds(getDocs(query(collection(alice(), "feedback"), where("uid", "==", "alice"))));
+      await assertFails(getDocs(collection(alice(), "feedback")));
+      await assertFails(getDoc(doc(alice(), "feedback/b1")));
+      await assertFails(deleteDoc(doc(alice(), "feedback/b1")));
+      await assertFails(getDoc(doc(anon(), "feedback/a1")));
+      await assertSucceeds(deleteDoc(doc(alice(), "feedback/a1")));
     });
   });
 

@@ -48,6 +48,12 @@ export function timesFor(date, settings) {
   return { Fajr: pt.fajr, Sunrise: pt.sunrise, Dhuhr: pt.dhuhr, Asr: pt.asr, Maghrib: pt.maghrib, Isha: pt.isha };
 }
 
+/** True when prayer `p` on the day `date` hasn't started yet at `now` (it can't be logged until it starts). */
+export function notStarted(date, p, settings, now = new Date()) {
+  const start = timesFor(date, settings)[p];
+  return !!start && now < start;
+}
+
 /** When a prayer's window closes (Fajr at sunrise, Isha at next Fajr, others at the next prayer). */
 export function windowEnd(date, p, settings, t = timesFor(date, settings)) {
   if (p === "Fajr") return t.Sunrise;

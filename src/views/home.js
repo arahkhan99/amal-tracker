@@ -4,15 +4,17 @@
 import { S, UI, A, $, NOW, todayKey, onRender, commit, render, toast, openSheet, closeSheet, go } from "../app.js";
 import * as store from "../store.js";
 import { PRAYERS, DOW, MON, fmt12, dkey, parseKey, addDays, esc } from "../util.js";
-import { timesFor, currentWindow, nextPrayer, windowEnd, ishaBestBefore, madeUpDeadline, canStillMakeUp, startedPrayers, weekIndex, METHOD_SHORT, FALLBACK_LOCATION } from "../times.js";
+import { timesFor, currentWindow, nextPrayer, windowEnd, ishaBestBefore, madeUpDeadline, canStillMakeUp, startedPrayers, notStarted, weekIndex, METHOD_SHORT, FALLBACK_LOCATION } from "../times.js";
 import { hijriLabel } from "../hijri.js";
 import * as st from "../stats.js";
 import { isOn, toolVisible } from "../features.js";
-import { madhhabOf, tierLabel, TIERS } from "../rules/madhhab.js";
+import { madhhabOf, tierLabel, TIERS, itemById } from "../rules/madhhab.js";
 import { thisWeek, pastSahabi, setSahabiStart, monthIndex, contentReady, loadContent } from "../content.js";
 import { gloss } from "../glossary.js";
 import * as T from "../strings.js";
-import { HOME_X } from "../strings.js";
+import { HOME_X, NOT_YET } from "../strings.js";
+import { reportLink } from "../feedback.js";
+import { homeChip as pvChip, homeOffer as pvOffer } from "./provisions.js";
 
 const { APP, COMMON, STATUS, STATUS_EXTRA, HOME, TIMES, LOG, DEEDS, DEED_NAME, EXCUSED, SUNNAH_UI, TIER, MEASURE, NOTIFY, WEEK_UI, WEEK_LETTERS_SUN, prayerName } = T;
 export { STATUS };
@@ -119,6 +121,8 @@ export const chipLegend = () => `<div class="slg"><span><i class="lmu"></i>${TIE
 
 function toggleChip(el) {
   const key = el.dataset.key;
+  const owner = el.dataset.witr ? "Isha" : itemById(el.dataset.chip, madhhabOf(S))?.prayer;
+  if (owner && PRAYERS.includes(owner) && notStarted(parseKey(key), owner, settings(), NOW())) { toast(NOT_YET.body(pName(owner, key))); return; }
   if (el.dataset.witr) {
     const w = store.witrChip(S, key);
     store.setWitr(S, key, w.status === "done" ? null : "done", NOW());
@@ -177,6 +181,7 @@ document.addEventListener("click", e => {
 
 /* ---------- logging a prayer ---------- */
 export function applyStatus(p, key, status, { close = true } = {}) {
+  if (status && notStarted(parseKey(key), p, settings(), NOW())) return; // no logging before the prayer's time begins
   const snap = snapshot(key);
   if (key < S.createdKey) S.createdKey = key; // backfilling an earlier day extends the tracked range
   const was = store.setPrayer(S, key, p, status, NOW());
@@ -203,11 +208,24 @@ A.excusedToday = (key = todayKey()) => {
   toast(on ? EXCUSED.today : X.notExcused, undoable(snap));
 };
 
+/** "Remembrance at prayer time" on an excused prayer (store.setRemember). Not a prayer and never counted as one. */
+function rememberTick(p, key, day) {
+  const on = store.remembered(day, p);
+  return `<div class="gdh-l">${esc(T.GENDER.rememberAt(pName(p, key)))}</div><button class="gdh ${on ? "on" : ""}" role="checkbox" aria-checked="${on}" onclick="A.rememberAt('${p}','${key}')"><span class="bx">${on ? ic("check", "") : ""}</span><span><b>${T.GENDER.remember}</b><small>${T.GENDER.rememberSub}</small></span></button>
+    <p class="gdh-n">${T.GENDER.rememberNote}</p>`;
+}
+A.rememberAt = (p, key = todayKey()) => {
+  const on = !store.remembered(store.getDay(S, key), p);
+  if (!store.setRemember(S, key, p, on, NOW())) return;
+  commit();
+};
+
 const madeUpOffered = (p, key, cur) => cur === "madeup" || NOW() < madeUpDeadline(parseKey(key), settings());
 
 A.prayerSheet = (p, key = todayKey()) => showSheet(() => {
   const d = parseKey(key), day = store.getDay(S, key), cur = store.prayerStatus(S, key, p);
   const t = timesFor(d, settings())[p], end = windowEnd(d, p, settings());
+  if (!cur && notStarted(d, p, settings(), NOW())) return `<div class="sh"><div class="lhd"><div><h3>${esc(pName(p, key))}</h3><p class="sub">${esc(longDate(d))} · ${esc(NOT_YET.begins(fmt12(t)))}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div><p class="note">${esc(NOT_YET.body(pName(p, key)))}</p><div class="shfoot"><button class="pbtn" onclick="A.closeSheet()">${esc(COMMON.done)}</button></div></div>`;
   let sub = `${dayLabel(key)}${fmt12(t)}`;
   if (cur === "madeup" && day.at?.[p]) sub += ` · ${HOME.madeUpAt(fmt12(new Date(day.at[p])))}`;
   else if (cur === "missed" || NOW() >= end) sub += ` · ${HOME.endedAt(fmt12(end))}`;
@@ -235,7 +253,7 @@ A.prayerSheet = (p, key = todayKey()) => showSheet(() => {
   return `<div class="sh"><div class="lhd"><div><h3>${esc(pName(p, key))}</h3><p class="sub">${esc(longDate(d))} · ${esc(sub)}${best ? `<br>${esc(best)}` : ""}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
     <div class="sgrid">${opts.map(tile).join("")}${excOn ? tile("excused") : ""}</div>
     ${cur ? `<p class="fine"><button class="link" onclick="A.setPrayer('${p}',null,'${key}')" style="font-weight:700;color:var(--z-ink2)">${COMMON.clear}</button></p>` : ""}
-    ${body}
+    ${body}${cur === "excused" ? rememberTick(p, key, day) : ""}
     <div class="shfoot">${excOn ? `<button class="exbtn" onclick="A.excusedToday('${key}')">${ic("moon")}${dayEx ? X.notExcused : EXCUSED.todayBtn}</button>` : ""}<button class="pbtn" onclick="A.closeSheet()">${COMMON.done}</button></div></div>`;
 });
 
@@ -358,6 +376,12 @@ function afterSalahLink(p, k, status) {
   if (!p || !status || !["congregation", "ontime", "madeup"].includes(status) || !toolVisible(S, "afterSalah")) return "";
   return `<button class="asl" onclick="A.openAfterSalah?.('${p}')">${esc(WEEK_UI.afterSalah)}${ic("chev", "")}</button>`;
 }
+/** The Now card's two log buttons: Prayed first (gold), except for a brother, who gets In jamāʿah first. */
+function nowButtons(p, key) {
+  const pr = cls => `<button class="${cls} big" onclick="A.setPrayer('${p}','ontime','${key}')">${ic("check", "")}${STATUS_EXTRA.prayed}</button>`;
+  const jm = cls => `<button class="${cls} big" onclick="A.setPrayer('${p}','congregation','${key}')">${ic("people", "")}${STATUS.congregation}</button>`;
+  return store.genderOf(S) === "m" ? jm("hbtn") + pr("obtn") : pr("hbtn") + jm("obtn");
+}
 function heroBlock(now, key, day) {
   const st0 = S.settings, T0 = timesFor(now, st0);
   const cur = currentWindow(now, st0);
@@ -386,7 +410,7 @@ function heroBlock(now, key, day) {
       <div class="nbMain"><div><div class="pn">${esc(name)}</div><div class="pt">${sub}</div></div><div class="cd"><b>${fmtHM(target - now)}</b><small>${cdSmall}</small></div></div>
       <div class="bar" aria-hidden="true"><i style="width:${Math.max(3, Math.min(100, Math.round(elapsed / total * 100)))}%"></i></div>
       ${chips.length ? `<div class="nbsn"><span class="lb">${X.withP(esc(name))}</span><div class="scs">${chips.join("")}</div></div>` : ""}
-      <div class="nbBtns"><button class="hbtn big" onclick="A.setPrayer('${p}','ontime','${curKey}')">${ic("check", "")}${STATUS_EXTRA.prayed}</button><button class="obtn big" onclick="A.setPrayer('${p}','congregation','${curKey}')">${ic("people", "")}${STATUS.congregation}</button><button class="obtn sq" aria-label="${COMMON.edit}" onclick="A.prayerSheet('${p}','${curKey}')">${ic("dots", "")}</button></div></div>`;
+      <div class="nbBtns">${nowButtons(p, curKey)}<button class="obtn sq" aria-label="${COMMON.edit}" onclick="A.prayerSheet('${p}','${curKey}')">${ic("dots", "")}</button></div></div>`;
   } else {
     const nx = nextPrayer(now, st0), name = pName(nx.p, nx.tomorrow ? dkey(addDays(now, 1)) : key);
     const chips = cur && curStatus ? chipsFor(cur.p, curKey, { hero: true }) : [];
@@ -541,7 +565,7 @@ function sahabiSheet(now) {
     : `<h4 class="fh">${esc(WEEK_UI.todaysFact)} <small>${esc(WEEK_UI.factDay(sb.day, mon))}</small></h4><div class="en">${esc(sb.fact)}</div>${sb.src ? `<div class="src">${esc(sb.src)}</div>` : ""}`}
     ${earlier}
     <button class="pastbtn" onclick="A.pastMonths()"><span><b>${esc(WEEK_UI.pastMonths)}</b><small>${esc(WEEK_UI.pastMonthsSub)}</small></span>${ic("chev")}</button>
-    <div class="shfoot"><button class="pbtn" onclick="A.closeSheet()">${COMMON.done}</button></div></div>`));
+    <div class="shfoot"><button class="pbtn" onclick="A.closeSheet()">${COMMON.done}</button></div>${reportLink("A.fbReport('sahabi')")}</div>`));
 }
 A.pastMonths = () => {
   const list = pastSahabi(NOW());
@@ -572,7 +596,7 @@ A.weekItem = id => {
   const en = it.en || it.text, title = it.title || it.name;
   openSheet(zz(`<div class="sh wd"><div class="lhd"><span class="kick">${esc(kicker)}</span><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
     ${title ? `<h3 style="margin-top:8px">${esc(title)}</h3>` : ""}${it.ar ? `<div class="ar${id === "ayah" ? " q" : ""}${it.ar.length > 160 ? " long" : ""}" lang="ar" dir="rtl">${esc(it.ar)}</div>` : ""}${it.tr ? `<div class="tr">${esc(it.tr)}</div>` : ""}<div class="en${it.ar ? " mn" : ""}">${esc(en)}</div>${weekMeta(it)}
-    <div class="shfoot"><button class="pbtn" onclick="A.closeSheet()">${COMMON.done}</button></div></div>`));
+    <div class="shfoot"><button class="pbtn" onclick="A.closeSheet()">${COMMON.done}</button></div>${it.id ? reportLink(`A.fbReport('${id}')`) : ""}</div>`));
   render();
 };
 
@@ -587,7 +611,10 @@ function renderHome() {
   if (UI.view !== "home") { refreshLive(); return; }
   const el = $("#v-home"); if (!el) return;
   const now = NOW(), key = todayKey(), day = store.getDay(S, key), z = zz;
-  const parts = [z(heroBlock(now, key, day))];
+  // P5: the "Lv N" chip next to the gear, only when Settings → Provisions → Level on Home is on (not through zz)
+  const pvc = pvChip();
+  const hero = z(heroBlock(now, key, day));
+  const parts = [pvc ? hero.replace(/<button class="z-ibtn"[^>]*onclick="A\.go\('settings'\)">[\s\S]*?<\/button>/, m => `<div class="pv-tr-r">${pvc}${m}</div>`) : hero];
   const attn = attnCards(now, key);
   if (attn) parts.push(z(`<div class="sec" style="padding-top:16px">${attn}</div>`));
   parts.push(z(`<div class="sec" style="padding-top:${attn ? 12 : 16}px">${metersBlock(key, day)}</div>`));
@@ -597,6 +624,8 @@ function renderHome() {
     const f = toolsHomeCards();
     if (f) { try { const h = f(key); if (h) parts.push(`<div style="padding-top:12px">${h}</div>`); } catch (e) { console.warn("tools cards", e); } }
   }
+  const pvo = pvOffer(); // P3: the one-time provisions offer, above Good Deeds
+  if (pvo) parts.push(pvo);
   if (isOn(S, "deeds")) parts.push(withRead(z(deedsBlock(key)), now));
   if (isOn(S, "week")) parts.push(z(weekTiles(now)));
   const loc = S.settings.location || FALLBACK_LOCATION;

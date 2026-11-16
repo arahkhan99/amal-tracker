@@ -2,7 +2,7 @@
    Steps come from guide.tourSteps (hidden tabs and features are left out). The overlay sits in #phone,
    outside the views, so Home's redraws never remove it; the page behind is inert while it shows. */
 import { S, UI, A, $, onRender, commit } from "../app.js";
-import { GUIDE as G } from "../strings.js";
+import { GUIDE as G, GENDER } from "../strings.js";
 import { esc } from "../util.js";
 import { tourSteps, tourDue, endTour } from "../guide.js";
 import { isOn } from "../features.js";
@@ -10,7 +10,7 @@ import { isOn } from "../features.js";
 let steps = null, idx = 0, el = null, returnFocus = null, starting = false;
 
 const TEXT = {
-  prayer: s => [G.prayerT, s.variant === "today" ? G.prayerAltP : G.prayerP],
+  prayer: s => [G.prayerT, s.variant === "today" ? G.prayerAltP : S.profile?.gender === "m" ? GENDER.prayerPBrother : G.prayerP],
   status: () => [G.statusT, G.statusP({ excused: S.settings.excusedDays !== false, sunnah: isOn(S, "sunnah") })],
   deeds: () => [G.deedsT, esc(G.deedsP)],
   tools: () => [G.toolsT, esc(G.toolsP)],

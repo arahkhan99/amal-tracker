@@ -1,7 +1,9 @@
 /* Crash reporting (Firebase Crashlytics), native builds only; every call is a no-op on the web.
  * Privacy: only error messages, stack frames and the four keys in CRASH_KEYS are sent. Never add names,
  * emails, locations, madhhab, prayer logs or any other personal or religious-practice data here.
- * The switch lives in Settings (S.settings.crashReports, on unless set to false). */
+ * Opt-in: S.settings.crashReports === true is the only "on" (undefined = not asked yet = off). Asked in set-up
+ * (onboarding "Help us fix bugs?") and switchable in Settings. Native auto-collection is off in AndroidManifest.xml /
+ * Info.plist until setEnabled({ enabled: true }) runs here. */
 import { Capacitor } from "@capacitor/core";
 
 /** The only custom keys ever sent. Tests check nothing else gets through. */
@@ -98,7 +100,7 @@ export async function initCrash(ctx = {}, target = globalThis.window) {
   // Listeners stay attached; recordError checks the switch, so turning it on later works without a restart
   target?.addEventListener?.("error", e => { recordError(e?.error || e?.message); });
   target?.addEventListener?.("unhandledrejection", e => { recordError(e?.reason); });
-  await setCrashReporting(ctx.enabled !== false);
+  await setCrashReporting(ctx.enabled === true); // opt-in: anything but true is off
   return enabled;
 }
 

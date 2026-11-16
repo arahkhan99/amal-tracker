@@ -2,7 +2,8 @@
    pages come from src/tools/quran-data.js (public/quran). Nothing is typed by hand here. */
 import { A, S, $, NOW, todayKey, esc, I, T, open, redraw, part, persist, prune, toast, openSheet, closeSheet, head, info, COMMON, APP, arNum } from "./core.js";
 import { quranFont } from "./qtext.js";
-import { TOOLS_UI } from "../../strings.js";
+import { TOOLS_UI, FEEDBACK } from "../../strings.js";
+import { FLAG_SVG } from "../../feedback.js";
 import { TT } from "./strings-tools.js";
 import { listMushafs, getMushaf, getSurahs, getPage, getPageTranslation, getQuranCredits, loadMushafFont, pageForJuz, pageForSurah, juzForPage, manzilForPage, DEFAULT_MUSHAF } from "../../tools/quran-data.js";
 import { spreadPages, stepSpread, spreadFirst, TABLET_QUERY, SPREAD_QUERY } from "../../tools/quran-spread.js";
@@ -120,10 +121,11 @@ export function quranView() {
     <div class="tl-qbot"><div class="tl-qslide"><input type="range" min="1" max="${total}" value="${n}" aria-label="${pageLbl}" dir="rtl" oninput="A.tlQSlide(this.value,true)" onchange="A.tlQSlide(this.value)"></div>
       <div class="tl-qmeta"><span><button type="button" class="tl-qpn" aria-label="Next page" onclick="A.tlQPage(1)">‹</button><b>${pageLbl}</b><button type="button" class="tl-qpn" aria-label="Previous page" onclick="A.tlQPage(-1)">›</button></span>
         <button type="button" class="tl-qmu" onclick="A.tlQMushaf()">${esc(NAME[id] || id)} ▾</button></div>
-      <div class="tl-qact"><button type="button" onclick="A.tlGoTo()"><i>${I.list}</i>${TT.goTo}</button>
+      <div class="tl-qact five"><button type="button" onclick="A.tlGoTo()"><i>${I.list}</i>${TT.goTo}</button>
         <button type="button" onclick="A.tlBookmarks()"><i>${I.bookmark}</i>${TT.bookmarks}</button>
         <button type="button" class="${st.trans ? "on" : ""}" aria-pressed="${st.trans}" onclick="A.tlQTrans()"><i>${I.translate}</i>${TT.translationBtn}</button>
-        <button type="button" class="${st.night ? "on" : ""}" aria-pressed="${st.night}" onclick="A.tlQNight()"><i>${I.moon}</i>${TT.night}</button></div></div>
+        <button type="button" class="${st.night ? "on" : ""}" aria-pressed="${st.night}" onclick="A.tlQNight()"><i>${I.moon}</i>${TT.night}</button>
+        <button type="button" aria-label="${FEEDBACK.reportMistake}" onclick="A.fbReportQuran()"><i>${FLAG_SVG}</i>${FEEDBACK.report}</button></div></div>
   </div>`;
 }
 

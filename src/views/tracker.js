@@ -8,6 +8,7 @@ import { timesFor, currentWindow, canStillMakeUp, windowEnd } from "../times.js"
 import { hijriLabel } from "../hijri.js";
 import { isOn } from "../features.js";
 import { COMMON, STATUS, STATUS_EXTRA, HOME, TRACKER, DEEDS, EXCUSED, FEATURE, WEEK_LETTERS_MON, LOG } from "../strings.js";
+import { trackerChip as pvTrackerChip } from "./provisions.js";
 import { zz, ic, X, pName, chipsFor, chipLegend, deedsCard, snapshot, restore } from "./home.js";
 
 export { STATUS };
@@ -130,6 +131,8 @@ function summaryHTML(d, key, now) {
   }
   const w = store.witrChip(S, key), day = store.getDay(S, key);
   if (w.allowed && (w.inQada || isOn(S, "sunnah"))) chips.push(`<span>${day.witr === "done" || day.witr === "madeup" ? X.witrDone : day.witr === "missed" ? X.witrMissed : X.witrToDo}</span>`);
+  const pv = pvTrackerChip(key); // P7: "+N provisions", only with Settings → Provisions → Provisions in Tracker
+  if (pv) chips.push(pv);
   const C = 144.5, v = pct == null ? 0 : pct / 100;
   const title = UI.trkDay === 0 ? `${COMMON.today}, ${d.getDate()} ${MON[d.getMonth()]}` : longDate(d);
   return `<div class="daysum"><div class="tx"><b>${esc(title)}</b><small>${esc(hijriLabel(d))}${pct == null ? ` · ${TRACKER.beforeTracking}` : ""}</small><div class="chips">${chips.join("")}</div></div>

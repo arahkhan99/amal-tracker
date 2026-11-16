@@ -187,6 +187,7 @@ A.tlAa = tool => {
     <div class="tl-aarow col"><div class="t"><b>${TT.size}</b></div><div class="tl-sizes" role="radiogroup">${TT.sizes.map((l, i) => `<button type="button" role="radio" aria-checked="${p.size === i}" class="${p.size === i ? "on" : ""}" style="font-size:${13 + i * 2}px" onclick="A.tlSize(${i},'${tool}')">${l}</button>`).join("")}</div></div>
     ${tool === "manzil" ? sw("manzilTr", TT.showTranslation, TT.pickthallFrom) : sw("translit", TT.showTranslit, TT.draftSub) + sw("translation", TT.showTranslation, TT.draftSub)}
     ${tool === "adhkar" ? sw("evWords", TT.eveningWords, TT.eveningWordsSub) : ""}
+    ${A.fbAaRow?.(tool) || ""}
     <div class="cta"><button class="btn primary" onclick="A.closeSheet()">${COMMON.done}</button></div>`);
 };
 A.tlPref = (k, tool) => { const p = prefs(); p[k] = !p[k]; persist(); A.tlAa(tool); redraw(); };

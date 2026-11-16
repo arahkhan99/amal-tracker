@@ -35,12 +35,17 @@ S = {
     makeupNudge: true,                // "Still time to make up ʿAsr today" reminder (notify.js)
     features: { sunnah, deeds, makeups, week, progress, tools },   // booleans, all true by default
     hiddenTools: [],                  // subset of ["adhkar","durud","hizb","quran"]
+    provisions: { on: false, homeFull: false, home: false, tracker: false, best: 1, weights: "v1", offered: false },
+                                      // provisions & levels (points.js): switch, sisters' rule, Home / Tracker chips,
+                                      // best level shown (never goes down), weights version, one-time offer shown
   },
   amalList: [...],                    // built-ins now named "Qurʾān recitation", "Morning adhkār", …
   days: { [key]: Day },
   lastQuran,
   excusedMode: null | { since: key },
-  qada: { Fajr, Dhuhr, Asr, Maghrib, Isha, Witr, fasts, goal, fastGoal, monthLog, addedLog },
+  qada: { Fajr, Dhuhr, Asr, Maghrib, Isha, Witr, fasts, goal, fastGoal, monthLog, dayLog, addedLog },
+                                      // dayLog: { "YYYY-MM-DD": { prayers, fasts } } make-ups completed per day,
+                                      // written next to monthLog (unchanged) by madeUpPrayer / madeUpFast
 }
 
 Day = {
@@ -52,6 +57,9 @@ Day = {
   witrQ?: true,                       // this missed Witr was added to make-ups
   witrAuto?: true,                    // Witr marked missed because ʿIshāʾ was missed (Hanafi)
   excused?: true,                     // excused day: unlogged prayers count as "excused"
+  remember?: { [prayer]: true },      // remembrance at prayer time, only on excused prayers (setRemember)
+  first?: ms,                         // first time anything was logged for the day (markLogged); set once,
+                                      // never overwritten; the cloud merge keeps the earlier of two copies
   u: ms,
 }
 
@@ -77,7 +85,8 @@ Status = "congregation" | "ontime" | "madeup" | "missed" | "excused"
 - `defaultState(now)`: a new state, with Hanafi as the madhhab.
 - `normalize(s, now)`: fills in missing fields and runs the migration. It never drops a field.
 - `load(storage)` / `save(S, storage)`.
-- `mergeStates(local, remote)`: unchanged. Settings, features, `excusedMode` and qada come from the side saved last. Days merge one at a time by `day.u`.
+- `mergeStates(local, remote)`: settings, features, `excusedMode` and qada come from the side saved last. Days merge one at a time by `day.u`, except that `day.first` keeps the earlier stamp of the two copies and `settings.provisions.best` keeps the higher level.
+- `normalize` fills `settings.provisions` (defaults above, bad values reset) and `qada.dayLog` (`{}`) on older saves.
 - **The migration is keyed on fields, so it is safe to run again:**
   - The state already has a `madhhab`: nothing changes.
   - The old state has `asr: "hanafi"`: Hanafi, with `asrChosen: true`. This was an explicit choice, because the old default was "shafi".
@@ -123,7 +132,17 @@ Status = "congregation" | "ontime" | "madeup" | "missed" | "excused"
 - `qadaKeys(S)`: the rows to show. This is `PRAYERS` plus `"Witr"` for Hanafi.
 - `qadaOwed(S)`: the total. It includes Witr only where Witr is owed.
 - `qadaSplit(S)`: `{fard, witr}`, used for "1,770 fard + 356 Witr to go".
-- `madeUpPrayer(S,p\|"Witr",now)`, `madeUpFast`, `monthLog`, `addedToday`, `lastDetail`: unchanged.
+- `madeUpPrayer(S,p\|"Witr",now)`, `madeUpFast`: as before, and also count the make-up in `qada.dayLog[dkey(now)]`. `monthLog`, `addedToday`, `lastDetail`: unchanged.
+- `markLogged(day,now)`: stamps `day.first` once. Called by `setPrayer` / `setWitr` (with a status), `setSunnah` (accepted), `setAmal` (done), `setRemember` (on) and tools' `tickAmal`. Clearing, `setExcusedDay` and viewing never stamp. `setSunnah` and `setAmal` take an optional last `now`.
+- `setRemember(S,key,p,on,now)`: remembrance at prayer time; refused (false) unless `statusOf(day,p)` is excused. `remembered(day,p)` reads it.
+- `defaultProvisions()`, `recordLevel(S,level)`: true when `level` is a new best (show the level-up), and stores it.
+
+### Provisions (`src/points.js`, pure)
+- `WEIGHTS.v1`, `CURRENT`, `needFor(n) = 100·n·(n−1)`, `levelFor(total)`.
+- `dayProvisions(day,{w,homeFull,makeups,madhhab})` → `{total, parts}`; `dayBreakdown(S,key,{today})` applies the settings.
+- `provisions(S,{version,from,to,today,homeFull})` → `{total, level, need, next, toNext, byDay, version, daysLogged, since}`. Days before `createdKey` or after `today` count nothing.
+- `makeupsByDay(S,{today})`: exact from `dayLog`; a month's `monthLog` total beyond its `dayLog` entries is spread evenly over that month's other days in range, at most 5 a day.
+- `displayLevel(S,opts)` = max(`settings.provisions.best`, computed level). `weekRange(today)` → `{from,to}`.
 
 ---
 

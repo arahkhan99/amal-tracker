@@ -1,5 +1,5 @@
 /*
- * Cloud backup & sync (Android app and the web version): Google sign-in, then the whole tracker is stored in the
+ * Cloud backup & sync (Android app and the web version): Google or Apple sign-in (after explicit consent), then the whole tracker is stored in the
  * user's own Firestore space:
  *   users/{uid}             everything except daily logs (profile, settings, amal list, qada)
  *   users/{uid}/years/{yyyy} that year's daily logs
@@ -12,27 +12,43 @@ import { isNative } from "./platform.js";
 import { firebaseConfig } from "./firebase-config.js";
 import { currentHijri, calcParts, CALENDARS } from "./hijri.js";
 import { storeCommittee, putMonth, monthId } from "./hijri-committees.js";
+import { CONSENT } from "./strings.js";
 
 /** Version (date) of the Terms of use and Privacy policy. Bump it when either changes; signed-in users are asked to agree again. */
-export const TERMS_VERSION = "2026-11-03";
+export const TERMS_VERSION = "2026-11-15";
+/** Version of the explicit consent to back up religious and health data (profile.dataConsent, privacy audit A1).
+ *  Bump it when what is stored, or where, changes. */
+export const DATA_CONSENT_VERSION = TERMS_VERSION;
 
 // deletePending: uid whose account deletion started but didn't finish; sync stays paused for it so nothing is re-uploaded
-export const cloud = { available: false, user: null, syncing: false, lastSync: 0, error: "", deletePending: "" };
+// consentNeeded: signed in, but this phone has no current consent yet; nothing is uploaded until A.consentSheet's Continue
+export const cloud = { available: false, user: null, syncing: false, lastSync: 0, error: "", deletePending: "", consentNeeded: false };
 
 const META_KEY = "amal-cloud-meta";
 const CONSENT_PENDING_KEY = "zad-consent-pending"; // agreed before a redirect sign-in (web), recorded once it returns
+const APPLE = "apple.com";
+const RELAY = /@privaterelay\.appleid\.com$/i; // "Hide my email" addresses from Sign in with Apple
 let fb = null; // lazily loaded Firebase modules + instances
 let pushed = {}; // hash of what was last written per document, to skip unchanged writes
 let syncTimer = null; // debounced sync after a change
 let signingIn = false; // consent is recorded by signIn itself
 let consentAsked = false; // ask about updated terms at most once per app start
-let reauthFirst = false; // the last deletion attempt needed a fresh Google sign-in
+let reauthFirst = false; // the last deletion attempt needed a fresh sign-in
 
 function loadMeta() { try { Object.assign(cloud, JSON.parse(localStorage.getItem(META_KEY) || "{}")); } catch (e) { /* none yet */ } }
 function saveMeta() { try { localStorage.setItem(META_KEY, JSON.stringify({ lastSync: cloud.lastSync, deletePending: cloud.deletePending })); } catch (e) { /* ignore */ } }
 
-/** Sync is paused while this user's account deletion is under way or unfinished. */
-const paused = () => !cloud.user || cloud.deletePending === cloud.user.uid;
+/** True while this phone has no record of the current terms and data consent. */
+export const needsAnyConsent = () => store.needsDataConsent(S.profile, DATA_CONSENT_VERSION) || store.needsConsent(S.profile, TERMS_VERSION);
+/** Sync is paused while this user's account deletion is under way or unfinished, and while consent is missing. */
+const paused = () => !cloud.user || cloud.deletePending === cloud.user.uid || needsAnyConsent();
+
+/** The signed-in user as the app shows it. A private-relay address ("Hide my email") is shown as the Apple ID. */
+export function userInfo(u, labelHidden = CONSENT.appleHidden) {
+  const provider = (u.providerData || []).some(p => p?.providerId === APPLE) ? "apple" : "google";
+  const relay = u.email ? RELAY.test(u.email) : provider === "apple";
+  return { uid: u.uid, email: relay ? labelHidden : u.email || "", relay, provider };
+}
 
 async function firebase() {
   if (fb) return fb;
@@ -56,58 +72,130 @@ export async function initCloud() {
   loadMeta();
   const { auth, a } = await firebase();
   auth.onAuthStateChanged(a, u => {
-    cloud.user = u ? { uid: u.uid, email: u.email } : null;
+    cloud.user = u ? userInfo(u) : null;
+    cloud.consentNeeded = false;
+    if (u && !signingIn) {
+      // Consent first, upload after: a pending consent from a redirect sign-in (web) is recorded before the first
+      // sync; without a current consent nothing is uploaded until the re-consent sheet's Continue.
+      if (applyPendingConsent()) sync().then(() => { recordAllConsent(); });
+      else if (needsAnyConsent()) askConsent();
+      else sync();
+    }
     render();
-    if (u) sync().then(checkConsent);
     if (u) refreshHijri();
   });
-  onCommit(() => { if (cloud.user) { clearTimeout(syncTimer); syncTimer = setTimeout(sync, 3000); } });
+  onCommit(() => { if (cloud.user && !paused()) { clearTimeout(syncTimer); syncTimer = setTimeout(sync, 3000); } });
   window.addEventListener("online", () => { if (cloud.user) { sync(); refreshHijri(); } });
   document.addEventListener("visibilitychange", () => { if (!document.hidden && cloud.user) sync(); });
 }
 
-/* ---------- terms consent ---------- */
-/** Save that the user agreed to the current terms (synced with the rest of the profile). */
-export function recordConsent() {
-  S.profile.consent = { version: TERMS_VERSION, at: new Date().toISOString() };
+/* ---------- consent ---------- */
+/** Write both records (terms + explicit data consent) into the profile, without saving. */
+function writeConsent(at = new Date().toISOString()) {
+  S.profile.consent = { version: TERMS_VERSION, at };
+  S.profile.dataConsent = { version: DATA_CONSENT_VERSION, at, scope: store.DATA_CONSENT_SCOPE };
+}
+/** Save that the user agreed to the current terms and to backing up their data (synced with the rest of the profile). */
+export function recordAllConsent() {
+  writeConsent();
+  cloud.consentNeeded = false;
   commit();
 }
+/** Kept for older callers: agreeing now always records both. */
+export const recordConsent = recordAllConsent;
 
-function checkConsent() {
-  if (!cloud.user || signingIn) return;
-  let pending = null;
-  try { pending = sessionStorage.getItem(CONSENT_PENDING_KEY); sessionStorage.removeItem(CONSENT_PENDING_KEY); } catch (e) { /* none */ }
-  if (pending === TERMS_VERSION) { recordConsent(); return; }
-  if (consentAsked || !store.needsConsent(S.profile, TERMS_VERSION)) return;
+/** Re-consent sheet answered with Continue (A.consentSheet): record, then start syncing. */
+export function agreeConsent() {
+  recordAllConsent();
+  return sync();
+}
+
+function askConsent() {
+  cloud.consentNeeded = true;
+  clearTimeout(syncTimer);
+  if (consentAsked) return;
   consentAsked = true;
   A.consentSheet?.();
 }
 
+/** After a redirect sign-in (web): the consent given before leaving the page. True if it was recorded. */
+function applyPendingConsent() {
+  let p = null;
+  try { p = JSON.parse(sessionStorage.getItem(CONSENT_PENDING_KEY) || "null"); sessionStorage.removeItem(CONSENT_PENDING_KEY); } catch (e) { /* none */ }
+  if (!p || p.terms !== TERMS_VERSION || p.data !== DATA_CONSENT_VERSION) return false;
+  writeConsent(p.at);
+  store.save(S);
+  return true;
+}
+
 /* ---------- sign-in ---------- */
-/** Sign in with Google. The caller has shown the "By signing in you agree…" line, so consent is recorded on success. */
-export async function signIn() {
+const POPUP_FALLBACK = ["auth/popup-blocked", "auth/operation-not-supported-in-this-environment", "auth/web-storage-unsupported"];
+
+/** Web: the provider object for a popup or redirect sign-in. */
+function webProvider(auth, provider) {
+  if (provider === "apple") {
+    const p = new auth.OAuthProvider(APPLE);
+    p.addScope("email"); p.addScope("name"); // Apple sends the name on the very first sign-in only
+    return p;
+  }
+  const p = new auth.GoogleAuthProvider();
+  p.setCustomParameters({ prompt: "select_account" });
+  return p;
+}
+
+/** Native: sign in with the plugin and return a Firebase credential for the JS SDK (skipNativeAuth), plus the
+ *  plugin's result. `native` asks the plugin to also sign in its own (native) Firebase session, which iOS needs
+ *  to revoke an Apple token. */
+async function nativeCredential(provider, native = false) {
+  const { auth, FirebaseAuthentication } = await firebase();
+  if (provider === "apple") {
+    const r = await FirebaseAuthentication.signInWithApple(native ? { skipNativeAuth: false } : undefined);
+    const cred = new auth.OAuthProvider(APPLE).credential({ idToken: r.credential?.idToken, rawNonce: r.credential?.nonce });
+    return { cred, r };
+  }
+  const r = await FirebaseAuthentication.signInWithGoogle();
+  return { cred: auth.GoogleAuthProvider.credential(r.credential?.idToken), r };
+}
+
+/** First word of a name Apple (or Google) gave us; Apple only sends it on the first sign-in, so it's used once to
+ *  fill an empty name and never asked for again. */
+export const givenName = n => (typeof n === "string" ? n.trim().split(/\s+/)[0] || "" : "");
+
+/**
+ * Sign in with Google or Apple. `consent` must be true: the caller showed the consent block and the box is ticked.
+ * The terms and data-consent records are written before the first sync, so they exist before anything is uploaded;
+ * after the merge they are saved (and synced) again.
+ */
+export async function signIn({ provider = "google", consent = false } = {}) {
+  if (consent !== true) throw Object.assign(new Error("consent required"), { code: "zad/consent-required" });
   const { auth, a, FirebaseAuthentication } = await firebase();
   signingIn = true;
   try {
+    let name = "";
     if (FirebaseAuthentication) {
-      const r = await FirebaseAuthentication.signInWithGoogle();
-      await auth.signInWithCredential(a, auth.GoogleAuthProvider.credential(r.credential?.idToken));
+      const { cred, r } = await nativeCredential(provider);
+      await auth.signInWithCredential(a, cred);
+      name = r.user?.displayName || "";
     } else {
-      const provider = new auth.GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
-      try { await auth.signInWithPopup(a, provider); }
+      let res;
+      try { res = await auth.signInWithPopup(a, webProvider(auth, provider)); }
       catch (e) {
         // Popups can be blocked (or unsupported in a Home Screen app); fall back to a full-page redirect
-        if (["auth/popup-blocked", "auth/operation-not-supported-in-this-environment", "auth/web-storage-unsupported"].includes(e.code)) {
-          try { sessionStorage.setItem(CONSENT_PENDING_KEY, TERMS_VERSION); } catch (e2) { /* asked again after the redirect */ }
-          await auth.signInWithRedirect(a, provider);
+        if (POPUP_FALLBACK.includes(e.code)) {
+          try { sessionStorage.setItem(CONSENT_PENDING_KEY, JSON.stringify({ terms: TERMS_VERSION, data: DATA_CONSENT_VERSION, at: new Date().toISOString() })); } catch (e2) { /* asked again after the redirect */ }
+          await auth.signInWithRedirect(a, webProvider(auth, provider));
           return;
         }
         throw e;
       }
+      name = res?.user?.displayName || auth.getAdditionalUserInfo?.(res)?.profile?.name?.firstName || "";
     }
+    if (a.currentUser) cloud.user = userInfo(a.currentUser);
+    writeConsent(); // before the first push
+    if (!S.profile.name && givenName(name)) S.profile.name = givenName(name);
+    store.save(S);
     await sync();
-    recordConsent(); // after the merge, so the restored profile keeps it
+    recordAllConsent(); // again after the merge, so the restored profile keeps it
   } finally {
     signingIn = false;
   }
@@ -121,6 +209,8 @@ export async function signOut() {
   pushed = {};
   reauthFirst = false;
   cloud.deletePending = "";
+  cloud.consentNeeded = false;
+  consentAsked = false;
   saveMeta();
 }
 
@@ -131,7 +221,8 @@ export class DeleteError extends Error {
 }
 
 /**
- * Permanently delete the user's cloud backup (users/{uid}/years/* and users/{uid}) and their Firebase sign-in.
+ * Permanently delete the user's cloud backup (users/{uid}/years/* and users/{uid}), the feedback they sent, and
+ * their Firebase sign-in.
  * Data on this phone is left alone. Sync stays paused from the start until the deletion finishes or the user
  * signs out / keeps the account, so a pending sync can't upload the data again.
  */
@@ -140,15 +231,29 @@ export async function deleteAccount() {
   const { auth, fs, db, a, FirebaseAuthentication } = await firebase();
   const uid = cloud.user.uid;
   // On a retry after "requires recent login", confirm with Google first, while the tap still allows a popup
+  let appleToken = "";
   if (reauthFirst && a.currentUser?.uid === uid) {
-    try { await reauthenticate(a.currentUser); reauthFirst = false; }
+    try { appleToken = await reauthenticate(a.currentUser); reauthFirst = false; }
     catch (e) { throw new DeleteError("auth", e); } // only set once the backup is already deleted
+  }
+  // Sign in with Apple: confirm with Apple first (while the tap still allows a popup) to get a fresh token, so the
+  // app's access to the Apple ID is revoked below (App Store guideline 5.1.1(v)). Nothing is deleted if cancelled.
+  else if (isAppleUser(a.currentUser) && a.currentUser?.uid === uid) {
+    try { appleToken = await reauthenticate(a.currentUser); }
+    catch (e) { throw new DeleteError("confirm", e); }
   }
   clearTimeout(syncTimer);
   cloud.deletePending = uid;
   saveMeta();
   render();
   if (running) await running.catch(() => {}); // let an in-flight sync finish before deleting underneath it
+
+  // Feedback this user sent (feedback/{id} with uid == theirs). Best effort: a failure here is logged and never
+  // blocks deleting the account itself.
+  try {
+    const sent = await fs.getDocs(fs.query(fs.collection(db, "feedback"), fs.where("uid", "==", uid)));
+    for (const d of sent.docs) await fs.deleteDoc(d.ref);
+  } catch (e) { console.warn("delete feedback", e); }
 
   try {
     const years = await fs.getDocs(fs.collection(db, "users", uid, "years"));
@@ -159,6 +264,7 @@ export async function deleteAccount() {
   try {
     const user = a.currentUser;
     if (!user || user.uid !== uid) throw Object.assign(new Error("signed out"), { code: "auth/no-current-user" });
+    if (appleToken) await revokeApple(appleToken).catch(e => console.warn("revoke apple", e)); // best effort
     try { await auth.deleteUser(user); }
     catch (e) {
       if (e.code !== "auth/requires-recent-login") throw e;
@@ -180,16 +286,28 @@ export async function deleteAccount() {
   render();
 }
 
+export const isAppleUser = user => !!user?.providerData?.some(p => p?.providerId === APPLE);
+
+/** Confirm the sign-in again with the provider the user signed in with. For Apple it returns the token to revoke:
+ *  the authorization code on iOS, the OAuth access token on Android and the web ("" if none came back). */
 async function reauthenticate(user) {
-  const { auth, FirebaseAuthentication } = await firebase();
-  if (FirebaseAuthentication) {
-    const r = await FirebaseAuthentication.signInWithGoogle();
-    await auth.reauthenticateWithCredential(user, auth.GoogleAuthProvider.credential(r.credential?.idToken));
-  } else {
-    const provider = new auth.GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
-    await auth.reauthenticateWithPopup(user, provider);
+  const { auth } = await firebase();
+  const apple = isAppleUser(user);
+  if (fb.FirebaseAuthentication) {
+    // iOS revokes through the plugin's native session, so for Apple the plugin signs in natively too
+    const { cred, r } = await nativeCredential(apple ? "apple" : "google", apple);
+    await auth.reauthenticateWithCredential(user, cred);
+    return apple ? r.credential?.authorizationCode || r.credential?.accessToken || "" : "";
   }
+  const res = await auth.reauthenticateWithPopup(user, webProvider(auth, apple ? "apple" : "google"));
+  return apple ? auth.OAuthProvider.credentialFromResult?.(res)?.accessToken || "" : "";
+}
+
+/** Revoke Sign in with Apple's token for Zad (the Apple ID's "Apps using Apple ID" list drops Zad). */
+async function revokeApple(token) {
+  const { auth, a, FirebaseAuthentication } = await firebase();
+  if (FirebaseAuthentication) await FirebaseAuthentication.revokeAccessToken({ token });
+  else await auth.revokeAccessToken(a, token);
 }
 
 /** Stop an unfinished deletion and keep the account: sync resumes and uploads this phone's data again. */
@@ -197,6 +315,15 @@ export function keepAccount() {
   cloud.deletePending = "";
   saveMeta();
   return sync();
+}
+
+/* ---------- feedback ---------- */
+/** Send feedback (views/feedback.js) as feedback/{auto id}. Resolves once the server has it; while offline Firestore
+ *  keeps it queued in memory and sends it when the connection is back (lost if the app is closed first). */
+export async function sendFeedback(data) {
+  if (!cloud.user) throw new Error("not signed in");
+  const { fs, db } = await firebase();
+  return fs.addDoc(fs.collection(db, "feedback"), { ...data, uid: cloud.user.uid, createdAt: fs.serverTimestamp() });
 }
 
 /* ---------- sync ---------- */

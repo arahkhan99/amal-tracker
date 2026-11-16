@@ -20,6 +20,38 @@ export async function currentPosition() {
     p => res({ lat: roundCoord(p.coords.latitude), lng: roundCoord(p.coords.longitude) }), rej, { timeout: 15000, maximumAge: 36e5 }));
 }
 
+/**
+ * Whether location access is ALREADY allowed. Never asks: Geolocation.checkPermissions on the phone,
+ * navigator.permissions on the web (false when the browser can't tell). Used by the travel check.
+ */
+export async function locationGranted() {
+  try {
+    if (isNative()) {
+      const { Geolocation } = await import("@capacitor/geolocation");
+      const p = await Geolocation.checkPermissions();
+      return p.location === "granted" || p.coarseLocation === "granted";
+    }
+    if (typeof navigator === "undefined" || !navigator.permissions?.query || !navigator.geolocation) return false;
+    return (await navigator.permissions.query({ name: "geolocation" })).state === "granted";
+  } catch (e) { return false; }
+}
+
+/**
+ * A quiet position read for the travel check: low accuracy, a reading up to 30 minutes old is fine,
+ * short timeout, and no permission request. Rounded straight away like currentPosition(). Throws on failure.
+ */
+export async function quietPosition() {
+  const opts = { enableHighAccuracy: false, timeout: 8000, maximumAge: 30 * 60e3 };
+  if (isNative()) {
+    const { Geolocation } = await import("@capacitor/geolocation");
+    const p = await Geolocation.getCurrentPosition(opts);
+    return { lat: roundCoord(p.coords.latitude), lng: roundCoord(p.coords.longitude) };
+  }
+  if (!navigator.geolocation) throw new Error("unsupported");
+  return new Promise((res, rej) => navigator.geolocation.getCurrentPosition(
+    p => res({ lat: roundCoord(p.coords.latitude), lng: roundCoord(p.coords.longitude) }), rej, opts));
+}
+
 /** City name for coordinates (needs internet; falls back to a generic label). */
 export async function cityName(lat, lng) {
   try {

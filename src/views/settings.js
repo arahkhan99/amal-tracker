@@ -4,7 +4,9 @@ import * as store from "../store.js";
 import { PRAYERS, esc, dkey, addDays } from "../util.js";
 import { METHODS, METHOD_SHORT, FALLBACK_LOCATION } from "../times.js";
 import { isNative, currentPosition, cityName, searchCity, saveFile, pickFile, biometryAvailable, authenticate } from "../platform.js";
-import { cloud, signIn, signOut, sync, deleteAccount, keepAccount, recordConsent } from "../cloud.js";
+import { cloud, signIn, signOut, sync, deleteAccount, keepAccount } from "../cloud.js";
+import { signInSheetHtml, consentTicked, signInError } from "./consent.js"; // also registers A.consentSheet (c3)
+import { CONSENT } from "../strings.js";
 import { Capacitor } from "@capacitor/core";
 import { reschedule, askForExactAlarms, exactAlarmStatus } from "../notify.js";
 import * as feat from "../features.js";
@@ -13,8 +15,10 @@ import {
   SETTINGS as T, APP, COMMON, MADHHAB_UI, ASR_UI, SUNNAH_UI, EXCUSED, MAKEUPS, FEATURE,
   STATUS, prayerName, WITR_STATUS, DEED_NAME, NAV,
 } from "../strings.js";
-import { SETTINGS_X, GUIDE } from "../strings.js";
+import { SETTINGS_X, GUIDE, GENDER, TRAVEL } from "../strings.js";
+import { currentWindow, startedPrayers } from "../times.js";
 import { helpPage } from "./help.js";
+import { featureRow as pvFeatureRow, settingsGroup as pvGroup, pvIcon } from "./provisions.js";
 import { helpIsNew } from "../guide.js";
 import { setHijriSource, currentHijri, normalizeHijri, hijriLabel, hijriParts, calendarAvailable, calcParts, CALENDARS, HIJRI_MONTHS } from "../hijri.js";
 import { COMMITTEES, committeeById, committeeData, suggestedHijri, monthToSet, plausibleStart, monthId } from "../hijri-committees.js";
@@ -53,6 +57,7 @@ const P = {
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17v.01"/>',
   file: '<path d="M6 3h8l5 5v13H6zM14 3v5h5"/>',
   mosque: '<path d="M4 21V11l3-3 3 3v10M14 21V9a3 3 0 0 1 6 0v12M2 21h20M7 8V5"/>',
+  user: '<circle cx="12" cy="8" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/>',
   heart: '<path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z"/>',
   bars: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
   grid: '<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><path d="M17.25 13.5v7.5M13.5 17.25H21"/>',
@@ -102,9 +107,9 @@ A.toggle = async k => {
   S.settings[k] = on;
   commit();
 };
-/* Crash reports default on (S.settings.crashReports !== false); crash-only diagnostics, see src/crash.js */
+/* Crash reports are opt-in: only S.settings.crashReports === true is on (undefined = not asked = off); see src/crash.js */
 A.crashToggle = () => {
-  const on = S.settings.crashReports === false;
+  const on = S.settings.crashReports !== true;
   S.settings.crashReports = on;
   setCrashReporting(on);
   commit();
@@ -125,6 +130,29 @@ A.appearanceSheet = () => {
 };
 A.setAppearance = k => { S.settings.appearance = k; commit(); A.appearanceSheet(); };
 
+/* ---------- set up for (brother / sister, store.applyGender) ---------- */
+const genderVal = g => (g === "f" ? GENDER.sister : g === "m" ? GENDER.brother : GENDER.notSet);
+A.genderSheet = () => {
+  const g = store.genderOf(S), cur = g || "n";
+  const opt = (k, t) => `<button class="gopt${k === cur ? " on" : ""}" role="radio" aria-checked="${k === cur}" onclick="A.setGender('${k}')"><span class="rd"></span><span><b>${esc(t)}</b><small>${esc(GENDER.optSub[k])}</small></span></button>`;
+  openSheet(`<div class="gs"><div class="sheet-head"><h3>${esc(GENDER.sheetTitle)}</h3><button class="link-btn" onclick="A.closeSheet()">${esc(COMMON.done)}</button></div>
+    <p>${esc(GENDER.sheetLead)}</p>
+    <div role="radiogroup" aria-label="${esc(GENDER.sheetTitle)}">${opt("f", GENDER.sister)}${opt("m", GENDER.brother)}${opt("n", GENDER.skip)}</div>
+    <div class="gbox"><h4>${esc(GENDER.boxTitle[cur])}</h4>${GENDER.box[cur].map(([a, b]) => `<div><span>${esc(a)}</span><span>${esc(b)}</span></div>`).join("")}</div>
+    <p class="note">${esc(GENDER.note)}</p></div>`);
+};
+A.setGender = k => {
+  const g = k === "f" || k === "m" ? k : null;
+  if (g === store.genderOf(S)) return; // same choice: leave the switches as the user set them
+  // A brother in excused mode: end it like Home's "End" button (prayers already started today stay excused)
+  const now = NOW(), key = dkey(now), cur = currentWindow(now, S.settings);
+  const excusedPrayers = startedPrayers(now, now, S.settings).filter(p => !(cur && dkey(cur.date) === key && cur.p === p));
+  store.applyGender(S, g, { todayKey: key, excusedPrayers }, now);
+  commit(); A.genderSheet(); toast(GENDER.setToast[g || "n"]);
+};
+A.jumuahToggle = () => { S.settings.jumuah = S.settings.jumuah === false; commit(); };
+A.autoLocationToggle = () => { S.settings.autoLocation = S.settings.autoLocation === false; commit(); };
+
 /* ---------- location ---------- */
 A.locationSheet = () => {
   const loc = S.settings.location;
@@ -139,7 +167,7 @@ A.useGps = async () => {
   try {
     const { lat, lng } = await currentPosition();
     const label = await cityName(lat, lng);
-    S.settings.location = { lat, lng, label };
+    S.settings.location = { lat, lng, label, source: "gps" };
     closeSheet(); commit(); toast(T.locSetToast(label));
   } catch (e) { toast(T.locFailed); }
 };
@@ -151,7 +179,8 @@ A.findCity = async () => {
   try { found = await searchCity(q); } catch (e) { found = []; box.innerHTML = `<div class="note">${esc(T.searchFailed)}</div>`; return; }
   box.innerHTML = found.length ? found.map((r, i) => `<button class="opt" onclick="A.pickCity(${i})"><div><b>${esc(r.label)}</b><small>${r.lat.toFixed(3)}, ${r.lng.toFixed(3)}</small></div></button>`).join("") : `<div class="note">${esc(T.noMatches)}</div>`;
 };
-A.pickCity = i => { S.settings.location = found[i]; closeSheet(); commit(); toast(T.locSetToast(found[i].label)); };
+// A searched city is a fixed choice: source "city" turns off the travel check (src/travel.js)
+A.pickCity = i => { S.settings.location = { ...found[i], source: "city" }; closeSheet(); commit(); toast(T.locSetToast(found[i].label)); };
 
 /* ---------- calculation method, ʿAsr ---------- */
 A.methodSheet = () => openSheet(`<h3>${esc(T.method)}</h3><p>${esc(T.methodLead)}</p><div class="opts">
@@ -347,17 +376,13 @@ function ago(t) {
 function cloudStatus() {
   if (!cloud.user) return T.cloudOff;
   if (cloud.deletePending === cloud.user.uid) return T.cloudPaused(cloud.user.email);
+  if (cloud.consentNeeded) return CONSENT.pausedStatus(cloud.user.email);
   if (cloud.syncing) return T.cloudSyncing(cloud.user.email);
   return T.cloudOn(cloud.user.email, cloud.error || T.synced(ago(cloud.lastSync)));
 }
 A.cloudSheet = () => {
-  if (!cloud.user) {
-    openSheet(`<h3>${esc(T.cloud)}</h3><p>${esc(T.cloudLead)}</p>
-    <p class="note legal">${consentLine()}</p>
-    <div class="cta"><button class="btn primary" onclick="A.cloudSignIn()">${esc(T.signInGoogle)}</button></div>
-    <p class="note">${esc(T.cloudPrivate)}</p>`);
-    return;
-  }
+  if (!cloud.user) { openSheet(signInSheetHtml()); return; } // c1: consent block, unticked box, Google + Apple
+  if (cloud.consentNeeded) { A.consentSheet(); return; } // c3: signed in, sync paused until Continue
   if (cloud.deletePending === cloud.user.uid) {
     openSheet(`<h3>${esc(T.cloud)}</h3><p>${esc(T.deletePausedBody(cloud.user.email))}</p>
     <div class="cta"><button class="btn danger" onclick="A.deleteSheet()">${esc(T.deleteGo)}</button></div>
@@ -369,24 +394,16 @@ A.cloudSheet = () => {
   <div class="cta"><button class="btn ghost" onclick="A.cloudSignOut()">${esc(T.signOut)}</button><button class="btn primary" onclick="A.cloudSync()">${esc(T.syncNow)}</button></div>
   <p class="note">${esc(T.signOutNote)}</p>`);
 };
-A.cloudSignIn = async () => {
-  try { await signIn(); closeSheet(); toast(cloud.error || T.signedInToast); }
-  catch (e) { console.warn("sign-in", e); toast(T.signInFailed); }
+A.cloudSignIn = async (provider = "google") => {
+  if (!consentTicked()) { toast(CONSENT.tickFirst); return; } // the box must be ticked: consent before any upload
+  try { await signIn({ provider, consent: true }); closeSheet(); toast(cloud.error || T.signedInToast); }
+  catch (e) { console.warn("sign-in", e); toast(signInError(e)); }
 };
 A.cloudSync = async () => { await sync(); closeSheet(); toast(cloud.error || T.syncedToast); };
 A.cloudSignOut = async () => { await signOut(); closeSheet(); toast(T.signedOutToast); };
 A.keepAccount = async () => { closeSheet(); await keepAccount(); toast(cloud.error || T.syncBackOn); };
 
-/* ---------- terms consent ---------- */
-A.consentSheet = () => {
-  const updated = !!S.profile.consent;
-  openSheet(`<h3>${esc(updated ? T.updatedTerms : T.terms)}</h3><p>${esc(updated ? T.termsChanged : T.termsNew)} ${esc(T.termsAsk)}</p>
-  <p class="note legal">${links()}</p>
-  <div class="cta"><button class="btn ghost" onclick="A.consentLater()">${esc(COMMON.notNow)}</button><button class="btn primary" onclick="A.consentAgree()">${esc(T.agree)}</button></div>
-  <p class="note">${esc(T.notNowSignsOut)}</p>`);
-};
-A.consentAgree = () => { recordConsent(); closeSheet(); toast(T.thanks); };
-A.consentLater = async () => { closeSheet(); await signOut().catch(() => {}); toast(T.signedOutToast); };
+/* ---------- terms + data consent: A.consentSheet / A.consentAgree / A.consentLater live in views/consent.js ---------- */
 
 /* ---------- delete account ---------- */
 A.deleteSheet = () => {
@@ -407,10 +424,10 @@ A.deleteAccount = async () => {
   catch (e) {
     console.warn("delete account", e);
     go.disabled = false; go.textContent = T.tryAgain;
-    err.textContent = e.step === "auth"
+    err.textContent = e.step === "confirm" ? CONSENT.delConfirm : e.step === "auth"
       ? (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request" || /cancel/i.test(e.message) ? T.delAuthCancelled : T.delAuthFailed)
       : T.delDataFailed;
-    toast(e.step === "auth" ? T.delAuthToast : T.delToast);
+    toast(e.step === "auth" ? T.delAuthToast : e.step === "confirm" ? CONSENT.delConfirmToast : T.delToast);
     return;
   }
   closeSheet();
@@ -470,7 +487,7 @@ function sunnahPage() {
 
 /* ---------- features page ---------- */
 function featuresPage() {
-  const rows = feat.featureRows(S).map(r => `<div class="srow ${r.on ? "" : "off"}"><div class="srow-main static">${tile(FEATURE_ICON[r.id], r.on ? "green" : "grey")}<span class="t"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span>${r.locked ? `<span class="lockic">${svg("lock")}</span>` : `<button class="switch${r.on ? " on" : ""}" role="switch" aria-checked="${r.on}" aria-label="${esc(r.name)}" onclick="A.featToggle('${r.id}')"></button>`}</div></div>`).join("");
+  const rows = feat.featureRows(S).map(r => `<div class="srow ${r.on ? "" : "off"}"><div class="srow-main static">${tile(FEATURE_ICON[r.id], r.on ? "green" : "grey")}<span class="t"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span>${r.locked ? `<span class="lockic">${svg("lock")}</span>` : `<button class="switch${r.on ? " on" : ""}" role="switch" aria-checked="${r.on}" aria-label="${esc(r.name)}" onclick="A.featToggle('${r.id}')"></button>`}</div></div>${r.id === "progress" ? pvFeatureRow(tone => `<span class="ic ${tone}">${pvIcon("bag", "")}</span>`) : ""}`).join("");
   const toolsOn = feat.isOn(S, "tools");
   const tools = toolsOn ? `<section class="sgroup" id="set-tools"><h2>${esc(X.toolsHead)}</h2><div class="card scard">${feat.toolRows(S).map(r => `<div class="srow ${r.visible ? "" : "off"}"><div class="srow-main static">${tile(TOOL_ICON[r.id], r.visible ? "green" : "grey")}<span class="t"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span><button class="switch${r.visible ? " on" : ""}" role="switch" aria-checked="${r.visible}" aria-label="${esc(r.name)}" onclick="A.toolToggle('${r.id}')"></button></div></div>`).join("")}</div><p class="sfoot">${esc(X.toolsLead)}</p></section>` : "";
   const tabs = feat.navTabs(S);
@@ -478,7 +495,7 @@ function featuresPage() {
   const bar = `<div class="barprev"><h3>${esc(FEATURE.bottomBar)}</h3><div class="bar-in">${barIds.map(id => `<span class="${tabs.some(t => t.id === id) ? (id === "home" ? "on" : "") : "gone"}">${svg(id === "home" ? "mosque" : id === "tracker" ? "list" : id === "tools" ? "grid" : id === "qada" ? "refresh" : "bars")}<i>${esc(NAV[id])}</i></span>`).join("")}</div></div>`;
   const { on, of } = feat.featureCount(S);
   return `${head(FEATURE.title)}<p class="spage-lead">${esc(FEATURE.intro)}</p>
-  <div class="sec" style="padding-top:0"><div class="card scard">${rows}</div></div>${tools}${bar}<p class="sfoot center">${esc(FEATURE.count(on, of))}</p><div class="space"></div>`;
+  <div class="sec" style="padding-top:0"><div class="card scard">${rows}</div></div>${pvGroup(svg("chev"))}${tools}${bar}<p class="sfoot center">${esc(FEATURE.count(on, of))}</p><div class="space"></div>`;
 }
 
 /* ---------- main page ---------- */
@@ -497,9 +514,13 @@ function mainPage() {
     navRow({ icon: "info", title: GUIDE.helpRow, sub: GUIDE.helpRowSub, tag: helpIsNew(S) ? GUIDE.newTag : "", onclick: "A.helpOpen()" }),
   ]));
   g.push(group(T.groups.prayer, [
+    navRow({ icon: "user", tone: "green", title: GENDER.row, value: genderVal(store.genderOf(S)), onclick: "A.genderSheet()" }),
     navRow({ icon: "book", tone: "green", title: MADHHAB_UI.title, sub: info.summary, value: info.name, onclick: "A.madhhabSheet()", gl: "" }),
+    switchRow({ icon: "mosque", tone: "green", title: GENDER.jumuah, sub: GENDER.jumuahSub, key: "jumuah", on: st.jumuah !== false, fn: "A.jumuahToggle()" }),
     ...(isOnF("sunnah") ? [navRow({ icon: "layers", tone: "green", title: SUNNAH_UI.pageTitle, value: SUNNAH_UI.tiersOn(sunnahTiers), onclick: "A.settingsPage('sunnah')" })] : []),
     navRow({ icon: "pin", tone: "green", title: T.location, value: loc ? loc.label : "", sub: loc ? "" : T.locNotSet(FALLBACK_LOCATION.label), onclick: "A.locationSheet()" }),
+    // Only for a location from "Use my current location"; a searched city never changes on its own
+    ...(loc && loc.source !== "city" ? [switchRow({ icon: "refresh", tone: "green", title: TRAVEL.row, sub: TRAVEL.rowSub, key: "autoLocation", on: st.autoLocation !== false, fn: "A.autoLocationToggle()" })] : []),
     navRow({ icon: "compass", tone: "green", title: T.method, value: METHOD_SHORT[st.method] || st.method, onclick: "A.methodSheet()" }),
     navRow({ icon: "sun", tone: "green", title: ASR_UI.title, value: st.asr === "hanafi" ? ASR_UI.hanafi : ASR_UI.standard, onclick: "A.asrSheet()" }),
   ]));
@@ -524,7 +545,7 @@ function mainPage() {
   g.push(group(T.groups.account, [
     ...(cloud.available ? [navRow({ icon: "cloud", tone: "green", title: T.cloud, value: cloud.user ? COMMON.on : COMMON.off, sub: cloud.user ? "" : "", onclick: "A.cloudSheet()", id: "cloudRow" })] : []),
     ...(isNative() ? [switchRow({ icon: "lock", tone: "green", title: T.lock, sub: T.lockSub, key: "lock", on: !!st.lock })] : []),
-    ...(isNative() ? [switchRow({ icon: "shield", tone: "green", title: T.crashReports, sub: T.crashReportsSub, key: "crashReports", on: st.crashReports !== false, fn: "A.crashToggle()" })] : []),
+    ...(isNative() ? [switchRow({ icon: "shield", tone: "green", title: T.crashReports, sub: T.crashReportsSub, key: "crashReports", on: st.crashReports === true, fn: "A.crashToggle()" })] : []),
     navRow({ icon: "download", tone: "green", title: T.exportCsv, value: "CSV", onclick: "A.exportCsv()" }),
     navRow({ icon: "upload", tone: "green", title: T.backup, onclick: "A.backup()" }),
     navRow({ icon: "history", tone: "green", title: T.restore, onclick: "A.restore()" }),

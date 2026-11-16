@@ -18,58 +18,100 @@
   <a class="open-app" href="https://arahkhan99.github.io/amal-tracker/">Zad home</a>
 </div></header>
 
+<!--
+  Maintainers: this page must match the app. Source of truth: docs/privacy-answers.md and
+  docs/legal/privacy-audit.md. When this page changes, bump TERMS_VERSION in src/cloud.js so signed-in
+  users are asked again. Placeholders filled 15 Nov 2026.
+  Not legal advice: have a lawyer review this page before the public launch.
+-->
 <main class="wrap">
   <h1>Privacy Policy</h1>
-  <p class="meta">Effective {{EFFECTIVE_DATE}}</p>
+  <p class="meta">Effective 15 November 2026</p>
 
-  <p class="lead">Zad is a free tracker for the five daily prayers, daily amal and qada. It is built to keep your worship private: by default everything stays on your device, and nothing is sent anywhere unless you turn on cloud backup or use a feature that needs the internet, as described below.</p>
+  <p class="lead">Zad is a free tracker for the five daily prayers, good deeds (amal) and qada. Your worship is between you and Allah, so Zad is built to keep it private: by default everything stays on your phone. Data only leaves your phone when you turn on cloud backup, look up a city, or when the app sends a crash report, all explained below.</p>
 
   <div class="card">
-    <p><strong>In short:</strong> no ads, no analytics, no tracking, and we never sell or share your data for advertising. Cloud backup is optional and your backup can only be read by your own Google account.</p>
+    <p><strong>In short</strong></p>
+    <ul>
+      <li>No ads, no analytics, no tracking. We never sell your data or share it for advertising.</li>
+      <li>Your prayer logs stay on your phone unless you choose cloud backup. Cloud backup is optional and stored in your own private space on Google's Firebase service, in the United States.</li>
+      <li>Your logs show your religious practice, and excused days (hayd or nifās) can reveal health information. We only back these up after you clearly agree, and you can delete them at any time from inside the app.</li>
+      <li>Location is rounded to about 1&nbsp;km before it is saved or sent anywhere.</li>
+      <li>Crash reports contain technical details only, never your logs, and you can turn them off.</li>
+      <li>You can see, export, correct and delete your data. Questions: <a href="mailto:zadapp.team@gmail.com">zadapp.team@gmail.com</a>.</li>
+    </ul>
   </div>
 
-  <p>This policy covers the Zad phone app for Android and iPhone (app ID <code>com.zad.app</code> on both), coming to Google Play and the App Store, and the Zad pages at <a href="https://arahkhan99.github.io/amal-tracker/">arahkhan99.github.io/amal-tracker</a>. "We" means the developer of Zad. Questions: <a href="mailto:zadapp.team@gmail.com">zadapp.team@gmail.com</a>.</p>
+  <h2>Who we are</h2>
+  <p>Zad is made by an individual developer, Abdul Khan, based in the United States ("we", "us"). We are responsible for (the "controller" of) the personal data described here. Contact: <a href="mailto:zadapp.team@gmail.com">zadapp.team@gmail.com</a>. We are a one-person team, so we have not appointed a data protection officer; please send any privacy question to that email and we will answer it ourselves.</p>
+  <p>This policy covers the Zad app for Android and iPhone (app ID <code>com.zad.app</code> on both), offered on Google Play and the App Store, and the Zad pages at <a href="https://arahkhan99.github.io/amal-tracker/">arahkhan99.github.io/amal-tracker</a>.</p>
 
-  <h2>What stays on your device</h2>
-  <p>Zad saves its data in the app's own storage on your phone. This includes:</p>
+  <h2>What stays on your phone</h2>
+  <p>Zad saves its data in the app's own storage on your phone. We cannot see it. This includes:</p>
   <ul>
     <li>The name you type for the greeting on Home (optional).</li>
-    <li>Your prayer logs and daily amal logs, including any counts or notes you add (for example a Quran position or a sadaqah note), and your own amal list.</li>
+    <li>Your prayer logs (for example on time, in jamāʿah, made up, missed), sunnah and Witr logs, and your good-deeds logs, including counts and notes you add (such as a Quran position or a sadaqah note) and your own list of good deeds.</li>
+    <li>Excused days (hayd or nifās), if you use that feature, and whether Zad is set up for a brother or a sister, if you choose one.</li>
     <li>Qada balances for prayers and fasts, your monthly goals and their history.</li>
-    <li>Your settings: reminder choices, the prayer-time calculation and Asr methods, app lock on or off, and your approximate location (map coordinates rounded to about 1&nbsp;km) with a city label.</li>
-    <li>If you sign in to cloud backup: the version of the Terms of use you agreed to and the date and time you agreed.</li>
+    <li>Your settings: madhhab, reminder choices, prayer-time calculation and Asr method, Hijri date choices, app lock on or off, crash reports on or off, and your approximate location (rounded to about 1&nbsp;km) with a city label.</li>
+    <li>If you use cloud backup: the version of the Terms and Privacy Policy you agreed to, your agreement to back up your records, and when you agreed.</li>
   </ul>
-  <p>We cannot see this data. It is removed when you use <strong>Settings → Reset all data</strong> or uninstall the app.</p>
-  <p>Files you create with <strong>Settings → Back up</strong> or <strong>Export my data</strong> (CSV) are saved or shared wherever you choose (for example your Files app or an email). Where they go after that is up to you.</p>
+  <p>It is removed when you use <strong>Settings → Reset all data</strong> or uninstall the app.</p>
+  <p><strong>Things that show on your screen.</strong> Reminders and Zad's home-screen widgets show prayer names, times and whether today's prayers are logged. Anyone who can see your screen may see them. You can turn reminders off in Settings and remove widgets from your home screen.</p>
+  <p><strong>Your phone's own backups.</strong> Android's backup to your Google account and iPhone's iCloud backup may include Zad's data, depending on your phone settings. Those backups are run by Google or Apple under your own account; we cannot see or delete them.</p>
+  <p><strong>Files you export.</strong> Files you create with <strong>Settings → Back up</strong> or <strong>Export my data</strong> (CSV) are saved or shared wherever you choose. Where they go after that is up to you.</p>
 
   <h2>Optional cloud backup</h2>
-  <p>If you turn on <strong>Settings → Cloud backup</strong>, you sign in with your Google account and your tracker data is backed up and synced between your devices. This uses two Google services from Firebase:</p>
+  <p>If you turn on <strong>Settings → Cloud backup</strong> (or choose "Continue with Google" or "Continue with Apple" when you first open Zad), you sign in with your Google account or Apple ID and your tracker data is backed up and synced between your phones. This uses two services from Google's Firebase:</p>
   <ul>
-    <li><strong>Firebase Authentication</strong> handles the Google sign-in. It keeps your Google account's email address, a user ID, the name and profile-photo link that Google shares at sign-in, and when you created the account and last signed in.</li>
-    <li><strong>Cloud Firestore</strong> stores a copy of the same tracker data listed above (name, logs and notes, amal list, qada, settings including your approximate location and city label, and your terms agreement) under your user ID. It is hosted on Google Cloud in the United States (multi-region <code>nam5</code>).</li>
+    <li><strong>Firebase Authentication</strong> handles the Google or Apple sign-in. It keeps your account's email address (with Apple this can be a private relay address if you chose "Hide My Email"), a user ID, the name (and, for Google, the profile-photo link) shared at sign-in, and when you created the account and last signed in. Google also logs the IP address used to sign in for a few weeks, for security.</li>
+    <li><strong>Cloud Firestore</strong> stores a copy of everything listed under "What stays on your phone" above, under your user ID, with the time of each save. It is hosted on Google Cloud in the United States (multi-region <code>nam5</code>). Firebase Authentication also runs in the United States.</li>
   </ul>
-  <p>Before you sign in, the app shows "By signing in you agree to the Terms of use and Privacy policy". When sign-in succeeds, Zad saves the terms version and the date and time you agreed in your profile, which is backed up with the rest of your data. If the terms change, you are asked to agree again.</p>
-  <p>Security rules on the database allow each signed-in account to read and write only its own data. No other user can access it, and the app itself has no feature to look at other people's data. Data travels over encrypted connections (HTTPS/TLS) and Google encrypts it at rest.</p>
+  <p><strong>Your agreement.</strong> Before you sign in, Zad explains that your prayer records show your religious practice, may include excused days, and will be stored on Google's servers in the United States, and asks you to tick a separate box to agree to back them up. The sign-in buttons stay off until you tick it, and nothing is uploaded before you agree. Signing in also means you accept the Terms of use. Zad saves which version you agreed to and when. If these documents change in a way that matters, the app asks you again and pauses syncing until you answer; choosing <strong>Sign out, keep data on this phone</strong> stops cloud backup and keeps everything on your phone.</p>
+  <p><strong>Who can see it.</strong> Security rules on the database let each signed-in account read and write only its own data. No other user can see it, and the app has no feature to look at other people's data. As the developer we manage the Firebase project, so we could technically open the database. We do not look at your data, except when you ask us to (for example to delete your account or fix a sync problem you report) or when the law requires it. Google stores the data for us as our service provider. Data travels over encrypted connections (HTTPS/TLS) and Google encrypts it at rest.</p>
   <p><strong>Sign out</strong> stops syncing on that phone and keeps the data on the phone. Your cloud copy stays until you delete it.</p>
-  <p><strong>Settings → Delete my account</strong> (shown while you are signed in to cloud backup) permanently deletes your cloud backup and your Zad sign-in from inside the app. You can also ask us by email. See <a href="delete-account.html">Delete your account and data</a>.</p>
+  <p><strong>Settings → Delete my account</strong> (shown while you are signed in) permanently deletes your cloud backup and your Zad sign-in from inside the app. You can also ask us by email. See <a href="delete-account.html">Delete your account and data</a>. Withdrawing your agreement is the same thing: delete your account (or ask us to), and we stop holding your records.</p>
+
+  <h2 id="sensitive">Sensitive information</h2>
+  <p>Some of what Zad holds is especially private, and the law treats it with extra care:</p>
+  <ul>
+    <li><strong>Religious practice.</strong> Prayer, good-deeds and qada logs, and your madhhab, show your religious beliefs and practice.</li>
+    <li><strong>Health information.</strong> If you mark excused days for hayd or nifās, those days can reveal information about menstruation or recent childbirth. In some places (for example Washington State and Nevada in the US) this counts as "consumer health data".</li>
+  </ul>
+  <p>We only use this information to run the features you see: showing your logs and progress, working out qada, scheduling reminders, and backing up and syncing if you choose. We never sell it, never use it for advertising or profiling, never share it with anyone except Google as our storage provider for cloud backup, and never put it in crash reports. It only leaves your phone if you agree to cloud backup. If you'd rather not store excused days at all, turn off <strong>Settings → Excused days</strong>.</p>
 
   <h2>Location</h2>
-  <p>Prayer times are calculated on your device from your location. You can allow location access or type a city instead.</p>
+  <p>Prayer times are calculated on your phone from your location. You can allow location access or type a city instead.</p>
   <ul>
-    <li><strong>Approximate location only:</strong> when you choose to use your location, Zad reads your coordinates once from the phone and straight away rounds them to two decimal places, which is within about 1&nbsp;km of where you are. Only this rounded, approximate location is saved in your settings, backed up or sent anywhere. The precise reading from your phone is not stored or sent anywhere. A city you pick from search is rounded the same way, and a location saved by an earlier version of Zad is rounded the next time the app opens. The calculation happens on the device. Zad does not track your location in the background.</li>
-    <li><strong>City name:</strong> when you are online, the rounded coordinates are sent once to <strong>BigDataCloud</strong>'s free reverse-geocoding service to look up the name of your city. If you are offline, Zad shows "Your location" instead.</li>
+    <li><strong>Approximate location only:</strong> when you choose to use your location, Zad reads your position once and straight away rounds it to two decimal places, which is within about 1&nbsp;km of where you are. Only this rounded location is saved, backed up or sent anywhere. The precise reading is not stored or sent. A city you pick from search is rounded the same way. If "Update location when I travel" is on (Settings, under Location; it applies only when you chose "Use my current location"), Zad checks your approximate location when it opens, only if you have already allowed location access, rounds it the same way, and looks up the city name the same way if you have moved more than 25&nbsp;km. Your location is never tracked in the background.</li>
+    <li><strong>City name:</strong> when you are online, the rounded coordinates are sent once to <strong>BigDataCloud</strong>'s reverse-geocoding service to look up your city's name. If you are offline, Zad shows "Your location" instead.</li>
     <li><strong>City search:</strong> if you search for a city, the text you type is sent to the <strong>Open-Meteo</strong> geocoding service to find matching places.</li>
   </ul>
-  <p>These services receive the request and, like any website, your IP address. We do not send them your name, account or logs.</p>
+  <p>These services receive the request and, like any website, your IP address. We do not send them your name, account or logs, and we do not keep anything from these lookups apart from the result you choose.</p>
 
   <h2>Reminders and app lock</h2>
-  <p>Prayer reminders are scheduled on the phone itself. They are not sent through any server. The optional app lock uses your phone's own fingerprint, face or screen-lock prompt. Zad only receives "unlocked" or "not unlocked" and never sees your fingerprint or face data.</p>
+  <p>Prayer reminders are scheduled on the phone itself. They are not sent through any server. The optional app lock uses your phone's own fingerprint, face or screen-lock prompt. Zad only learns "unlocked" or "not unlocked" and never sees your fingerprint or face data.</p>
+
+  <h2>Crash reports</h2>
+  <p>To find and fix bugs, the app sends a report to <strong>Firebase Crashlytics</strong> (Google) when it crashes or hits an error. A report contains the device model, operating system version, app version, the technical error message and stack trace (which part of the app's code failed), the screen that was open (for example "home" or "settings"), the light or dark theme setting, whether the phone is Android or iPhone, and random installation IDs used to count crashes. Like any internet request, Google also sees your IP address. A report does not contain your name, email, account, location, prayer or deeds logs, notes, excused days, qada or madhhab, and it is not linked to your cloud backup. Crashlytics keeps reports for 90 days and then deletes them.</p>
+  <p>Crash reports are off until you agree. Zad asks you when you first open it whether to send crash reports, and you can change your answer at any time with <strong>Settings → Send crash reports</strong>. When you turn them off, reports not yet sent are deleted, and the change takes full effect the next time Zad opens.</p>
+
+  <h2>Moon-sighting committees</h2>
+  <p>If you follow a moon-sighting committee for the Hijri date while signed in, Zad downloads that committee's published month start dates. People invited by us to update a committee's dates have their user ID saved next to each date they enter, so changes can be traced. Nothing about other users is saved.</p>
+
+  <!-- FEEDBACK-FORM: start -->
+  <h2>Feedback and "report a mistake"</h2>
+  <p>If you send us feedback or report a mistake from inside the app (<strong>Help &amp; tour → Send feedback</strong>, or <strong>Report a mistake</strong> on a hadith, adhkar or Quran page), we receive your message, the kind of feedback, the item and parts you were reporting (if any) and the time. The app version, whether your phone is Android or iPhone, and the phone model are added only while the "Include app and device details" box is ticked (it starts ticked, and you can untick it before sending). Nothing else from the tracker is ever attached: no prayer logs, notes, excused days or location.</p>
+  <p><strong>If you are signed in</strong>, the message is saved in our Firebase database (Cloud Firestore, United States) together with your account's user ID, which is always attached so we know which messages are yours. Adding an email address is optional; we only use it to reply to you. Your messages are deleted together with your account when you use <strong>Settings → Delete my account</strong>. <strong>If you are not signed in</strong>, Zad opens your own email app with the message ready to send, so it reaches us as a normal email from your address, and we see your email address.</p>
+  <p>Please don't include anything more personal than you need to, such as details of your own worship or health. We keep feedback for up to 12 months after we have dealt with it, then delete it. Ask us at any time to delete a message sooner.</p>
+  <!-- FEEDBACK-FORM: end -->
 
   <h2>What we don't do</h2>
   <ul>
     <li>No advertising and no advertising IDs.</li>
-    <li>No analytics, crash-reporting or tracking tools.</li>
-    <li>We do not sell your data or share it with anyone for marketing.</li>
+    <li>No analytics or tracking tools. The only diagnostics are the crash reports described above.</li>
+    <li>We do not sell your personal data, and we do not "share" it for cross-context behavioural advertising (as California law uses that word).</li>
+    <li>We do not use your data to make automated decisions about you or to build a profile of you.</li>
     <li>We do not access your contacts, photos, microphone or camera.</li>
   </ul>
 
@@ -77,37 +119,77 @@
   <div class="table"><table>
     <thead><tr><th>Service</th><th>What it receives</th><th>When</th></tr></thead>
     <tbody>
-      <tr><td>Firebase Authentication (Google)</td><td>Google account email, user ID, name and photo link, sign-in times</td><td>Only if you turn on cloud backup</td></tr>
-      <tr><td>Cloud Firestore (Google)</td><td>Your tracker data and settings, including your approximate location and your terms agreement</td><td>Only while signed in to cloud backup</td></tr>
-      <tr><td>BigDataCloud</td><td>Your approximate coordinates (rounded to about 1&nbsp;km)</td><td>When you set your location while online</td></tr>
-      <tr><td>Open-Meteo</td><td>The city name you search for</td><td>When you search for a city</td></tr>
-      <tr><td>GitHub Pages</td><td>Standard web request details (such as IP address)</td><td>Only when you load these pages</td></tr>
-      <tr><td>Google Fonts</td><td>Standard web request details</td><td>When you open these policy pages (the app itself bundles its fonts)</td></tr>
-      <tr><td>Firebase App Distribution (Google)</td><td>Your email address and basic device details, if you are invited as a tester</td><td>Installing the Android app during testing</td></tr>
+      <tr><td>Firebase Authentication (Google, our service provider)</td><td>Google account email, user ID, name and photo link, sign-in times, IP address</td><td>Only if you turn on cloud backup</td></tr>
+      <tr><td>Cloud Firestore (Google, our service provider)</td><td>Your tracker data and settings, including religious-practice logs, any excused days, your approximate location and your agreement record</td><td>Only while signed in to cloud backup</td></tr>
+      <tr><td>Firebase Crashlytics (Google, our service provider)</td><td>Device model, OS and app version, error details and stack traces, random installation IDs, IP address</td><td>When the app crashes or hits an error, only if you said yes to crash reports</td></tr>
+      <tr><td>BigDataCloud</td><td>Your approximate coordinates (rounded to about 1&nbsp;km) and IP address</td><td>When you set your location while online, or when "Update location when I travel" finds you have moved more than 25&nbsp;km</td></tr>
+      <tr><td>Open-Meteo</td><td>The city name you search for and IP address</td><td>When you search for a city</td></tr>
+      <tr><td>GitHub Pages</td><td>Standard web request details (such as IP address)</td><td>Only when you open these web pages</td></tr>
+      <tr><td>Google Fonts</td><td>Standard web request details</td><td>When you open these web pages (the app itself bundles its fonts)</td></tr>
+      <tr><td>Google Play, Apple App Store, TestFlight, Firebase App Distribution</td><td>What those stores collect when you download or test the app, under their own policies</td><td>Installing or testing the app</td></tr>
     </tbody>
   </table></div>
-  <p>Each of these providers handles data under its own privacy policy. We may also disclose data if the law requires it.</p>
+  <p>Google processes cloud backup, sign-in and crash-report data on our behalf under the Firebase data processing terms. BigDataCloud, Open-Meteo, GitHub and the app stores handle the requests they receive under their own privacy policies. We will disclose data only if the law truly requires it, and we will tell you if we are allowed to.</p>
+
+  <h2>Why we use your data (legal bases)</h2>
+  <p>For people in the EU, the UK and other places with similar laws:</p>
+  <ul>
+    <li><strong>Cloud backup of your records</strong>, including religious-practice and health information: your <strong>explicit consent</strong>, given when you agree before signing in. You can withdraw it at any time by deleting your account.</li>
+    <li><strong>Your Google sign-in</strong> (email, user ID, sign-in times): needed to provide the backup you asked for (<strong>contract</strong>).</li>
+    <li><strong>City lookups and search</strong>: needed to provide the feature you just asked for (<strong>contract</strong>).</li>
+    <li><strong>Crash reports</strong>: our <strong>legitimate interest</strong> in keeping the app working, using technical data only, with a switch to turn them off.</li>
+    <li><strong>Feedback you send</strong>: our legitimate interest in answering you and fixing mistakes.</li>
+    <li><strong>Records of your agreement and of deletion requests</strong>: to meet our <strong>legal obligations</strong>.</li>
+  </ul>
+
+  <h2>Where your data is stored</h2>
+  <p>Cloud backup and sign-in data is stored in the United States. Crash reports may be processed wherever Google runs its services. If you live outside the US, your data is transferred there. Google protects these transfers with the European Commission's Standard Contractual Clauses (and the UK equivalent) in its Firebase data processing terms, and Google LLC takes part in the EU–US Data Privacy Framework. You can ask us for more details.</p>
 
   <h2>How long data is kept</h2>
-  <p>Data on your device stays until you reset the app or uninstall it. Cloud backup data stays until you delete it with <strong>Settings → Delete my account</strong>, which removes it straight away, or ask us to. We delete it, and your sign-in account, within 30 days of an email request.</p>
+  <ul>
+    <li><strong>On your phone:</strong> until you reset the app or uninstall it.</li>
+    <li><strong>Cloud backup and sign-in:</strong> until you delete your account. <strong>Settings → Delete my account</strong> deletes it straight away. If you ask by email, we delete it within 30 days. Google then clears remaining copies from its backup systems within about 180 days; nobody can use them in the meantime.</li>
+    <li><strong>Sign-in IP addresses:</strong> a few weeks (kept by Google for security).</li>
+    <li><strong>Crash reports:</strong> 90 days.</li>
+    <li><strong>Emails you send us:</strong> as long as needed to help you, and no longer than 2 years, except a short record of deletion or privacy requests, which we keep to show we handled them.</li>
+  </ul>
+  <p>If a cloud account looks abandoned, we may delete it; we will email you first if we do.</p>
+  <!-- Abandoned-account deletion is optional; remove the sentence above unless an inactivity rule is actually run. -->
 
   <h2>Your choices and rights</h2>
   <ul>
-    <li>Use Zad without signing in. Everything then stays on your device.</li>
+    <li>Use Zad without signing in. Everything then stays on your phone.</li>
     <li>Turn location off and type a city instead.</li>
-    <li>Export your data at any time with <strong>Settings → Back up</strong>.</li>
+    <li>Turn crash reports off with <strong>Settings → Send crash reports</strong>.</li>
+    <li>Turn off excused days with <strong>Settings → Excused days</strong>.</li>
+    <li>Get a copy of your data at any time with <strong>Settings → Back up</strong> (a complete file you can restore or keep) or <strong>Export my data</strong> (a spreadsheet).</li>
+    <li>Correct anything by editing it in the app; changes sync to your backup.</li>
     <li>Delete your cloud backup and sign-in at any time with <strong>Settings → Delete my account</strong>.</li>
-    <li>Ask us for a copy of your cloud data, a correction, or its deletion by emailing <a href="mailto:zadapp.team@gmail.com">zadapp.team@gmail.com</a>.</li>
+    <li>Ask us for a copy of what we hold about you (including your sign-in details), a correction, deletion, or to restrict or object to how we use it, by emailing <a href="mailto:zadapp.team@gmail.com">zadapp.team@gmail.com</a>.</li>
   </ul>
+  <p>We reply within one month (within 45 days where US state law allows that). We may ask you to confirm the request comes from you, usually by writing from the Google account email you signed in with. You can ask someone to make a request for you; we may ask for proof they are allowed to. We will never treat you differently for using your rights, and you can appeal any decision by replying to our answer.</p>
 
-  <h2>Children</h2>
-  <p>Zad is not directed at children under 13, and we do not knowingly collect personal information from them. If you think a child has used cloud backup, contact us and we will delete the data.</p>
+  <h3>If you are in the EU, the UK or Switzerland</h3>
+  <p>You have the rights of access, correction, deletion, restriction, objection, data portability and to withdraw consent at any time (this doesn't affect what was done before). You can also complain to your local data protection authority, for example the Information Commissioner's Office in the UK, although we'd be grateful for the chance to fix things first.</p>
+
+  <h3>If you are in the United States</h3>
+  <p>Depending on your state, you have rights to know, access, correct, delete and get a copy of your personal data, and to opt out of sale, targeted advertising and profiling. We don't do any of those things, so there is nothing to opt out of. We only use sensitive data (religious beliefs and health information) to provide the features you ask for, and with your consent where the law requires it. We don't use Do Not Track signals or Global Privacy Control to change anything, because we don't track you across apps or websites in the first place.</p>
+  <p id="health-data"><strong>Consumer health data (Washington, Nevada, Connecticut and similar laws).</strong> The only health-related data Zad may hold is excused days you mark (hayd or nifās), and the fact that a prayer is logged as excused. We collect it only when you choose to use that feature, keep it on your phone unless you consent to cloud backup, use it only to show your tracker correctly, and never sell it or share it with anyone except Google as our storage provider. You can see, export and delete it as described above, and withdraw consent by deleting your account.</p>
+
+  <h3>If you are in Canada, India, Pakistan, the Gulf, Malaysia or elsewhere</h3>
+  <p>You have the rights your local law gives you, which usually include access, correction and withdrawing consent. Email us and we will help, whatever country you live in. In India, the email address above is also our contact for grievances.</p>
+
+  <h2>Children and teenagers</h2>
+  <p>Zad is meant for adults and teenagers. It is not directed at children under 13, and we do not knowingly collect personal data from them. Cloud backup is only for people who are at least 13, or older where local law requires (for example 16 in some European countries, 18 in India), unless a parent or guardian has agreed. Teenagers should check with a parent before turning on cloud backup. If you believe a child has used cloud backup without permission, email us and we will delete the data. Zad has no public profiles, chat or sharing, and location is approximate and never shown to anyone.</p>
+
+  <h2>Security</h2>
+  <p>We use encrypted connections, Google's encryption at rest, database rules that lock each account to its owner, and an optional app lock on your phone. No system is perfectly secure, so please keep your Google account and phone protected. If a security incident affects your data, we will tell you and the authorities where the law requires.</p>
 
   <h2>Changes</h2>
-  <p>If this policy changes, we will update this page and its effective date. Significant changes will also be mentioned in the <a href="release-notes.html">release notes</a>.</p>
+  <p>If this policy changes, we will update this page and its effective date. For important changes, especially about cloud backup or sensitive data, the app will ask you again before continuing to back up, and the <a href="release-notes.html">release notes</a> will mention it. We will never start using your existing data in a new way that needs your consent without asking first.</p>
 
   <h2>Contact</h2>
-  <p>Email <a href="mailto:zadapp.team@gmail.com">zadapp.team@gmail.com</a>.</p>
+  <p>Email <a href="mailto:zadapp.team@gmail.com">zadapp.team@gmail.com</a>. We read every message.</p>
 </main>
 
 <footer class="foot"><div class="wrap">

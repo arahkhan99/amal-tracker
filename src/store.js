@@ -32,13 +32,14 @@ export function defaultState(now = new Date()) {
   return {
     version: VERSION,
     createdKey: dkey(now),
-    profile: { name: "", onboarded: false, consent: null }, // consent: { version, at } of the terms agreed to at sign-in
+    profile: { name: "", onboarded: false, consent: null, dataConsent: null, gender: null }, // consent: { version, at } of the terms agreed to at sign-in; dataConsent: { version, at, scope: "cloud-backup-sensitive" }, the explicit consent to back up religious/health data (separate from the terms); gender: "m" | "f" | null (applyGender)
     settings: {
       preQada: true, leadMin: 15, prayerAlerts: false, evening: true,
       method: "Karachi", // new installs; saved states keep their method (the old default was "NorthAmerica")
       madhhab: DEFAULT_MADHHAB, // "hanafi" | "shafii" | "maliki" | "hanbali"
       asr: asrMethod(DEFAULT_MADHHAB), // "hanafi" | "shafi"; follows the madhhab unless the user overrides it
-      location: null, // {lat, lng, label}
+      location: null, // {lat, lng, label, source: "gps" | "city"}
+      autoLocation: true, // "Update location when I travel" (src/travel.js); only for source "gps"
       carryQuran: true, reflection: true, seerah: false, lock: false,
       jumuah: true, // on Friday, Dhuhr shows the Jumu'ah sunnah list
       sunnahGhayr: true, // show ghayr mu'akkadah chips (outlined)
@@ -47,13 +48,41 @@ export function defaultState(now = new Date()) {
       makeupNudge: true, // "Still time to make up Asr today"
       features: defaultFeatures(), // module switches, see features.js
       hiddenTools: [], // tool ids hidden on their own, see features.js
+      provisions: defaultProvisions(), // provisions & levels (points.js), off by default
     },
     amalList: DEFAULT_AMAL.map(a => ({ ...a })),
     days: {},
     lastQuran: "",
     excusedMode: null, // { since: "YYYY-MM-DD" } while excused mode is on
-    qada: { Fajr: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0, Witr: 0, fasts: 0, goal: 20, fastGoal: 2, monthLog: {}, addedLog: {} },
+    qada: { Fajr: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0, Witr: 0, fasts: 0, goal: 20, fastGoal: 2, monthLog: {}, dayLog: {}, addedLog: {} },
   };
+}
+
+/**
+ * Provisions & levels settings (see points.js). on: the Features switch; homeFull: "Prayer at home counts
+ * in full" (sisters: on time earns the jamāʿah amount); home / tracker: the Home chip and Tracker chip;
+ * best: the highest level ever shown (levels never go down); weights: the WEIGHTS version; offered: the
+ * one-time Home offer has been shown.
+ */
+export function defaultProvisions() {
+  return { on: false, homeFull: false, home: false, tracker: false, best: 1, weights: "v1", offered: false };
+}
+function normalizeProvisions(p) {
+  const d = defaultProvisions();
+  if (!p || typeof p !== "object") return d;
+  const out = { ...d, ...p };
+  for (const k of ["on", "homeFull", "home", "tracker", "offered"]) out[k] = !!out[k];
+  out.best = Number.isFinite(out.best) ? Math.max(1, Math.floor(out.best)) : 1;
+  if (typeof out.weights !== "string" || !out.weights) out.weights = d.weights;
+  return out;
+}
+
+/** Remember a level as shown; levels never go down. Returns true when it is a new best (show the level-up). */
+export function recordLevel(S, level) {
+  const p = S.settings.provisions || (S.settings.provisions = defaultProvisions());
+  if (!(level > (p.best || 1))) return false;
+  p.best = Math.floor(level);
+  return true;
 }
 
 /**
@@ -83,16 +112,23 @@ export function normalize(s, now = new Date()) {
   const d = defaultState(now);
   const out = { ...d, ...s };
   out.profile = { ...d.profile, ...(s.profile || {}) };
+  if (!GENDERS.includes(out.profile.gender)) out.profile.gender = null; // older saves: not set (no prompt)
   out.settings = { ...d.settings, ...(s.settings || {}) };
   // A set-up user whose save has no method was on the old default: keep it (only new installs get Karachi)
   if (s.settings && !s.settings.method && s.profile?.onboarded) out.settings.method = "NorthAmerica";
   migrateMadhhab(s, out);
   out.settings.features = normalizeFeatures(out.settings.features);
   out.settings.hiddenTools = Array.isArray(out.settings.hiddenTools) ? out.settings.hiddenTools : [];
+  out.settings.provisions = normalizeProvisions(out.settings.provisions);
   // Only approximate location is kept (about 1 km); round anything saved before that rule
   const loc = out.settings.location;
-  if (loc && typeof loc.lat === "number") out.settings.location = { ...loc, lat: roundCoord(loc.lat), lng: roundCoord(loc.lng) };
+  // source: older saves didn't record how the location was chosen. It can't be told apart afterwards,
+  // so a missing source counts as "gps" (most people allow location at set-up). Searching a city again
+  // sets "city" and stops the travel check (src/travel.js).
+  if (loc && typeof loc.lat === "number") out.settings.location = { ...loc, lat: roundCoord(loc.lat), lng: roundCoord(loc.lng), source: loc.source === "city" ? "city" : "gps" };
+  out.settings.autoLocation = out.settings.autoLocation !== false;
   out.qada = { ...d.qada, ...(s.qada || {}) };
+  if (!out.qada.dayLog || typeof out.qada.dayLog !== "object") out.qada.dayLog = {};
   out.amalList = Array.isArray(s.amalList) ? s.amalList.map(migrateAmal) : d.amalList;
   out.days = s.days || {};
   out.excusedMode = s.excusedMode?.since ? s.excusedMode : null;
@@ -114,6 +150,22 @@ function migrateAmal(a) {
 export function needsConsent(profile, version) {
   const v = profile?.consent?.version;
   return typeof v !== "string" || v < version;
+}
+
+/** Scope of the explicit consent to back up religious and health data (privacy audit A1). */
+export const DATA_CONSENT_SCOPE = "cloud-backup-sensitive";
+/** True unless the profile records the explicit cloud-backup consent of `version` or later. Nothing may be
+ *  uploaded while this is true (cloud.js). */
+export function needsDataConsent(profile, version) {
+  const c = profile?.dataConsent;
+  return !c || c.scope !== DATA_CONSENT_SCOPE || typeof c.version !== "string" || c.version < version;
+}
+/** The newer of two consent records ({ version, at }); version first, then time. */
+function newerConsent(a, b) {
+  if (!a?.version) return b?.version ? b : a ?? b ?? null;
+  if (!b?.version) return a;
+  if (a.version !== b.version) return a.version > b.version ? a : b;
+  return String(b.at || "") > String(a.at || "") ? b : a;
 }
 
 export function load(storage = globalThis.localStorage) {
@@ -155,6 +207,33 @@ export function answerMadhhabAsk(S, madhhab = DEFAULT_MADHHAB) {
   delete S.settings.asrBefore;
 }
 
+/* ---------- brother / sister ---------- */
+
+/** profile.gender values; null = not set / prefer not to say. */
+export const GENDERS = ["m", "f"];
+export const genderOf = S => (GENDERS.includes(S?.profile?.gender) ? S.profile.gender : null);
+
+/**
+ * Set who Zad is set up for ("m" | "f" | null) and the defaults that follow. Each stays its own switch after.
+ * - "f" (sister): excused days on, Jumuʿah off, "prayer at home counts in full" (provisions) on.
+ * - "m" (brother): excused days off, Jumuʿah on, home-in-full off. Excused mode is ended (today is unflagged);
+ *   past excused days are never unflagged (they stay out of the stats as before).
+ * - null (prefer not to say): today's behaviour, excused days and Jumuʿah on; home-in-full is left as it is.
+ * Logs are never changed except ending excused mode. Returns the value stored.
+ */
+export function applyGender(S, g, { todayKey: key, excusedPrayers = [] } = {}, now = new Date()) {
+  const v = GENDERS.includes(g) ? g : null;
+  S.profile.gender = v;
+  const st = S.settings;
+  const prov = st.provisions || (st.provisions = defaultProvisions());
+  if (v === "f") { st.excusedDays = true; st.jumuah = false; prov.homeFull = true; }
+  else if (v === "m") {
+    st.excusedDays = false; st.jumuah = true; prov.homeFull = false;
+    if (S.excusedMode?.since) endExcused(S, key || dkey(now), { excusedPrayers }, now);
+  } else { st.excusedDays = true; st.jumuah = true; }
+  return v;
+}
+
 /* ---------- day records ----------
  * day = {
  *   prayers: { Fajr: "ontime", ... }   // STATUSES; missing = not logged
@@ -165,9 +244,20 @@ export function answerMadhhabAsk(S, madhhab = DEFAULT_MADHHAB) {
  *   witrQ?: true                       // the missed Witr was added to make-ups (Hanafi at the time)
  *   witrAuto?: true                    // Witr was marked missed automatically because ʿIshāʾ was missed
  *   excused?: true                     // excused day (hayd / nifas): unlogged prayers count as excused
+ *   remember?: { Fajr: true, ... }     // remembrance at prayer time, only on excused prayers (setRemember)
+ *   first?: ms                         // when anything was first logged for this day; set once (markLogged)
  *   u: ms                              // last edit, for cloud merges
  * }
  */
+
+/**
+ * Stamp day.first the first time anything is logged for the day (a prayer status, Witr, a sunnah chip,
+ * a good deed, remembrance). Never overwritten; only viewing a day never sets it. The cloud merge keeps
+ * the earlier of two copies' stamps.
+ */
+export function markLogged(day, now = new Date()) {
+  if (day && !(day.first > 0)) day.first = now.getTime();
+}
 export function getDay(S, key) { return S.days[key] || { prayers: {}, amal: {}, note: "" }; }
 export function ensureDay(S, key) {
   if (!S.days[key]) S.days[key] = { prayers: {}, amal: {}, note: "" };
@@ -201,6 +291,7 @@ export function setPrayer(S, key, p, status, now = new Date()) {
   if (status) {
     day.prayers[p] = status;
     (day.at ||= {})[p] = now.getTime();
+    markLogged(day, now);
   } else {
     delete day.prayers[p];
     if (day.at) delete day.at[p];
@@ -230,7 +321,7 @@ export function setWitr(S, key, status, now = new Date()) {
   const was = day.witr || null;
   if (was === "missed" && status !== "missed" && day.witrQ) { qadaAdd(S, "Witr", -1, now); delete day.witrQ; }
   if (status === "missed" && was !== "missed" && witrInQada(madhhabOf(S))) { qadaAdd(S, "Witr", 1, now); day.witrQ = true; }
-  if (status) day.witr = status; else delete day.witr;
+  if (status) { day.witr = status; markLogged(day, now); } else delete day.witr;
   delete day.witrAuto;
   day.u = Date.now();
   return was;
@@ -248,13 +339,14 @@ export function sunnahOpts(S, key) {
  * Log (done=true) or unlog a sunnah chip. Refused (returns false) when the fard's status doesn't allow
  * chips: Missed / Excused, or Made up for anything but Fajr's "2 before". Unlogging is always allowed.
  */
-export function setSunnah(S, key, id, done) {
+export function setSunnah(S, key, id, done, now = new Date()) {
   const item = itemById(id, madhhabOf(S));
   if (!item) return false;
   const day = ensureDay(S, key);
   if (done) {
     if (!sunnahAllowed(item, item.prayer ? statusOf(day, item.prayer) : null, { excusedDay: !!day.excused })) return false;
     (day.sunnah ||= {})[id] = true;
+    markLogged(day, now);
   } else if (day.sunnah) delete day.sunnah[id];
   day.u = Date.now();
   return true;
@@ -356,6 +448,32 @@ export function endExcused(S, key, { excusedPrayers = [] } = {}, now = new Date(
 export const isExcusedDay = (S, key) => !!S.days[key]?.excused;
 
 /**
+ * Tick (or untick) "Remembrance at prayer time" for one prayer: wuḍūʾ and dhikr in the prayer place,
+ * about the length of the prayer. Only allowed while that prayer's status is excused (statusOf);
+ * unticking is always allowed. Returns false when refused.
+ */
+export function setRemember(S, key, p, on, now = new Date()) {
+  if (!PRAYERS.includes(p)) return false;
+  if (on) {
+    if (statusOf(S.days[key], p) !== "excused") return false;
+    const day = ensureDay(S, key);
+    (day.remember ||= {})[p] = true;
+    markLogged(day, now);
+    day.u = Date.now();
+    return true;
+  }
+  const day = S.days[key];
+  if (day?.remember?.[p]) {
+    delete day.remember[p];
+    if (!Object.keys(day.remember).length) delete day.remember;
+    day.u = Date.now();
+  }
+  return true;
+}
+/** Whether remembrance at prayer time counts for a prayer (ticked and the prayer is still excused). */
+export const remembered = (day, p) => !!day?.remember?.[p] && statusOf(day, p) === "excused";
+
+/**
  * The good deeds list for a day. On an excused day "Qurʾān recitation" becomes "Listen to Qurʾān"
  * (its own id "listen"), and "Duʿāʾ & istighfār" (id "dua") is added. Other days: S.amalList as is.
  * Items carry `swappedFrom: "quran"` / `excusedOnly: true` so Progress can show recitation as excused.
@@ -369,9 +487,9 @@ export function amalForDay(S, key) {
   return list;
 }
 
-export function setAmal(S, key, id, done, detail = "") {
+export function setAmal(S, key, id, done, detail = "", now = new Date()) {
   const day = ensureDay(S, key);
-  if (done) day.amal[id] = { done: true, detail };
+  if (done) { day.amal[id] = { done: true, detail }; markLogged(day, now); }
   else delete day.amal[id];
   day.u = Date.now();
 }
@@ -387,19 +505,25 @@ export function monthLog(S, now = new Date()) {
 export function madeUpPrayer(S, p, now = new Date()) {
   if (!(S.qada[p] > 0)) return false;
   S.qada[p]--;
-  const k = ymKey(now);
-  const m = S.qada.monthLog[k] || (S.qada.monthLog[k] = { prayers: 0, fasts: 0 });
-  m.prayers++;
+  logMadeUp(S, "prayers", now);
   return true;
 }
 
 export function madeUpFast(S, now = new Date()) {
   if (S.qada.fasts <= 0) return false;
   S.qada.fasts--;
+  logMadeUp(S, "fasts", now);
+  return true;
+}
+
+/** Count one completed make-up in qada.monthLog (per month, unchanged) and qada.dayLog (per day, for provisions). */
+function logMadeUp(S, field, now) {
   const k = ymKey(now);
   const m = S.qada.monthLog[k] || (S.qada.monthLog[k] = { prayers: 0, fasts: 0 });
-  m.fasts++;
-  return true;
+  m[field]++;
+  const dl = S.qada.dayLog || (S.qada.dayLog = {});
+  const d = dl[dkey(now)] || (dl[dkey(now)] = { prayers: 0, fasts: 0 });
+  d[field] = (d[field] || 0) + 1;
 }
 
 /** The make-up rows to show: the five prayers, plus Witr where it is owed (Hanafi). */
@@ -424,12 +548,25 @@ export function lastDetail(S, id, beforeKey, strict = true) {
 /* ---------- cloud merge ---------- */
 /**
  * Combine this phone's state with the cloud copy. Each day keeps whichever side edited it last
- * (day.u); tool progress (S.tools) is combined by mergeTools; everything else (profile, settings incl.
+ * (day.u), except that day.first keeps the earlier stamp of the two and settings.provisions.best the higher; tool progress (S.tools) is combined by mergeTools; everything else (profile, settings incl.
  * features, amal list, qada, excusedMode) comes from the side saved last. A side that hasn't finished
  * onboarding never overrides one that has.
  */
 export function mergeStates(local, remote) {
   if (!remote) return local;
+  return keepNewestConsent(mergeCore(local, remote), local, remote);
+}
+/** Consent records never go backwards: an older phone or an older cloud copy can't remove or downgrade them. */
+function keepNewestConsent(out, local, remote) {
+  for (const k of ["consent", "dataConsent"]) {
+    const best = newerConsent(newerConsent(local.profile?.[k], remote.profile?.[k]), out.profile?.[k]);
+    if (!best || JSON.stringify(best) === JSON.stringify(out.profile?.[k])) continue;
+    if (out === local) out = { ...local, profile: { ...local.profile } };
+    out.profile = { ...out.profile, [k]: JSON.parse(JSON.stringify(best)) };
+  }
+  return out;
+}
+function mergeCore(local, remote) {
   if (!local.profile.onboarded && remote.profile?.onboarded) return normalize(remote);
   if (local.profile.onboarded && !remote.profile?.onboarded) return local;
   const newer = (remote.updatedAt || 0) > (local.updatedAt || 0) ? normalize(remote) : local;
@@ -437,8 +574,15 @@ export function mergeStates(local, remote) {
   out.days = {};
   for (const k of new Set([...Object.keys(local.days), ...Object.keys(remote.days || {})])) {
     const a = local.days[k], b = remote.days?.[k];
-    out.days[k] = !a ? b : !b ? a : (b.u || 0) > (a.u || 0) ? b : (a.u || 0) > (b.u || 0) ? a : newer === local ? a : b;
+    let d = !a ? b : !b ? a : (b.u || 0) > (a.u || 0) ? b : (a.u || 0) > (b.u || 0) ? a : newer === local ? a : b;
+    // day.first: the earliest stamp from either copy wins, whichever side's edit is kept
+    const first = [a?.first, b?.first].filter(x => x > 0).sort((x, y) => x - y)[0];
+    if (first && d.first !== first) d = { ...d, first };
+    out.days[k] = d;
   }
+  // Levels never go down: keep the higher best level shown on either phone
+  const bestOf = x => x?.settings?.provisions?.best || 1;
+  if (out.settings?.provisions) out.settings.provisions.best = Math.max(bestOf(local), bestOf(remote), out.settings.provisions.best || 1);
   out.createdKey = [local.createdKey, remote.createdKey].filter(Boolean).sort()[0];
   out.updatedAt = Math.max(local.updatedAt || 0, remote.updatedAt || 0);
   const tools = mergeTools(newer === local ? local.tools : remote.tools, newer === local ? remote.tools : local.tools);

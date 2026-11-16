@@ -42,7 +42,7 @@ describe("crash.js on native", () => {
   });
 
   it("never sends personal fields even if a caller passes them", async () => {
-    await crash.initCrash({ app_version: "1", view: "home", theme: "dark", name: "Aisha", email: "a@b.co", location: { lat: 1 }, madhhab: "hanafi", logs: [1] }, new EventTarget());
+    await crash.initCrash({ enabled: true, app_version: "1", view: "home", theme: "dark", name: "Aisha", email: "a@b.co", location: { lat: 1 }, madhhab: "hanafi", logs: [1] }, new EventTarget());
     for (const k of sentKeys()) expect(crash.CRASH_KEYS).toContain(k);
     const json = JSON.stringify(fc.setCustomKey.mock.calls);
     for (const bad of ["Aisha", "a@b.co", "hanafi", "madhhab", '"lat"', '"location"', '"email"', '"name"', '"logs"']) expect(json).not.toContain(bad);
@@ -51,7 +51,7 @@ describe("crash.js on native", () => {
 
   it("records uncaught errors and unhandled rejections as non-fatals with a stack", async () => {
     const target = new EventTarget();
-    await crash.initCrash({ app_version: "1" }, target);
+    await crash.initCrash({ enabled: true, app_version: "1" }, target);
     const err = new Error("render failed");
     err.stack = "Error: render failed\n    at renderHome (https://localhost/assets/index-abc.js?v=1:12:34)\n    at https://localhost/assets/vendor.js:5:6";
     target.dispatchEvent(Object.assign(new Event("error"), { error: err }));
@@ -82,7 +82,7 @@ describe("crash.js on native", () => {
   });
 
   it("dedupes repeated errors and caps reports per launch", async () => {
-    await crash.initCrash({}, new EventTarget());
+    await crash.initCrash({ enabled: true }, new EventTarget());
     await crash.recordError(new Error("same")); await crash.recordError(new Error("same"));
     expect(fc.recordException).toHaveBeenCalledTimes(1);
     for (let i = 0; i < 30; i++) await crash.recordError(new Error("e" + i));
@@ -90,7 +90,7 @@ describe("crash.js on native", () => {
   });
 
   it("updates the view key only when it changes", async () => {
-    await crash.initCrash({ view: "home" }, new EventTarget());
+    await crash.initCrash({ enabled: true, view: "home" }, new EventTarget());
     fc.setCustomKey.mockClear();
     await crash.crashView("home");
     expect(fc.setCustomKey).not.toHaveBeenCalled();
@@ -100,6 +100,31 @@ describe("crash.js on native", () => {
 });
 
 describe("the Send crash reports switch", () => {
+  it("is opt-in: unanswered (undefined), null, false or truthy non-true values all start off", async () => {
+    for (const enabled of [undefined, null, false, "yes", 1]) {
+      crash._resetCrash(); Object.values(fc).forEach(f => f.mockClear());
+      const target = new EventTarget();
+      expect(await crash.initCrash({ enabled, app_version: "1" }, target)).toBe(false);
+      expect(fc.setEnabled).toHaveBeenCalledWith({ enabled: false });
+      target.dispatchEvent(Object.assign(new Event("error"), { error: new Error("boom") }));
+      await flush();
+      expect(fc.recordException).not.toHaveBeenCalled();
+    }
+  });
+
+  it("main.js, the Settings switch and the set-up step treat only crashReports === true as on", async () => {
+    const fs = await import("node:fs");
+    const main = fs.readFileSync("src/main.js", "utf8"), settings = fs.readFileSync("src/views/settings.js", "utf8");
+    expect(main).toContain("initCrash({ enabled: S.settings.crashReports === true");
+    expect(settings).toContain("on: st.crashReports === true");
+    expect(settings).not.toContain("crashReports !== false");
+    const store = await import("../src/store.js");
+    expect(store.defaultState().settings.crashReports).toBeUndefined();
+    // native auto-collection stays off until the user says yes
+    expect(fs.readFileSync("android/app/src/main/AndroidManifest.xml", "utf8")).toContain('firebase_crashlytics_collection_enabled" android:value="false"');
+    expect(fs.readFileSync("ios/App/App/Info.plist", "utf8")).toMatch(/<key>FirebaseCrashlyticsCollectionEnabled<\/key>\s*<false\/>/);
+  });
+
   it("starts off when the setting is off, and sends nothing", async () => {
     const target = new EventTarget();
     expect(await crash.initCrash({ enabled: false }, target)).toBe(false);

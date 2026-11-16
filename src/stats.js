@@ -382,7 +382,8 @@ export function insights(S, now = new Date()) {
   // Strongest jamāʿah habit this week
   const cong = perPrayer(S, "congregation", 7, now);
   const bestCong = PRAYERS.map(p => [p, cong.c[p]]).sort((a, b) => b[1] - a[1])[0];
-  if (bestCong && bestCong[1] >= 2) good.push({ title: INSIGHT.congTitle(name(bestCong[0]), bestCong[1], cong.days), sub: INSIGHT.congSub });
+  // (left out for sisters: profile.gender "f"; the Jamāʿah chapter itself stays in Progress)
+  if (bestCong && bestCong[1] >= 2 && S.profile?.gender !== "f") good.push({ title: INSIGHT.congTitle(name(bestCong[0]), bestCong[1], cong.days), sub: INSIGHT.congSub });
 
   // Qurʾān streak
   const qs = amalStreak(S, "quran", now);
