@@ -1,3 +1,5 @@
+// NOTE (17 Nov 2026): app ICONS now come from the vector logo in scripts/icons/ — run `node scripts/icons/export.mjs --out . --write-repo`.
+// Running this script would overwrite them with the old soft raster (assets/zad-icon-512.png). Use it only for anything else it still makes (e.g. launch screens).
 // Renders the app icon and splash screens from ONE source image: assets/zad-icon-512.png
 // (a seamless full-bleed square icon). To change the icon, replace that file and re-run.
 // Outputs web icons to public/icons and, if the Android/iOS projects exist, launcher icons and splash.

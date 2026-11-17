@@ -796,3 +796,52 @@ To check them: `git status`; look for the files and screenshots named above; run
   10. guide.js copies the tools prefs defaults by hand → share one module.
 - 15 Nov: user chose notification icon C (in a circle) → INSTALLED: android/app/src/main/res/drawable-*/ic_stat_zad.png + capacitor.config.json LocalNotifications.smallIcon. User approved fixing all 10 part-4 findings (fix agent running). User wants NEW MAIN LOGO concepts → mockup agent running (design-review/mockups2/logo/logo-review.html, to publish).
 - 15 Nov: ✅ Part-4 fixes DONE (367 passed/23 skipped, build + cap sync + assembleDebug OK; the notification icon is synced). ALL REVIEW PARTS 1–4 FIXED, uncommitted. Also fixed: progress excused-day caption used Saturday-first names. NEXT: ask the user to push; logo concepts agent still running.
+- 15 Nov: ✅ PUSHED fc8ce24 (all review fixes + notification icon C). Watching CI.
+- 15 Nov: ✅ Logo concepts page https://claude.ai/artifact/REfu4iXURR1vxT38xea7Ws (design-review/mockups2/logo/, 7 SVG concepts + Current; recommended 1 Zāy redrawn, 2 Kufic زاد, 5 five-prayer ring). Awaiting the user's choice; then export Android adaptive + iOS icons and regenerate notification icon C from the chosen mono SVG.
+- 15 Nov: ✅ CI green for fc8ce24 (Android sent to the user; iPhone compile incl. the new widget Swift OK; Pages).
+- 15 Nov: ✅ LOGO DECIDED: keep the CURRENT logo (Concept 6). No icon changes. The notification icon stays option C, made from the current symbol.
+- 15 Nov: user asked to REFINE the current logo now (vector trace, same look, sharper; fix the Android safe zone). Agent running → design-review/mockups2/logo-refine/refine-review.html (to publish for approval before replacing icons).
+
+## ▶ RESUME HERE (saved 15 Nov 2026, late night, at the usage limit) — LATEST
+**State:** everything is pushed up to fc8ce24 and CI is green; the test build was sent to the user. Firestore rules are deployed. The CHC editor works (user UID HfNqGoSpjNUW0uzm5JhLScTj5f42 in hijriCommittees/chc-na). Crashlytics is live. Code review parts 1–4 are all done and fixed (367 tests pass). The notification icon (option C) has shipped.
+
+**Running when the session ended:** the logo REFINE agent (vector trace of the CURRENT Concept 6 logo, same look, sharper, Android safe-zone fix) → `design-review/mockups2/logo-refine/` (refine-review.html, NOTES.md, export.mjs). On resume:
+1. Check that folder. If it's incomplete, re-run the agent with the same brief: trace the current symbol into SVG, write refine-review.html, write the export plan, and test export.mjs only into a temp folder.
+2. Publish refine-review.html as an artifact (copy the page and PNGs to the scratchpad and apply the usual safe-area/viewport transform).
+3. Get the user's approval.
+4. Then run the export into android/ios/public icons, regenerate ic_stat_zad from the refined mono, run `cap sync`, tests and builds, and ask to push.
+
+**User decisions on 15 Nov (night):**
+- Keep the current logo, but refine it.
+- Crash reports stay opt-in.
+- Push builds as soon as they're ready; don't hold them back for the logo.
+
+**Waiting on the user (most urgent first):**
+1. Google Play developer account ($25, "Yourself"). This is the most urgent: the 12-testers-for-14-days rule means the account must exist by early December.
+2. Recruit 12–20 Android testers; we'll need their Gmail addresses.
+3. Apple developer account ($99).
+4. Accept Firebase's Data Processing and Security Terms (Project settings → Privacy).
+5. Test the new build on the phone.
+6. Ramadan content review: https://claude.ai/artifact/NFmfUG4J767t6fXZgWX4Mw
+7. A lawyer's look at the policy before January.
+8. Follow up the permission emails (Taqi Usmani, QUL).
+
+**Next to build:**
+- The refined logo (after approval).
+- Ramadan features per docs/plan/ramadan.md (mockups first) once the content review is back.
+- Store listings and screenshots.
+- Before launch: remove the old Android app and the web app from the Firebase project.
+- Privacy-audit B items for January.
+- Optional: server-side consent enforcement (review part 1, finding 4) before the public launch.
+
+**Review/decision pages:**
+
+| Page | Link |
+|---|---|
+| Built screens | https://claude.ai/artifact/L691B8FFFU4La7YVF8Uh5R |
+| Logo concepts (not chosen; kept the current logo) | https://claude.ai/artifact/REfu4iXURR1vxT38xea7Ws |
+| Notification icons | https://claude.ai/artifact/HaUBpjK7kQqqiC5XbQwaW1 |
+| Ramadan | https://claude.ai/artifact/NFmfUG4J767t6fXZgWX4Mw |
+- 17 Nov: session resumed; the logo refine agent was resumed via SendMessage.
+- 17 Nov: ✅ Logo refine done; review page https://claude.ai/artifact/LZYL5Pt5GhRjWWtH2LHEyZ. Awaiting: approval + 3 choices (bg #1A3126 current vs #0F3D2E; notif disc vs plain letter; colourways). Export: node design-review/mockups2/logo-refine/export.mjs --write-repo [--bg forest] [--splash] (see NOTES.md); retire scripts/make-icons.mjs (builds from the old raster).
+- 17 Nov: ✅ User approved the refine, KEEPING EVERYTHING CURRENT (bg #1A3126, notification disc, colourways, splash untouched). Exported into android mipmaps + adaptive fg, ic_stat_zad, iOS AppIcon, public/icons. Export script now tracked at scripts/icons/export.mjs + geometry.mjs (output identical); make-icons.mjs carries a warning; docs/ios-setup.md updated. Tests 367/23, build + cap sync OK. Uncommitted; awaiting push OK.
