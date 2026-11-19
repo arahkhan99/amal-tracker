@@ -1,6 +1,6 @@
 /* Manzil reader: the protective passages, rendered from the Quran data (IndoPak text, optional Pickthall).
    The data file holds references only. Reading is ticked per day, morning and evening. */
-import { A, S, NOW, todayKey, esc, I, T, redraw, part, persist, prune, prefs, toast, COMMON } from "./core.js";
+import { A, S, NOW, todayKey, esc, I, T, redraw, part, persist, prune, prefs, toast, COMMON, store } from "./core.js";
 import { MANZIL, MANZIL_META, manzilAyahCount, manzilRef } from "../../tools/data/manzil.js";
 import { timesFor } from "../../times.js";
 import { fmt12 } from "../../util.js";
@@ -76,8 +76,8 @@ A.mzDone = () => {
   const m = part("manzil", {});
   const k = todayKey();
   m[k] ||= {};
-  if (m[k][slot]) { delete m[k][slot]; toast(TT.undone); }
-  else { m[k][slot] = Date.now(); toast(TT.mzReadToast(slot === "morning" ? TT.morning : TT.evening)); }
+  if (m[k][slot]) { store.clearToolStamp(S, `manzil/${k}/${slot}`); toast(TT.undone); } // with a note, so a sync can't bring it back
+  else { m[k][slot] = Date.now(); store.noteToolSet(S, `manzil/${k}/${slot}`); toast(TT.mzReadToast(slot === "morning" ? TT.morning : TT.evening)); }
   prune(m, 40);
   markRead(S, "manzil", NOW()); // the day log too: the Manzil counts as a good deed in Provisions
   commit(); redraw();

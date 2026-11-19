@@ -11,7 +11,7 @@
  *   lists only the rest (deedInRead / sheetDeeds). A deed is in exactly one place, so nothing counts twice.
  * - A tick in Read writes the same day log as the Good deeds sheet (day.amal[id], store.setAmal), so Progress,
  *   the stats and Provisions count it as before. No new deed ids are written to day.amal (the scoring stays the same).
- * - Readings with no good deed (Hizb, Manzil, al-Mulk, al-Kahf) are kept with the tool's own progress in S.tools:
+ * - Readings with no good deed (Hizb, Manzil, al-Mulk, al-Kahf, Yā-Sīn morning and evening) are kept with the tool's own progress in S.tools:
  *   the Hizb week (S.tools.hizb), the Manzil day (S.tools.manzil), else S.tools.read[day][id]. They also
  *   mark the day log (day.reads, store.setRead), and each counts as one good deed in Provisions (scholar,
  *   18 Nov 2026; points.readsByDay), never on the editable deeds list.
@@ -36,10 +36,14 @@ const ITEM = {
   manzil: { tool: "manzil" },
   mulk: { tool: "quran" },
   kahf: { tool: "quran" },
+  yasinAm: { tool: "quran" },
+  yasinPm: { tool: "quran" },
   durud: { tool: "durud", deed: "salawat" },
 };
 /** The order on For today before done items move to the end. */
-export const READ_ORDER = ["morning", "evening", "hizb", "quran", "listen", "manzil", "mulk", "kahf", "durud"];
+export const READ_ORDER = ["morning", "evening", "hizb", "quran", "listen", "yasinAm", "yasinPm", "manzil", "mulk", "kahf", "durud"];
+/** Sūrah Yā-Sīn, morning and evening (user, 19 Nov 2026): two readings, each its own good deed. */
+export const YASIN = ["yasinAm", "yasinPm"];
 
 /** Whether good deed `id` is ticked in Read (true) or in the Good deeds sheet on Today (false). */
 export function deedInRead(S, id) {
@@ -96,16 +100,17 @@ const prune = (obj, n) => { const ks = Object.keys(obj).sort(); while (ks.length
 function setNative(S, id, on, now) {
   const key = dkey(now), set = S.settings, t = (S.tools ||= {});
   const stamp = on ? now.getTime() : 0;
-  const put = (obj, k) => { if (on) obj[k] = stamp; else delete obj[k]; };
+  // Unticking removes the stamp with a note (store.clearToolStamp), so the cloud copy's stamp can't bring it back
+  const put = (obj, k, path) => { if (on) { obj[k] = stamp; store.noteToolSet(S, path); } else store.clearToolStamp(S, path); };
   switch (id) {
     case "morning": case "evening": {
       const a = ensure(t, "adhkar"), d = ensure(a, key), s = ensure(d, id, { c: {} });
-      put(s, "done"); return;
+      put(s, "done", `adhkar/${key}/${id}/done`); return;
     }
     case "hizb": {
-      const h = ensure(t, "hizb", { weeks: {}, khatms: 0 }), ws = ensure(ensure(h, "weeks"), weekKey(now, HIZB_WEEK_START), { read: {} });
+      const h = ensure(t, "hizb", { weeks: {}, khatms: 0 }), wk = weekKey(now, HIZB_WEEK_START), ws = ensure(ensure(h, "weeks"), wk, { read: {} });
       ws.read ||= {};
-      put(ws.read, manzilFor(now));
+      put(ws.read, manzilFor(now), `hizb/weeks/${wk}/read/${manzilFor(now)}`);
       if (on) {
         delete ws.pos;
         // all seven manzils this week: a khatm (as the reader counts it, once a week)
@@ -114,13 +119,13 @@ function setNative(S, id, on, now) {
       prune(h.weeks, 30);
       return;
     }
-    case "manzil": { const m = ensure(t, "manzil"); put(ensure(m, key), slotOf(now, set)); prune(m, 40); return; }
+    case "manzil": { const m = ensure(t, "manzil"), slot = slotOf(now, set); put(ensure(m, key), slot, `manzil/${key}/${slot}`); prune(m, 40); return; }
     case "durud": {
-      if (!on) { const d = t.durud?.[jumuahKey(now, set)]; if (d) delete d.done; }
-      put(ensure(ensure(t, "read"), key), "durud"); prune(t.read, 40); return;
+      if (!on) store.clearToolStamp(S, `durud/${jumuahKey(now, set)}/done`);
+      put(ensure(ensure(t, "read"), key), "durud", `read/${key}/durud`); prune(t.read, 40); return;
     }
-    case "kahf": { put(ensure(ensure(t, "read"), jumuahKey(now, set)), "kahf"); prune(t.read, 40); return; }
-    default: put(ensure(ensure(t, "read"), key), id); prune(t.read, 40);
+    case "kahf": { const jk = jumuahKey(now, set); put(ensure(ensure(t, "read"), jk), "kahf", `read/${jk}/kahf`); prune(t.read, 40); return; }
+    default: put(ensure(ensure(t, "read"), key), id, `read/${key}/${id}`); prune(t.read, 40);
   }
 }
 
@@ -162,12 +167,17 @@ export function markRead(S, id, now = new Date()) {
   const set = S.settings;
   if (id === "kahf") return store.setRead(S, jumuahKey(now, set), "kahf", !!readDay(S, jumuahKey(now, set)).kahf);
   if (id === "manzil") { const m = tools(S).manzil?.[dkey(now)]; return store.setRead(S, dkey(now), "manzil", !!(m?.morning || m?.evening)); }
-  if (id === "hizb" || id === "mulk") return store.setRead(S, dkey(now), id, nativeDone(S, id, now) > 0);
+  if (id === "hizb" || id === "mulk" || YASIN.includes(id)) return store.setRead(S, dkey(now), id, nativeDone(S, id, now) > 0);
   return false;
 }
 
 /* ---------- For today ---------- */
 const P = p => PRAYER_NAME[p] || p;
+/** The morning readings' window (adhkār, Yā-Sīn): from Fajr until ʿAsr. The evening's: from ʿAsr until Fajr. */
+const isMorning = (now, t) => now >= t.Fajr && now < t.Asr;
+const isEvening = (now, t) => now >= t.Asr || now < t.Fajr;
+const morningSub = (now, t) => (now < t.Fajr ? READ.fromP(P("Fajr")) : isMorning(now, t) ? READ.nowUntil(P("Asr")) : READ.earlierToday);
+const eveningSub = (now, t) => (now >= t.Asr && now < t.Maghrib ? READ.nowUntil(P("Maghrib")) : isEvening(now, t) ? READ.tonight : READ.fromAt(P("Asr"), fmt12(t.Asr)));
 
 /**
  * The For today list for `now`: [{ id, tool, title, sub, now, done, at }], undone first (the one due now on top),
@@ -185,9 +195,8 @@ export function readItems(S, now = new Date(), extra = {}) {
     out.push({ id, tool: ITEM[id].tool, deed, title: READ.item[id], sub: done ? (at ? READ.doneAt(fmt12(new Date(at))) : READ.doneWord) : sub, due: due && !done, done, at });
   };
   if (vis("adhkar")) {
-    const morning = now >= t.Fajr && now < t.Asr, evening = now >= t.Asr || now < t.Fajr;
-    add("morning", now < t.Fajr ? READ.fromP(P("Fajr")) : morning ? READ.nowUntil(P("Asr")) : READ.earlierToday, morning);
-    add("evening", now >= t.Asr && now < t.Maghrib ? READ.nowUntil(P("Maghrib")) : evening ? READ.tonight : READ.fromAt(P("Asr"), fmt12(t.Asr)), evening);
+    add("morning", morningSub(now, t), isMorning(now, t));
+    add("evening", eveningSub(now, t), isEvening(now, t));
   }
   if (vis("hizb")) add("hizb", READ.hizbSub(manzilFor(now), READ.day3[now.getDay()]));
   if (vis("quran")) {
@@ -195,6 +204,8 @@ export function readItems(S, now = new Date(), extra = {}) {
     else if (has("listen")) add("listen", READ.listenSub);
   }
   // The Qurʾān's own passages are left off an excused day's list (still open in the Qurʾān chapter).
+  // Yā-Sīn keeps the adhkār's windows: morning from Fajr until ʿAsr, evening from ʿAsr through the night.
+  if (vis("quran") && !excused) { add("yasinAm", morningSub(now, t), isMorning(now, t)); add("yasinPm", eveningSub(now, t), isEvening(now, t)); }
   if (vis("manzil") && !excused) add("manzil", slotOf(now, set) === "morning" ? READ.manzilMorning : READ.manzilEvening);
   if (vis("quran") && !excused) add("mulk", READ.beforeSleep);
   if (vis("quran") && !excused && isJumuah(now, set)) add("kahf", now.getDay() === 4 ? READ.jumuahNight : READ.kahfSub(P("Maghrib")));

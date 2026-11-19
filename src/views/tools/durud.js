@@ -1,5 +1,5 @@
 /* Forty durūd: list (DL1, numbered rows) and a one-at-a-time reader. */
-import { A, S, NOW, todayKey, esc, I, T, open, redraw, part, persist, prune, prefs, tickAmal, untickAmal, amalIs, toast, openSheet, headWords, head, info, COMMON, APP, dkey, addDays } from "./core.js";
+import { A, S, NOW, todayKey, esc, I, T, open, redraw, part, persist, prune, prefs, tickAmal, untickAmal, amalIs, toast, openSheet, headWords, head, info, COMMON, APP, dkey, addDays, store } from "./core.js";
 import { DURUD, DURUD_META } from "../../tools/data/durud.js";
 import { timesFor } from "../../times.js";
 import { commit } from "../../app.js";
@@ -64,6 +64,7 @@ A.tlDurudRead = n => {
   prune(S.tools.durud, 14);
   if (st.read.length >= DURUD.length && !st.done) {
     st.done = Date.now();
+    store.noteToolSet(S, `durud/${key}/done`);
     tickAmal("salawat", key === todayKey() ? key : todayKey(), String(DURUD.length));
     commit();
     open("durud");
@@ -76,8 +77,8 @@ A.tlDurudRead = n => {
   void nx;
 };
 A.tlDurudUndo = () => {
-  const key = durudKey(), st = dayState(key, true);
-  delete st.done; untickAmal("salawat", todayKey());
+  const key = durudKey();
+  store.clearToolStamp(S, `durud/${key}/done`); untickAmal("salawat", todayKey());
   commit(); A.closeSheet(); toast(TT.undone);
 };
-A.tlDurudRestart = () => { const st = dayState(durudKey(), true); st.read = []; delete st.done; persist(); redraw(); };
+A.tlDurudRestart = () => { const key = durudKey(), st = dayState(key, true); st.read = []; store.clearToolStamp(S, `durud/${key}/done`); persist(); redraw(); };

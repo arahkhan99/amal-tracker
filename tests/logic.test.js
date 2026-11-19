@@ -191,7 +191,7 @@ describe("notifications plan", () => {
     store.setPrayer(S, dkey(early), "Dhuhr", "ontime", early);
     plan = planNotifications(S, early);
     expect(plan.some(n => n.id === 2001)).toBe(false); // today's Dhuhr reminder dropped
-    S.settings.preQada = false; S.settings.evening = false;
+    S.settings.preQada = false; S.settings.evening = false; S.settings.seerahNotify = false;
     expect(planNotifications(S, early).length).toBe(0);
   });
 });

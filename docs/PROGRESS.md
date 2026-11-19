@@ -1032,3 +1032,54 @@ To check them: `git status`; look for the files and screenshots named above; run
   - Tests: 505 passed. Build passes.
   - Screenshots: https://claude.ai/artifact/7oiNZBfwRTh9jjwUkApyz4 (build3/).
   - **NEXT:** the code review, after the user's OK.
+- 18 Nov (late): The user agreed to push first and review after the usage reset.
+  - Committed cf1aa18 on branch `redesign` and pushed the branch (main is untouched).
+  - android.yml: the public GitHub-release attach now runs only on main.
+  - Started CI runs on `redesign`: Android 44461281890 (App Distribution to the user's phone) and iPhone 44461285888 (the first test of the widget target script).
+  - **NEXT:** check both runs, then the thorough code review after the reset, then fixes, then merge to main only with the user's OK.
+- 18 Nov (late): ✅ Android CI run 44461281890 on redesign succeeded. The test build was sent to the user's phone through App Distribution. iOS run 44461285888 still running.
+- 18 Nov (late): ✅ **iOS CI run 44461285888 on redesign SUCCEEDED.** The script added the ZadWidget target (com.zad.app.ZadWidget, iOS 16) and the widget Swift compiled with Xcode 26.3. ZadWidget.appex is embedded and validated, BUILD SUCCEEDED. iPhone widgets are now really part of the app; TestFlight still needs the Apple account plus the portal steps in docs/ios-setup.md. NEXT: the code review after the usage reset.
+- 19 Nov: The user reported on the test build: (1) widgets not updated; (2) lag swiping chapters; (3) an unlogged prayer comes back as logged. A debug agent is investigating (suspects: notification action re-delivery with random ids, the queue, undo snapshots, sync, widget update on package replace, chapters doing scroll work).
+- 19 Nov: User details: the bug is unticking **Evening adhkār** (it comes back as done), and a re-added widget still shows the OLD design. Both forwarded to the debug agent.
+- 19 Nov: The debug agent stopped at the usage limit while hardening WidgetUpdater; resumed after the reset.
+- 19 Nov: User sent 10 feedback items (launch-and-premium.md). Started a parity audit agent (writes docs/plan/parity-audit.md) and a Qibla module agent (new files only). The rest waits until the debug agent finishes (file overlap).
+- 19 Nov: ✅ **Qibla module built** (src/qibla.js, views/qibla.js, css/qibla.css, tests/qibla.test.js; 23 tests; shots in design-review/mockups2/redesign/qibla/). Not wired yet: needs the css import in main.js, a route/entry, and unmountQibla on leave. Limitations: no magnetic-declination correction (consider the npm 'geomagnetism' WMM package; matters in the US west and NZ); iOS has no haptics (use @capacitor/haptics).
+- 19 Nov: Clarifications saved (launch-and-premium.md). Waiting on the debug and parity agents before step 1 (fixes) starts.
+- 19 Nov: ✅ **Parity audit done** (docs/plan/parity-audit.md). Feedback still exists, but it's buried under Help → Get in touch; add a Settings row. MISSING items M1–M13; my proposal: restore M1, M3, M4, M6, M7, M8, M10, the Feedback row and a Friday sīrah toggle (pre-existing gap). Ask the user about M2, M5, M9, M11, M12, M13 (dropped on purpose or not).
+- 19 Nov: ✅ **Debug fixes done.** (1) Untick root cause: mergeTools resurrected cleared reader stamps from the cloud; fixed with S.tools.cleared tombstones. (2) Notification replay: fixed ids, and MainActivity forgets the handled launch. (3) Lag: :has() CSS removed, chapters.js rewritten, home uses the shared chapters. (4) Widgets: hardened, root cause unproven (maybe the dark gold looks like the old design). Tests: 558 passed. The user answered the parity a–f questions. Nafl list (2 or 4) still open.
+- 19 Nov: The commit and push of the debug fixes was DENIED by the permission classifier (needs the user's explicit OK); nothing was committed. Started the next round: agent A (Now→next prayer, all-five, good deeds line bug, add deed, nafl add-on, sunnah line, day sheet + alignment, excused line, greeting, feedback row, sīrah toggle, tab reset, Qibla wiring; screenshots in build4/a) and agent B (Progress sub-tabs + restored numbers, legend alignment, Yā-Sīn morning/evening, Read sub-lines, set-up privacy note + presets; screenshots in build4/b).
+- 19 Nov: **The user gave explicit OK** to push everything to the `redesign` test branch and send a new Android test build once this round (agents A + B) is finished and tested. Main stays untouched.
+- 19 Nov: The location decision was sent to both agents (B: set-up screen, A: Settings page).
+
+## ▶ RESUME HERE (saved 19 Nov 2026, midday; the user is away until about 4:30pm)
+**State:** branch `redesign`. cf1aa18 is pushed. The working tree has UNCOMMITTED debug fixes (untick tombstones, notification replay, chapter lag, widget hardening, Qibla module); tests were 558 passed.
+
+**Running when saved:**
+- **Agent A** (Today/Now/calendar/Settings/navigation/Qibla wiring, plus Settings location with GPS primary). Screenshots go to build4/a/ (port 5197).
+- **Agent B** (Progress sub-tabs plus restored numbers, legend alignment, Yā-Sīn morning/evening, Read sub-lines, set-up privacy note, presets, set-up location with GPS primary and the city link only as a fallback). Screenshots go to build4/b/ (port 5198).
+
+If they stopped at the usage limit, resume them with SendMessage if their ids are live; otherwise relaunch from these notes plus launch-and-premium.md (the 19 Nov entries).
+
+**When both finish:**
+1. Run `npx vitest run`, `npx vite build`, `npx cap sync android` and `gradlew.bat assembleDebug`.
+2. Look at the build4 screenshots and publish one review page (light/dark).
+3. **The user gave explicit OK (19 Nov)** to commit, push to `redesign` and run `gh workflow run android.yml --ref redesign` (and ios.yml) for a new test build. Main stays untouched.
+4. Ask the user for a screenshot of the widget (the root cause of the "old widget" isn't proven; maybe the dark-mode gold looks like the old design).
+
+**Later:**
+- the thorough code review
+- magnetic declination for Qibla (US West)
+- the nafl wording review by the scholar (TODO in the code)
+- merging to main only with the user's OK
+- 19 Nov (4:30pm): agents A and B stopped at the usage limit and were resumed after the reset.
+- 19 Nov: Home merge requested (see launch-and-premium). Agent A told to skip Now-specific work. Mockup of the merged Today is next.
+- 19 Nov: The merged Today design is approved (see launch-and-premium). It will be built after agent A finishes (home.js overlap), shown as real-app screenshots before any push.
+- 19 Nov: Qurʾān goal requested; proposal sent, awaiting answers. Queued after the merged Today.
+- 19 Nov: Qurʾān goal spec approved (launch-and-premium); queued after the merged Today.
+- 19 Nov (evening): ✅ **Agent A done.** Tests: 621 passed.
+  - Good deeds line bug fixed: it was hidden when all deeds were reading deeds.
+  - Also built: add a deed with a type, the nafl group (naflShow, all 4 on by default, counted as good deeds now), the Sunnah line, the day sheet (Hijri, %, excused N of M, alignment fix), the excused line, the greeting and welcome toast, Settings rows (feedback, Qibla, seerahNotify), the location sheet with GPS primary, the central tab reset, and the #qibla route (views/qibla-page.js).
+  - Now-only markup (nowHead, nextCard, allFiveCard, qiblaBtn) can be deleted at the merge; the logic stays in today.js (nowFocus, allFiveMoment, makeUpNowFor).
+  - Screenshots: build4/a.
+  - Open questions: nafl defaults (all 4 or 2?); is moving nafl from sunnah to good deeds in provisions a weights change for the scholar to sign off?; 'Duhā' spelling; review of the nafl timing wording.
+  - **PLAN:** wait for B, then verify, commit, push and build (approved), then launch the merged Today and then the Qurʾān goal.

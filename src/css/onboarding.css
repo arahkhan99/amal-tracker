@@ -121,6 +121,8 @@
 .ob-chips{display:flex;flex-wrap:wrap;gap:8px}
 .ob-chips button{min-height:40px;padding:0 14px;border-radius:12px;background:var(--neutral);font-size:15px;color:var(--ink)}
 .ob-chips button.on{background:var(--acc);color:var(--on-acc);font-weight:600}
+.ob-presets{margin:0 0 12px}
+.ob-cityl{margin:-4px 0 6px}
 .ob-est{font-size:16px;margin:14px 0 0}.ob-est b{font-weight:600}
 .ob-hr{border:0;border-top:1px solid var(--line);margin:8px 0 14px}
 .ob-goals{display:flex;gap:8px}

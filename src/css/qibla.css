@@ -1,0 +1,114 @@
+/* The Qibla page (views/qibla.js). OG Calm A: theme.css tokens only, flat (hairlines, no shadows or gradients),
+   light and dark. Gold is a mark or a fill here (the facing ring, the Qibla line, the Kaʿbah band) and only
+   text on forest (the "Facing the Qibla" pill), as theme.css asks. The dial (.qb-card) is the one element
+   that changes every frame, and only by transform. */
+
+.qb{
+  --qb-kaaba:#17231E; --qb-kaaba-line:transparent; --qb-dial:min(300px, calc(100vw - 72px));
+  min-height:100%;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-variant-numeric:tabular-nums;-webkit-tap-highlight-color:transparent;
+}
+:root[data-theme=dark] .qb{--qb-kaaba:#0B120E;--qb-kaaba-line:#5B6B61}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]):not([data-theme=dark]) .qb{--qb-kaaba:#0B120E;--qb-kaaba-line:#5B6B61}}
+.qb button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0;text-align:inherit}
+.qb p{margin:0}
+.qb-i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- top row ---------- */
+.qb-top{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 14px) 8px 4px;min-height:60px;flex:none}
+.qb-pg{font:600 17px/1.2 var(--sans);margin:0;color:var(--ink)}
+.qb-ib{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--ink);flex:none}
+.qb-ib .qb-i{width:22px;height:22px}
+
+.qb-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:4px 16px calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 20px)}
+
+/* location · Change */
+.qb-loc{display:flex;align-items:center;gap:6px;max-width:100%;font-size:14.5px;color:var(--mute)}
+.qb-pin{width:17px;height:17px;color:var(--acc2)}
+.qb-place{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:500}
+.qb-link{font-weight:600;color:var(--link)!important;padding:10px 6px!important;margin:-10px -6px -10px 2px!important;flex:none}
+
+/* the big number */
+.qb-num{text-align:center;margin-top:14px}
+.qb-num b{display:block;font:400 64px/1 var(--serif);color:var(--ink);letter-spacing:-.01em}
+.qb-deg{font-size:.6em;vertical-align:.55em;margin-left:2px;color:var(--mute)}
+.qb-num small{display:block;font-size:13.5px;color:var(--mute);margin-top:6px}
+
+/* ---------- the dial ---------- */
+.qb-dial{position:relative;width:var(--qb-dial);aspect-ratio:1;margin:30px auto 0;flex:none}
+.qb-card{position:absolute;inset:0;will-change:transform;transform-origin:50% 50%}
+.qb-dsvg{display:block;width:100%;height:100%;overflow:visible}
+.qb-dsvg .qf{fill:var(--card);stroke:var(--card-line);stroke-width:1.5}
+.qb-dsvg .tn{stroke:var(--track);stroke-width:1.4}
+.qb-dsvg .tj{stroke:var(--faint);stroke-width:1.6}
+.qb-dsvg .tc{stroke:var(--ink);stroke-width:2.2}
+.qb-dsvg text{font-family:var(--sans);text-anchor:middle;dominant-baseline:central}
+.qb-dsvg .ql{font-size:17px;font-weight:600;fill:var(--mute)}
+.qb-dsvg .ql.qn{fill:var(--acc);font-weight:700}
+.qb-dsvg .qd{font-size:9.5px;fill:var(--faint)}
+.qb-dsvg .qq-line{stroke:var(--acc2);stroke-width:3;stroke-linecap:round}
+.qb-dsvg .qq-tick{stroke:var(--gold-dot);stroke-width:4;stroke-linecap:round}
+.qb-dsvg .qq-halo{fill:var(--soft)}
+.qb-dsvg .qk-body{fill:var(--qb-kaaba);stroke:var(--qb-kaaba-line);stroke-width:1}
+.qb-dsvg .qk-band,.qb-dsvg .qk-door{fill:var(--gold-fill)}
+
+/* the phone's direction: a fixed mark above the dial, and the hub */
+.qb-lub{position:absolute;left:50%;top:-20px;width:0;height:0;transform:translateX(-50%);
+  border-left:9px solid transparent;border-right:9px solid transparent;border-top:14px solid var(--ink);z-index:1}
+.qb-hub{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--card);border:3px solid var(--ink);z-index:1}
+
+/* facing the Qibla (within ±3°): gold ring, gold line, the halo behind the Kaʿbah */
+.qb.is-facing .qb-dsvg .qf{stroke:var(--gold-dot);stroke-width:3.5}
+.qb.is-facing .qb-dsvg .qq-line{stroke:var(--gold-dot)}
+.qb.is-facing .qb-dsvg .qq-halo{fill:var(--gold-bg);stroke:var(--gold-dot);stroke-width:1.5}
+.qb.is-facing .qb-lub{border-top-color:var(--gold-dot)}
+.qb.is-facing .qb-hub{border-color:var(--gold-dot)}
+@media (prefers-reduced-motion:no-preference){
+  .qb-dsvg .qf,.qb-dsvg .qq-line,.qb-dsvg .qq-halo{transition:stroke .25s ease,fill .25s ease}
+}
+
+/* ---------- state under the dial (a fixed slot, so nothing below moves) ---------- */
+.qb-state{min-height:64px;margin-top:22px;display:flex;align-items:center;justify-content:center;text-align:center;width:100%}
+.qb-state > *{display:none}
+.qb[data-mode=live] .qb-turn,.qb[data-mode=init] .qb-wait,.qb[data-mode=waiting] .qb-wait,.qb[data-mode=permission] .qb-perm,
+.qb[data-mode=none] .qb-m-none,.qb[data-mode=denied] .qb-m-denied{display:flex}
+.qb-turn{align-items:center;justify-content:center;min-height:40px;padding:0 18px;border-radius:999px;background:var(--soft);color:var(--on-soft);font-size:15.5px;font-weight:600}
+.qb-turn span{display:none}
+.qb[data-turn=left] .qb-s-left,.qb[data-turn=right] .qb-s-right,.qb[data-turn=facing] .qb-s-facing{display:inline}
+.qb[data-turn=facing] .qb-turn{background:var(--acc);color:var(--on-acc)}
+.qb-wait{font-size:15px;color:var(--mute)}
+.qb-perm{flex-direction:column;align-items:center;gap:8px}
+.qb-perm small{font-size:13px;color:var(--mute)}
+.qb-btn{display:inline-flex!important;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px!important;border-radius:999px;
+  background:var(--btn-bg)!important;color:var(--btn-fg)!important;font-weight:600!important;font-size:15.5px}
+.qb-msg{align-items:flex-start;gap:10px;width:100%;max-width:400px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--card-line);
+  font-size:14px;line-height:1.45;color:var(--ink);text-align:left}
+.qb-msg .qb-i{color:var(--acc2);margin-top:1px}
+
+/* hints (a reserved slot too) */
+.qb-hints{min-height:36px;margin-top:6px;display:flex;align-items:center;justify-content:center}
+.qb-hint{display:none;align-items:center;gap:8px;font-size:13.5px;color:var(--mute)}
+.qb-hint .qb-i{width:18px;height:18px;color:var(--acc2)}
+.qb[data-hint=calibrate] .qb-h-calibrate,.qb[data-hint=flat] .qb-h-flat{display:flex}
+
+/* distance and the note */
+.qb-facts{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;max-width:400px;margin-top:10px;padding:14px 16px;
+  border-radius:16px;background:var(--card);border:1px solid var(--card-line);font-size:14.5px;color:var(--mute)}
+.qb-facts b{font-size:16px;font-weight:600;color:var(--ink)}
+.qb-foot{max-width:400px;margin-top:12px!important;font-size:12px;line-height:1.5;color:var(--faint);text-align:center}
+
+/* no location */
+.qb[data-mode=noloc] .qb-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px 24px 18vh;text-align:center}
+.qb-emptydial{width:min(220px,60vw);aspect-ratio:1;opacity:.75}
+.qb-empty p{font-size:15.5px;color:var(--ink);max-width:300px;line-height:1.45}
+
+/* short screens: a smaller dial */
+@media (max-height:700px){
+  .qb{--qb-dial:min(250px, calc(100vw - 72px))}
+  .qb-num{margin-top:8px}.qb-num b{font-size:52px}.qb-dial{margin-top:24px}.qb-state{margin-top:14px}
+}
+
+/* the Kaʿbah marker upright on the static dial (North up); on the live dial it is upright when facing the Qibla */
+.qb-dsvg .qq-kaaba{transform-box:fill-box;transform-origin:center}
+.qb:not([data-mode=live]) .qb-dsvg .qq-kaaba{transform:rotate(var(--qb-kb,0deg))}

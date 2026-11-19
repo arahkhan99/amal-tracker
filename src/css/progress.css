@@ -19,6 +19,23 @@
 .zt-cb.ch-scroll.fl{-webkit-mask-image:linear-gradient(90deg,transparent,#000 40px);mask-image:linear-gradient(90deg,transparent,#000 40px)}
 .zt-cb.ch-scroll.fl.fr{-webkit-mask-image:linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(90deg,transparent,#000 40px,#000 calc(100% - 40px),transparent)}
 
+/* ---------- sub-tabs inside a chapter (views/subtabs.js): a segmented control; scrolls sideways when it doesn't fit ---------- */
+.st-wrap{display:flex;margin:-4px -16px 14px;padding:0 0 0 16px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;flex:none}
+.st-wrap::after{content:"";flex:0 0 16px}
+.st-wrap::-webkit-scrollbar{display:none}
+.st-bar{display:flex;flex:1 0 auto;background:var(--neutral);border-radius:12px;padding:3px;gap:2px}
+.st-bar button{flex:1 0 auto;min-height:40px;padding:0 12px;border-radius:9px;font-size:14.5px;font-weight:500;color:var(--mute);white-space:nowrap;text-align:center}
+.st-bar button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 0 0 1px var(--card-line)}
+.st-bar button:focus-visible{outline:2px solid var(--acc2);outline-offset:-2px}
+.st-p{display:flex;flex-direction:column;min-width:0}
+.st-p > .pr-sec:first-child{margin-top:4px}
+.st-p > .pr-pnav + .pr-sec{margin-top:16px}
+/* the period (30 days / Year) under the sub-tabs: lighter, so the two controls don't read as one */
+.st-p > .pr-pnav{margin:0 0 12px}
+.st-p .pr-seg{background:transparent;box-shadow:inset 0 0 0 1px var(--line);border-radius:999px}
+.st-p .pr-seg button{min-height:36px;padding:0 14px;border-radius:999px;font-size:14px}
+.st-p .pr-seg button.on{background:var(--neutral);box-shadow:none}
+
 /* ---------- heads, sections, captions ---------- */
 .pr-chh{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
 .pr-hl{min-width:0}
@@ -27,6 +44,14 @@
 .pr-nav.sm .zt-ib{width:44px;height:44px}
 .pr-sec{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:2px 10px;margin:26px 4px 8px}
 .pr-sec h2{font-size:17px;font-weight:600;color:var(--ink)}
+.pr-sec h2.pr-hi{display:inline-flex;align-items:center;gap:6px}
+.pr-sec .info-btn{width:30px;height:30px;border-radius:50%;background:var(--neutral);color:var(--mute);display:inline-grid;place-items:center;flex:none}
+.pr-sec .info-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.pr-tally{margin-bottom:12px}
+.pr-st1 .pr-cs{margin:0;font-size:15px;color:var(--ink)}
+.pr-st3{margin-bottom:4px}
+.mk-goal .mk-bar{margin-top:6px}
+.mk-mo{margin:6px 0 0}
 .pr-sec span{font-size:13px;color:var(--mute)}
 .pr-cap{font-size:13px;color:var(--mute);line-height:1.45;margin:8px 4px 0}
 .pr-cs{font-size:13.5px;color:var(--mute);margin:0 0 10px;line-height:1.45}
@@ -39,7 +64,7 @@
 .pr-stats>div{flex:1;min-width:0}
 .pr-stats b{display:block;font-size:26px;font-weight:600;color:var(--ink);line-height:1.15;letter-spacing:-.01em}
 .pr-stats b span{font-size:17px;color:var(--mute);font-weight:500;letter-spacing:0}
-.pr-stats small{display:block;font-size:13.5px;color:var(--mute);margin-top:3px;line-height:1.3}
+.pr-stats small{display:block;font-size:13.5px;color:var(--mute);margin-top:3px;line-height:1.3;overflow-wrap:anywhere;hyphens:auto}
 .pr-stats em{display:block;font-style:normal;font-size:12.5px;color:var(--faint);margin-top:4px;line-height:1.35}
 .pr-big{display:flex;align-items:baseline;gap:4px 12px;flex-wrap:wrap}
 .pr-big b{font-size:56px;font-weight:600;line-height:1;letter-spacing:-.02em;color:var(--ink)}
@@ -70,25 +95,27 @@
 .pr-wk{padding:16px 16px 0}
 .pr-delta{font-size:13px;color:var(--mute);margin-top:8px}
 .pr-days{border-top:1.5px solid var(--line);margin-top:14px}
-.pr-day{display:flex;align-items:center;gap:10px;width:100%;min-height:54px;border-top:1px solid var(--line);padding:6px 0;color:var(--ink)}
+.pr-day{display:flex;align-items:center;gap:8px;width:100%;min-height:54px;border-top:1px solid var(--line);padding:6px 0;color:var(--ink)}
 .pr-day:first-child{border-top:0}
-.pr-day .dl{flex:0 0 4.4em;font-size:15.5px;text-align:left}
+.pr-day .dl{flex:0 0 3.9em;font-size:15.5px;text-align:left;min-width:0}
 .pr-day.t .dl{font-weight:700}
-.pr-day .ms{flex:1;display:flex;gap:clamp(3px,1.6vw,10px);min-width:0;justify-content:flex-start}
-.pr-day .ms .z-mk{width:28px;height:28px}
-.pr-day .ms .z-mk svg{width:14px;height:14px}
-.pr-day .n{flex:none;min-width:34px;text-align:right;font-size:14.5px;color:var(--mute)}
+.pr-day .ms{flex:1;display:flex;align-items:center;gap:clamp(3px,1.6vw,10px);min-width:0;justify-content:flex-start}
+/* the five marks shrink to fit a narrow phone with large text (never under the n/5 at the end) */
+.pr-day .ms .z-mk{width:auto;height:auto;flex:0 1 28px;aspect-ratio:1;min-width:17px;max-width:28px}
+.pr-day .ms .z-mk svg{width:12px;height:12px}
+.pr-day .n{flex:none;min-width:2.2em;text-align:right;font-size:14.5px;color:var(--mute)}
 .pr-day.fut .dl{color:var(--faint)}
 .pr-day.fut .ms{opacity:.7}
 .pr-day:focus-visible{outline-offset:-2px;border-radius:8px}
 .z-mk.pr-fut{box-shadow:inset 0 0 0 1.5px var(--line)}
 .z-mk.pr-un{box-shadow:none;border:1.5px dashed var(--faint)}
 .pr-leg{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;color:var(--mute);padding:12px 0 14px;border-top:1px solid var(--line)}
-.pr-leg span{display:inline-flex;align-items:center;gap:6px}
+.pr-leg .pr-li{display:inline-flex;align-items:center;gap:6px}
 .pr-leg .z-mk{width:22px;height:22px}
 .pr-leg .z-mk svg{width:12px;height:12px}
 .pr-leg.sq{border-top:0;padding:0 0 10px}
 .pr-leg.sq i{width:22px;height:16px;border-radius:4px;display:grid;place-items:center;flex:none}
+.pr-leg.sq i.pr-c1 svg,.pr-hb .bar i.pr-c1 svg{transform:translateX(5%)}
 
 /* congregation, five prayers */
 .pr-five{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;text-align:center}

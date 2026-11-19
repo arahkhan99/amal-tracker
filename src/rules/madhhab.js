@@ -84,6 +84,20 @@ export const DAY_NAFL = [
   it("tahajjud", null, "before", 2, "nafl", { name: "tahajjud", anchor: "Fajr" }),
 ];
 
+/**
+ * The nafl prayers offered as a good-deeds add-on (the Good deeds sheet's "Nafl prayers" group; the user's choice
+ * of 19 Nov 2026): Ishrāq, Duhā, Awwābīn, Tahajjud. Not new items: each `id` is the existing sunnah item above
+ * (Awwābīn is Hanafi's "4 more after the 2" after Maghrib, found by itemById for every madhhab), so a tick in the
+ * sheet and a chip in the sunnah UI write the same day.sunnah[id]. points.js counts these as good deeds, once.
+ */
+export const NAFL_ADDON = [
+  { key: "ishraq", id: "ishraq" },
+  { key: "duha", id: "duha" },
+  { key: "awwabin", id: "maghrib-awwabin" },
+  { key: "tahajjud", id: "tahajjud" },
+];
+export const NAFL_ADDON_IDS = NAFL_ADDON.map(x => x.id);
+
 const RULES = {
   hanafi: {
     id: "hanafi", asr: "hanafi", sunnah: HANAFI,

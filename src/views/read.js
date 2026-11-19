@@ -11,17 +11,19 @@
  */
 import { S, A, NOW, todayKey, esc, I, T, open, redraw, openSheet, toast, COMMON } from "./tools/core.js";
 import { UI, commit, avatarBtn, render } from "../app.js";
+import * as store from "../store.js";
 import { makeChapters, setHTML } from "./chapters.js";
-import { readItems, setReadDone, isReadDone, isJumuah } from "../reading.js";
+import { readItems, setReadDone, isReadDone, isJumuah, slotOf, jumuahKey } from "../reading.js";
 import { toolVisible, isOn } from "../features.js";
 import { READ, GUIDE, PRAYER_NAME, NAV } from "../strings.js";
 import { timesFor } from "../times.js";
-import { dkey } from "../util.js";
+import { dkey, DOW, MON3 } from "../util.js";
 import { thisWeek, contentReady, whenContent } from "../content.js";
 import { getMushaf, pageForSurah } from "../tools/quran-data.js";
 import { ADHKAR } from "../tools/data/adhkar.js";
 import { TT } from "./tools/strings-tools.js";
-import { loadQuranMeta, surahName, quranMushaf, quranPage, quranHasStarted, mushafName } from "./tools/quran.js";
+import { loadQuranMeta, surahName, quranMushaf, quranPage, quranHasStarted, mushafName, pagesToday } from "./tools/quran.js";
+import { DURUD } from "../tools/data/durud.js";
 import { loadHizb, manzilToday } from "./tools/hizb.js";
 
 const ic = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
@@ -32,7 +34,9 @@ const ICON = {
   durud: ic('<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'),
   afterSalah: I.beads, info: I.info, leaf: ic('<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z"/><path d="M5 19l7-7"/>'),
 };
-ICON.kahf = ICON.mulk;
+ICON.kahf = ICON.yasinAm = ICON.yasinPm = ICON.mulk;
+/** Sūrah numbers of the Qurʾān readings that open the mushaf at their first page. */
+const SURAH = { mulk: 67, kahf: 18, yasinAm: 36, yasinPm: 36 };
 const dot = '<i class="zt-dot" aria-hidden="true"></i>';
 const P = p => PRAYER_NAME[p] || p;
 
@@ -60,12 +64,33 @@ const lastReadText = () => {
   return l.para ? `${l.surah} · ${TT.juzN(l.para)}` : l.surah;
 };
 
+/* ---------- the restored sub-lines (parity M11): durūd n of 40 and last read, Qurʾān pages today ---------- */
+const shortDay = key => { const [y, m, d] = key.split("-").map(Number), x = new Date(y, m - 1, d); return `${DOW[x.getDay()]} ${d} ${MON3[m - 1]}`; };
+/** { n, of, last }: durūd read for this Jumuʿah day (or today), and the last earlier day any were read ("" if none). */
+function durudLine(now) {
+  const all = S.tools?.durud || {}, key = jumuahKey(now, S.settings);
+  const n = all[key]?.read?.length || 0;
+  const last = Object.keys(all).filter(k => k < key && /^\d{4}-\d{2}-\d{2}$/.test(k) && (all[k]?.done || all[k]?.read?.length)).sort().pop();
+  return { n: Math.min(n, DURUD.length), of: DURUD.length, last: last ? shortDay(last) : "" };
+}
+/** The second line under a reading's sub: "12 of 40 read · Last read Fri 14 Nov" (durūd), "3 pages today" (Qurʾān). */
+function extraLine(id, now, done) {
+  if (id === "durud") {
+    const d = durudLine(now), parts = [];
+    if (d.n && !done) parts.push(READ.durudOf(d.n, d.of));
+    if (d.last) parts.push(READ.durudLast(d.last));
+    return parts.join(" · ");
+  }
+  if (id === "quran") { const n = pagesToday(); return n ? TT.pagesToday(n) : ""; }
+  return "";
+}
+
 /* ---------- rows ---------- */
 const tile = id => `<span class="zt-ico">${ICON[id] || ICON.info}</span>`;
 const doneTag = () => `<span class="rd-tag">${I.check}${esc(READ.doneTag)}</span>`;
 const chev = `<span class="rd-cv">${I.chev}</span>`;
 /** A tappable row with an icon, title, sub line and a chevron (or "Done"). */
-const linkRow = (id, title, sub, act, { done = false, now = false } = {}) => `<button type="button" class="rd-row link" onclick="${act}">${tile(id)}<span class="t"><b>${esc(title)}</b>${sub ? `<small>${now ? dot : ""}${esc(sub)}</small>` : ""}</span>${done ? doneTag() : chev}</button>`;
+const linkRow = (id, title, sub, act, { done = false, now = false, sub2 = "" } = {}) => `<button type="button" class="rd-row link" onclick="${act}">${tile(id)}<span class="t"><b>${esc(title)}</b>${sub ? `<small>${now ? dot : ""}${esc(sub)}</small>` : ""}${sub2 ? `<small class="rd-s2">${esc(sub2)}</small>` : ""}</span>${done ? doneTag() : chev}</button>`;
 
 /* ---------- For today ---------- */
 function forToday(now) {
@@ -73,13 +98,16 @@ function forToday(now) {
   const n = items.filter(i => i.done).length;
   const rows = items.map(it => {
     const btn = it.done || it.id === "listen" ? "" : `<button type="button" class="rd-btn" data-f="o-${it.id}" onclick="A.readOpen('${it.id}')" aria-label="${esc(`${it.id === "quran" ? READ.open : READ.read}: ${it.title}`)}">${esc(it.id === "quran" ? READ.open : READ.read)}</button>`;
-    return `<div class="rd-row${it.done ? " done" : ""}">${tile(it.id)}<span class="t"><b>${esc(it.title)}</b><small>${it.now ? dot : ""}${esc(it.sub)}</small></span>${btn}
+    const s2 = extraLine(it.id, now, it.done);
+    return `<div class="rd-row tk${it.done ? " done" : ""}">${tile(it.id)}<span class="t"><b>${esc(it.title)}</b><small>${it.now ? dot : ""}${esc(it.sub)}</small>${s2 ? `<small class="rd-s2">${esc(s2)}</small>` : ""}</span>${btn}
       <button type="button" class="rd-tick" data-f="t-${it.id}" role="checkbox" aria-checked="${it.done}" aria-label="${esc(READ.markDone(it.title))}" onclick="A.readTick('${it.id}')"><span class="rd-bx${it.done ? " on" : ""}">${it.done ? I.check : ""}</span></button></div>`;
   }).join("");
   const head = `<header class="zt-chh"><h1 class="zt-title">${esc(READ.todayTitle)}</h1>${items.length ? `<p class="zt-sub"><b>${esc(READ.doneOf(n, items.length))}</b> ${esc(READ.doneWord)}</p>` : ""}</header>`;
   const excused = items.length && S.days[dkey(now)]?.excused ? `<p class="zt-note">${esc(READ.excusedNote)}</p>` : "";
   const list = items.length ? `<div class="zt-card list rd-list">${rows}</div>${excused}` : isOn(S, "tools") ? `<p class="zt-note">${esc(READ.nothingDue)}</p>` : "";
-  return `${head}${list}${weekRow(now)}<div class="zt-fill"></div><div class="rd-choose"><button type="button" class="zt-link" onclick="A.toolsSettings()">${esc(READ.choose)}</button></div>`;
+  // "Your wird is voluntary…" (parity M11): a quiet note at the end of the list
+  const vol = items.length ? `<p class="zt-note rd-vol">${esc(TT.voluntary)}</p>` : "";
+  return `${head}${list}${weekRow(now)}${vol}<div class="zt-fill"></div><div class="rd-choose"><button type="button" class="zt-link" onclick="A.toolsSettings()">${esc(READ.choose)}</button></div>`;
 }
 
 /** "This week · New on Sunday": one row; it opens the six weekly readings. */
@@ -114,6 +142,8 @@ function quranCh(now) {
   if (q) {
     rows.push(linkRow("kahf", READ.kahfRow, READ.kahfRowSub, "A.readOpen('kahf')", { done: !excused && isJumuah(now, S.settings) && isReadDone(S, "kahf", now) }));
     rows.push(linkRow("mulk", READ.mulkRow, READ.mulkRowSub, "A.readOpen('mulk')", { done: !excused && isReadDone(S, "mulk", now) }));
+    const ya = !excused && isReadDone(S, "yasinAm", now), yp = !excused && isReadDone(S, "yasinPm", now);
+    rows.push(linkRow("yasinAm", READ.yasinRow, ya || yp ? READ.yasinDone(ya, yp) : READ.yasinRowSub, "A.readOpen('yasin')", { done: ya && yp }));
   }
   if (toolVisible(S, "manzil")) rows.push(linkRow("manzil", READ.manzilRow, READ.manzilRowSub, "A.readOpen('manzil')", { done: isReadDone(S, "manzil", now) }));
   if (q) rows.push(linkRow("quran", READ.allSurahs, "", "A.readAll()"));
@@ -132,7 +162,7 @@ function adhkarCh(now) {
   }
   if (toolVisible(S, "afterSalah")) rows.push(linkRow("afterSalah", READ.afterSalah, READ.afterSalahSub, "A.toolsOpen('afterSalah')"));
   if (toolVisible(S, "hizb")) rows.push(linkRow("hizb", READ.item.hizb, READ.hizbRowSub(manzilToday(now)), "A.toolsOpen('hizb')", { done: isReadDone(S, "hizb", now) }));
-  if (toolVisible(S, "durud")) rows.push(linkRow("durud", READ.durudRow, READ.durudRowSub, "A.toolsOpen('durud')", { done: isReadDone(S, "durud", now) }));
+  if (toolVisible(S, "durud")) { const dd = isReadDone(S, "durud", now); rows.push(linkRow("durud", READ.durudRow, READ.durudRowSub, "A.toolsOpen('durud')", { done: dd, sub2: extraLine("durud", now, dd) })); }
   return `<header class="zt-chh"><h1 class="zt-title">${esc(READ.adhkarTitle)}</h1></header>
     ${rows.length ? `<div class="zt-card list rd-list">${rows.join("")}</div>` : ""}
     <div class="zt-card list rd-list"><button type="button" class="rd-row link" onclick="A.readTips()">${tile("info")}<span class="t"><b>${esc(READ.tips)}</b><small>${esc(READ.tipsSub)}</small></span>${chev}</button></div>`;
@@ -161,6 +191,8 @@ export function renderRead(root) {
 export function leaveRead(root) {
   for (const id of ch.ids()) { const p = root.querySelector(`#rd-ch-${id}`); if (p) scrolls[id] = p.scrollTop; }
 }
+/** For tests: the chapters as HTML. */
+export const _chapters = { today: forToday, quran: quranCh, adhkar: adhkarCh };
 /** Show a chapter of Read by id (zad://read links, the Now chapter's "In Read"). */
 A.readChapter = id => { UI.readCh = id; if (UI.view !== "tools") A.go("tools"); else ch.show(id); };
 
@@ -168,13 +200,15 @@ A.readChapter = id => { UI.readCh = id; if (UI.view !== "tools") A.go("tools"); 
 /** Open the reader for a For today item (or the Qurʾān chapter's rows). Back returns to Read. */
 A.readOpen = id => {
   T.set = null; T.resumed = false; T.asPrayer = null; T.asKey = null; T.readItem = null; T.entry = null;
-  const tool = { morning: "adhkar", evening: "adhkar", hizb: "hizb", quran: "quran", quranCont: "quran", mulk: "quran", kahf: "quran", durud: "durud", manzil: "manzil" }[id];
+  // "yasin" (the Qurʾān chapter's row): the reading of this half of the day
+  if (id === "yasin") id = slotOf(NOW(), S.settings) === "morning" ? "yasinAm" : "yasinPm";
+  const tool = { morning: "adhkar", evening: "adhkar", hizb: "hizb", quran: "quran", quranCont: "quran", mulk: "quran", kahf: "quran", yasinAm: "quran", yasinPm: "quran", durud: "durud", manzil: "manzil" }[id];
   if (!tool || !toolVisible(S, tool)) return;
   if (id === "morning" || id === "evening") { T.set = id; open("adhkar"); return; }
   if (id === "hizb") { loadHizb(); T.entry = "hizbRead"; open("hizbRead", { manzil: manzilToday() }); return; }
   if (id === "quran" || id === "quranCont") { T.readItem = "quran"; open("quran", { page: quranPage(), bars: false }); return; }
-  if (id === "mulk" || id === "kahf") {
-    pageForSurah(quranMushaf(), id === "mulk" ? 67 : 18).then(p => { T.readItem = id; open("quran", { page: p, bars: false }); }).catch(() => toast(TT.pageFail));
+  if (SURAH[id]) {
+    pageForSurah(quranMushaf(), SURAH[id]).then(p => { T.readItem = id; open("quran", { page: p, bars: false }); }).catch(() => toast(TT.pageFail));
     return;
   }
   open(id);
@@ -191,7 +225,7 @@ A.readTick = id => {
   commit();
   toast(it.done ? READ.unticked : READ.ticked(it.title), { undo: () => {
     const s = JSON.parse(snap);
-    S.tools = s.tools;
+    store.restoreTools(S, s.tools); // notes what the Undo removes, so the next sync can't bring it back
     if (s.day) { S.days[key] = s.day; s.day.u = Date.now(); } else S.days[key] = { prayers: {}, amal: {}, note: "", u: Date.now() };
     commit();
   } });

@@ -165,7 +165,7 @@ A.tlHizbStart = () => {
 A.tlHizbFinish = m => {
   const ws = weekState(NOW(), true);
   const was = !!ws.read[m];
-  if (!was) ws.read[m] = Date.now();
+  if (!was) { ws.read[m] = Date.now(); store.noteToolSet(S, `hizb/weeks/${weekKey(NOW(), HIZB_WEEK_START)}/read/${m}`); }
   // the day log too (store.setRead), under the day manzil m is due: it counts as a good deed in Provisions
   const due = dkey(weekDates(NOW(), 0, HIZB_WEEK_START)[m - 1]);
   if (due <= dkey(NOW())) store.setRead(S, due, "hizb", true);

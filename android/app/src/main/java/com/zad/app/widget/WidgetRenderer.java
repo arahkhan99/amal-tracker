@@ -298,7 +298,7 @@ final class WidgetRenderer {
         v.setContentDescription(R_ROOT[i], desc);
     }
 
-    private static RemoteViews message(Context c, String staleJson) {
+    static RemoteViews message(Context c, String staleJson) {
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.zw_widget_message);
         v.setTextViewText(R.id.zw_message, WidgetModel.label(WidgetModel.labelsOf(staleJson), "stale"));
         v.setOnClickPendingIntent(R.id.zw_root, link(c, "zad://open?v=home"));

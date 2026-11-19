@@ -16,10 +16,11 @@ const ROUTES = {
   makeups: "qada", qada: "qada",
   community: "community",
   settings: "settings",
+  qibla: "qibla",
   onboard: "onboard",
 };
 /** View id → the name shown in the address bar. */
-const NAMES = { home: "today", tools: "read", calendar: "calendar", progress: "progress", qada: "makeups", community: "community", settings: "settings" };
+const NAMES = { home: "today", tools: "read", calendar: "calendar", progress: "progress", qada: "makeups", community: "community", settings: "settings", qibla: "qibla" };
 
 /** The view id for a route or view name (old names redirect); null when unknown. */
 export function resolveView(name) {
@@ -49,3 +50,19 @@ export function tabFor(view) {
   if (view === "qada") return "progress";
   return view;
 }
+
+/* ---------- leaving a tab resets it (19 Nov 2026; views/chapters.js resetChapters) ---------- */
+/** Pages opened over a tab that return to it (Settings, the Qibla page, set-up): they belong to no tab. */
+export const OVER_PAGES = ["settings", "qibla", "onboard"];
+/** The bottom-bar tab a view belongs to, or null for a page opened over a tab. */
+export function tabOf(view) { return !view || OVER_PAGES.includes(view) ? null : tabFor(view); }
+/**
+ * Which tab to reset when going to `view` while `lastTab` was the tab last shown: the tab being left, when the
+ * new view belongs to another tab. Pages opened over a tab (Settings, Qibla) leave it alone, so back finds it as it was.
+ */
+export function tabToReset(lastTab, view) {
+  const t = tabOf(view);
+  return t && lastTab && t !== lastTab ? lastTab : null;
+}
+/** The views that make up a tab (the calendar is part of Today; Make-ups of Progress). */
+export function viewsOfTab(tab) { return tab === "home" ? ["home", "calendar"] : tab === "progress" ? ["progress", "qada"] : [tab]; }

@@ -152,3 +152,16 @@
 .ap-smp small{display:block;font-size:13px;font-weight:400;color:var(--ink2);margin-top:4px;line-height:1.4}
 .ap-arsample{font:400 28px/1.7 "Amiri Quran","Amiri",serif;color:var(--arabic);margin-top:14px;text-align:right}
 .ap-arsample + .ap-smp{margin-top:10px}
+
+/* the location sheet: current location first, a city as a small link (19 Nov 2026) */
+.locnow{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--inset);color:var(--ink);font-size:14.5px;line-height:1.4;margin:8px 0 4px}
+.locnow svg{width:20px;height:20px;flex:none;stroke:var(--leaf);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.locnow.none svg{stroke:var(--mute)}
+.locsw{display:flex;align-items:center;gap:12px;padding:12px 2px;border-top:1px solid var(--line);margin-top:6px}
+.locsw .t{flex:1;min-width:0}
+.locsw .t b{display:block;font-size:14.5px;font-weight:600;color:var(--ink)}
+.locsw .t small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px;line-height:1.4}
+.loccity{margin:10px 0 0;text-align:center}
+.loccity .link{font-size:13.5px;font-weight:600;color:var(--mute);text-decoration:underline;text-underline-offset:3px;min-height:40px;padding:0 8px;background:none;border:0;cursor:pointer}
+.edtype{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13px;color:var(--mute)}
+.edtype select{flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);font:inherit;font-size:14px;background:var(--field);color:var(--ink)}

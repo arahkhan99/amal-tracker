@@ -7,6 +7,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.util.Log;
 import android.widget.RemoteViews;
 
 /**
@@ -22,6 +23,7 @@ import android.widget.RemoteViews;
  */
 public final class WidgetUpdater {
     static final String ACTION_TICK = "com.zad.app.widget.TICK";
+    private static final String TAG = "ZadWidgets";
 
     private WidgetUpdater() {}
 
@@ -33,18 +35,38 @@ public final class WidgetUpdater {
         AppWidgetManager mgr = AppWidgetManager.getInstance(c);
         String json = WidgetStore.read(c);
         long now = System.currentTimeMillis();
-        WidgetModel model = WidgetModel.build(c, now, false);
+        WidgetModel model;
+        try {
+            model = WidgetModel.build(c, now, false);
+        } catch (Exception e) {
+            // A snapshot this version can't read (e.g. one written by an older app): "Open Zad to update" until the app writes a new one
+            Log.w(TAG, "widget snapshot unreadable", e);
+            model = null;
+        }
         boolean any = false;
         for (int k = 0; k < PROVIDERS.length; k++) {
             int[] ids = mgr.getAppWidgetIds(new ComponentName(c, PROVIDERS[k]));
             if (ids == null || ids.length == 0) continue;
             any = true;
-            RemoteViews views = WidgetRenderer.render(c, SIZES[k], model, json);
-            mgr.updateAppWidget(ids, views);
+            // Every placed widget always gets this version's layout: a failure falls back to the message in the same
+            // style, never leaving the views an older version (or the picker) drew in place.
+            RemoteViews views;
+            try {
+                views = WidgetRenderer.render(c, SIZES[k], model, json);
+            } catch (Exception e) {
+                Log.w(TAG, "widget render failed (" + SIZES[k] + ")", e);
+                views = WidgetRenderer.message(c, json);
+            }
+            try {
+                mgr.updateAppWidget(ids, views);
+            } catch (Exception e) {
+                Log.w(TAG, "widget update failed (" + SIZES[k] + ")", e);
+                try { mgr.updateAppWidget(ids, WidgetRenderer.message(c, json)); } catch (Exception ignored) { /* nothing more to try */ }
+            }
         }
         boolean ongoing = WidgetModel.flag(json, "ongoingNow");
         try { NowNotification.update(c, now); } catch (Exception e) { /* never let the notification break the widgets */ }
-        ZadTileService.requestUpdate(c);
+        try { ZadTileService.requestUpdate(c); } catch (Exception e) { Log.w(TAG, "tile update failed", e); }
         schedule(c, any || ongoing, model, now);
     }
 

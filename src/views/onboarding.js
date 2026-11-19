@@ -129,13 +129,17 @@ function sTimes() {
   const m = madhhabOf(S), later = S.settings.asr === "hanafi";
   // Sunrise (muted, between Fajr and Zuhr): when Fajr's time ends
   const rows = PRAYERS.map(p => `<div class="${p === cur ? "cur" : ""}"><span>${esc(prayerName(p))}${p === cur ? ' <i class="ob-dot" aria-hidden="true"></i>' : ""}</span><b>${fmt12(t[p])}</b></div>${p === "Fajr" ? `<div class="sun"><span>${esc(prayerName("Sunrise"))}</span><b>${fmt12(t.Sunrise)}</b></div>` : ""}`).join("");
+  // Current location is the one way in (user, 19 Nov 2026): one big button, no "Choose a city" beside it. The city
+  // search shows only as a small link once location was refused, isn't available or timed out (locFail).
+  const cityLink = locFail ? `<button class="ob-link ob-cityl" data-f="ob-city" onclick="A.obCity()">${esc(X.cantLocate)}</button>` : "";
   const body = `${head(X.timesTitle, X.whereLead)}
-    ${seg([[src === "gps", `${svg("pin", "xs")}${esc(SETUP.useLocation)}`, "A.obLocate()"], [src === "city" || src === "unknown", esc(X.chooseCity), "A.obCity()"]], X.timesTitle)}
-    <p class="ob-locline">${locLine}</p>
+    <p class="ob-locline">${locLine}</p>${cityLink}
     <div class="ob-card ob-times">${rows}
       <button class="ob-asrline" onclick="A.obAsrSheet()"><span class="t"><b>${esc(X.asrRow)}</b><small>${esc(MADHHAB_NAME[m] || m)} · ${esc((later ? X.laterAsr : X.earlierAsr).replace(/^./, c => c.toLowerCase()))}</small></span><span class="ob-linkt">${esc(X.change)}</span></button></div>
-    ${note(X.calcNoteShort(METHOD_SHORT[S.settings.method] || S.settings.method))}`;
-  const btns = loc ? btn(esc(X.looksRight), "A.obNext()") : `${btn(esc(SETUP.useLocation), "A.obLocate()")}${btn(esc(SETUP.skipForNow), "A.obNext()", "txt")}`;
+    ${note(`${X.calcNote} ${X.methodLine(METHOD_SHORT[S.settings.method] || S.settings.method)}`)}`;
+  // M3: the full privacy note (who receives the location) sits above the button that asks for it.
+  // Before the location is known: one big "Use my location", and "Skip for now". Once found: "Looks right".
+  const btns = loc ? btn(esc(X.looksRight), "A.obNext()") : `${btn(`${svg("pin", "xs")}${esc(locating ? X.locating : SETUP.useLocation)}`, "A.obLocate()", "pri", locating ? 'aria-busy="true"' : "")}${btn(esc(SETUP.skipForNow), "A.obNext()", "txt")}`;
   return frame(body, { top: stepTop("times"), btns });
 }
 /** ʿAsr for madhhab m today, so each option shows what the choice changes. */
@@ -159,15 +163,27 @@ A.obCity = () => {
     <div class="results" id="cityResults"></div></div>`);
   setTimeout(() => $("#cityIn")?.focus(), 50);
 };
-/** Use my location: the screen has explained why, so this goes straight to the system prompt. */
+/**
+ * Use my location: the screen has explained why (the full privacy note under the times), so this goes straight to
+ * the system prompt. Refused, unavailable, or no answer within LOCATE_MS: the "Choose a city" link appears.
+ */
+let locFail = false, locating = false;
+const LOCATE_MS = 20000;
 A.obLocate = async () => {
-  toast(T.finding);
+  if (locating) return;
+  locating = true; drawn = ""; commit();
+  let timer;
   try {
-    const { lat, lng } = await currentPosition();
+    const { lat, lng } = await Promise.race([currentPosition(), new Promise((_, rej) => { timer = setTimeout(() => rej(new Error("timeout")), LOCATE_MS); })]);
     S.settings.location = { lat, lng, label: await cityName(lat, lng), source: "gps" };
-    commit();
-  } catch (e) { toast(SETUP.locFailed); }
+    locFail = false;
+  } catch (e) { locFail = true; toast(X.locNoGo); }
+  clearTimeout(timer);
+  locating = false; drawn = ""; commit();
 };
+/** For tests: one set-up screen's HTML, and the location state. */
+export const _screen = id => SCREENS[id]();
+export const _loc = { reset() { locFail = false; locating = false; }, get fail() { return locFail; } };
 
 /* ---------- 3. how you read ---------- */
 function sRead() {
@@ -188,8 +204,16 @@ export function setupRows() {
 function sFeatures() {
   const rows = setupRows(), on = rows.filter(r => r.on).length;
   const list = rows.map(r => `<button class="ob-feat" role="checkbox" aria-checked="${r.on}" ${r.locked ? 'aria-disabled="true"' : `onclick="A.obFeat('${r.id}')"`}><span class="t"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span><span class="ob-bx${r.on ? " on" : ""}${r.locked ? " lockd" : ""}">${r.on ? svg("check") : ""}</span></button>`).join("");
-  return frame(`${head(X.featTitleNew, X.featLead)}<div class="ob-card ob-feats">${list}</div>`,
+  // M4: the two presets above the list. "Everything" includes Provisions & levels; "Just prayers" leaves it off.
+  const pr = presetOf(), chip = (id, label) => `<button type="button" class="${pr === id ? "on" : ""}" aria-pressed="${pr === id}" onclick="A.obPreset('${id}')">${esc(label)}</button>`;
+  const chips = `<div class="ob-chips ob-presets" role="group" aria-label="${esc(X.presets)}">${chip("prayers", X.justPrayers)}${chip("all", X.everything)}</div>`;
+  return frame(`${head(X.featTitleNew, X.featLead)}${chips}<div class="ob-card ob-feats">${list}</div>${note(X.featNote)}`,
     { top: stepTop("features"), btns: btn(esc(X.continueN(on)), "A.obNext()") });
+}
+/** Which preset the Features step matches now: "prayers" (only the five), "all" (every row on, Provisions too), or "". */
+export function presetOf() {
+  const rows = setupRows().filter(r => !r.locked);
+  return rows.every(r => !r.on) ? "prayers" : rows.every(r => r.on) ? "all" : "";
 }
 
 /* ---------- 5. make-ups (only if chosen) ---------- */
@@ -340,6 +364,13 @@ function obProvisions() {
   else { turnOff(S); if (obPvOffered != null) S.settings.provisions.offered = obPvOffered; }
   commit();
 }
+/** M4: "Just prayers" / "Everything" (features.applyPreset), with Provisions & levels off / on to match. */
+A.obPreset = p => {
+  if (p !== "prayers" && p !== "all") return;
+  feat.applyPreset(S, p);
+  if ((p === "all") !== pvOn(S)) { obProvisions(); return; } // it commits
+  commit();
+};
 A.obOwe = k => { owe.mode = k; if (k === "yes" && !owe.span) owe.span = "oneTwo"; drawn = ""; commit(); };
 A.obSpan = k => { owe.span = k; owe.exact = false; drawn = ""; commit(); };
 A.obExact = () => { owe.exact = !owe.exact; drawn = ""; commit(); };

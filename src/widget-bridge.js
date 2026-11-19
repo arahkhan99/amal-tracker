@@ -80,6 +80,9 @@ function handleUrl(url) {
 export async function initWidgets() {
   if (!isNative()) return;
   onRender(schedule);
+  // Redraw every placed widget with this version's layouts straight away (after an update the system may still
+  // show what the previous version drew until the next boundary), then write the fresh snapshot.
+  ZadWidgets.reload().catch(e => console.warn("widgets", e));
   schedule();
   try {
     const { App } = await import("@capacitor/app");

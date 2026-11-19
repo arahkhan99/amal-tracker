@@ -51,7 +51,9 @@ describe("points: weights", () => {
     const many = { prayers: {}, sunnah: {} };
     for (const id of ["fajr-b2", "dhuhr-b4", "dhuhr-a2", "dhuhr-a2n", "asr-b4", "maghrib-a2", "maghrib-awwabin", "isha-b4", "isha-a2", "witr-a2n", "ishraq", "duha", "tahajjud"]) many.sunnah[id] = true;
     r = pts.dayProvisions(many);
-    expect(r.parts.find(p => p.kind === "sunnah")).toMatchObject({ count: 13, n: 10 });
+    // the nafl add-on (Ishrāq, Duhā, Awwābīn, Tahajjud) counts as good deeds instead, once
+    expect(r.parts.find(p => p.kind === "sunnah")).toMatchObject({ count: 9, n: 9 });
+    expect(r.parts.find(p => p.kind === "deeds")).toMatchObject({ count: 4, n: 4 });
   });
 
   it("Good Deeds 1 each, capped at 10", () => {

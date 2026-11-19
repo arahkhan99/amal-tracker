@@ -268,9 +268,35 @@ export const TODAY = {
   begins: t => `Begins at ${t}`,
   // deeds sheet
   deedsSub: (day, n, m) => `${day} · ${n} of ${m} done`, editList: "Edit list",
+  // 19 Nov 2026 round (views/home.js): Now after logging, all five, the Today lines, the greeting, Qibla
+  inLeft: left => `in ${left}`, tomorrowWord: "tomorrow",
+  allFiveStreak: n => `${n} days in a row`,
+  deedsAddOwn: "add your own", addDeed: "Add a good deed",
+  stillCount: "Dhikr and duʿāʾ still count.",
+  sunnahLine: "Sunnah", sunnahRakahs: (got, of) => `${got} of ${of} rakʿahs`,
+  witrDone: "Witr ✓", witrMissed: "Witr missed", witrToDo: "Witr to do",
+  qibla: deg => (deg == null ? "Qibla" : `Qibla ${deg}°`), qiblaAria: deg => (deg == null ? "Qibla finder" : `Qibla finder, ${deg} degrees from North`),
+  welcome: name => (name ? `Welcome, ${name}` : "Welcome"),
   // community placeholder (Zad Plus only)
   communityLead: "Leaderboards, Circles, Family and mentoring will live here.",
   communitySoon: "Coming with Zad Plus.",
+};
+/*
+ * The nafl add-on in the Good deeds sheet (views/home.js; rules/madhhab.js NAFL_ADDON). Timing lines take today's
+ * real times. TODO(scholar): review this wording (Ishrāq / Duhā start and end, Awwābīn rakʿahs, Tahajjud) before
+ * release. Kept short and neutral; Awwābīn follows madhhab.js (4 more after the 2 sunnah, 6 in all).
+ */
+export const NAFL = {
+  title: "Nafl prayers", choose: "Choose", optional: "optional, as you can",
+  chooseTitle: "Nafl prayers", chooseLead: "Choose which show in Good deeds. Each one you pray counts as a good deed.",
+  noneShown: "No nafl prayers shown.",
+  when: {
+    ishraq: t => `From about 15–20 min after sunrise (≈ ${t})`,
+    duha: t => `After Ishrāq until before zawāl (≈ until ${t})`,
+    awwabin: t => `After Maghrib (${t}): 4 more after the 2 sunnah, 6 in all`,
+    tahajjud: t => `Last part of the night, after sleeping, before Fajr (≈ until ${t})`,
+  },
+  afterMissed: "Not after a missed Maghrib.",
 };
 export const CALENDAR = {
   back: "Today",
@@ -599,7 +625,17 @@ export const SETTINGS = {
   carryQuran: "Carry Qurʾān position forward", carryQuranSub: "Pre-fill where you stopped last time",
   weekCard: "“This week” readings", weekCardSub: "One short reading for the week",
   reflection: "Daily reflection", reflectionSub: "An āyah or hadīth each morning",
-  seerah: "Friday sīrah moment",
+  seerah: "Friday sīrah moment", seerahSub: "A short sīrah reading, Friday 9 AM",
+  feedbackRow: "Send feedback / Report a mistake",
+  qiblaRow: "Qibla finder", qiblaRowSub: "The direction of the Kaʿbah from where you are",
+  // the location sheet: current location first, a city as the fallback
+  locGps: label => `Using your current location · ${label}`,
+  locCity: label => `Using a chosen city · ${label}`,
+  locOld: label => `Using ${label}`,
+  locNone: fallback => `No location yet · using ${fallback}`,
+  locRowGps: "Current location", locRowCity: "Chosen city",
+  useMyLocationShort: "Use my location", updateMyLocation: "Update my location",
+  chooseCity: "Choose a city instead",
   remindNote: "shown in the app on this device",
   lock: "App lock", lockSub: "Fingerprint or face each time Zad opens",
   noBiometry: "No fingerprint or screen lock set up on this phone", notTurnedOn: "Not turned on",
@@ -797,6 +833,15 @@ export const PROG = {
   pickTitle: "Which one did you make up?",
   pickSub: "One tap counts it toward this month's goal.",
   more: "More",
+  // sub-tabs inside Week, Charts and Make-ups (views/subtabs.js)
+  sub: {
+    days: "Days", streaks: "Streaks", cong: "Congregation", sunnah: "Sunnah", deeds: "Good deeds",
+    prayers: "Prayers", each: "Each prayer", left: "Left", goal: "Goal", history: "History",
+  },
+  subLabel: { week: "Week sections", charts: "Charts sections", makeups: "Make-ups sections", mkpage: "Make-ups sections" },
+  bestWeek: "Your best week yet.",
+  salawatDays: "days with salawāt", sadaqahDays: "days with sadaqah", salawatAll: n => `${n.toLocaleString("en")} salawāt in all`,
+  deedsNow: "Good deeds are shown for the current period. Go back to the latest to see them.",
 };
 
 /** views/qada.js */
@@ -861,6 +906,11 @@ export const SETUP_X = {
   locNotSet: f => `Not set yet · the times below are for ${f}`,
   asrRow: "ʿAsr time", laterAsr: "Later ʿAsr", earlierAsr: "Earlier ʿAsr",
   calcNoteShort: m => `Worked out on your phone (${m} method), so they work offline. Your location is rounded to about 1 km.`,
+  methodLine: m => `${m} method; they work offline.`,
+  cantLocate: "Can’t get your location? Choose a city",
+  locNoGo: "Couldn’t get your location",
+  locating: "Finding your location…",
+  presets: "Quick choices",
   asrSheetTitle: "ʿAsr time and madhhab", asrSheetLead: "Sets ʿAsr time, which sunnah prayers are listed, and how Witr is counted. Not sure? Keep Hanafī.",
   defaultTag: "Default", cityLead: "Search for your town or city. Times are worked out on your phone.",
   readLead: "This sets what the adhkār and other readers show.",
@@ -1259,6 +1309,7 @@ export const READ = {
   item: {
     morning: "Morning adhkār", evening: "Evening adhkār", hizb: "Hizb al-Aʿzam", quran: "Qurʾān recitation",
     listen: "Listen to Qurʾān", manzil: "Manzil", mulk: "Sūrat al-Mulk", kahf: "Sūrat al-Kahf", durud: "Durūd",
+    yasinAm: "Yā-Sīn · morning", yasinPm: "Yā-Sīn · evening",
   },
   nowUntil: p => `Now · until ${p}`,
   fromP: p => `From ${p}`,
@@ -1294,6 +1345,8 @@ export const READ = {
   surah: name => `Sūrah ${name}`, firstPage: "From the first page",
   kahfRow: "Sūrat al-Kahf", kahfRowSub: "Fridays",
   mulkRow: "Sūrat al-Mulk", mulkRowSub: "Each night",
+  yasinRow: "Sūrah Yā-Sīn", yasinRowSub: "Morning and evening",
+  yasinDone: (a, b) => (a && b ? "Morning and evening done" : a ? "Morning done · evening from ʿAsr" : "Evening done"),
   manzilRow: "Manzil", manzilRowSub: "Protection · morning and evening",
   allSurahs: "All sūrahs and juzʾ",
   // Adhkār
@@ -1303,6 +1356,8 @@ export const READ = {
   afterSalah: "After ṣalāh", afterSalahSub: "After each fard · tasbīh counter",
   hizbRowSub: m => `One manzil a day · today manzil ${m}`,
   durudRow: "Durūd", durudRowSub: "Forty durūd · at least on Friday",
+  durudOf: (n, m) => `${n} of ${m} read`,
+  durudLast: d => `Last read ${d}`,
   doneTag: "Done",
   tips: "Tips for reading", tipsSub: "How the counters and ticks work",
   tipTicks: "Tick a reading off in For today, or with the bar at the bottom of the reader. It counts in your good deeds and in Progress, and you can untick it the same way.",

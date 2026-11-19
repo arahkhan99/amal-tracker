@@ -74,3 +74,15 @@ export async function checkTravel(S, deps) {
     return false; // quiet: no permission prompt, no log
   }
 }
+
+/**
+ * How Settings presents the saved location (views/settings.js, the Location row and sheet): current location is
+ * the default way, a chosen city the fallback. { kind: "gps" | "city" | "unknown" | "none", label, follows }.
+ * follows: prayer times follow the phone when it travels (a "gps" location with autoLocation on).
+ */
+export function locationSummary(settings = {}) {
+  const loc = settings.location;
+  if (!loc || typeof loc.lat !== "number") return { kind: "none", label: "", follows: false };
+  const kind = loc.source === "gps" ? "gps" : loc.source === "city" ? "city" : "unknown";
+  return { kind, label: loc.label || TRAVEL.fallbackLabel, follows: kind === "gps" && settings.autoLocation !== false };
+}

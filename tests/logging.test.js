@@ -95,7 +95,9 @@ describe("every Home write path that adds a log goes through logAllowed", () => 
     const cal = fs.readFileSync(new URL("../src/views/calendar.js", import.meta.url), "utf8");
     expect(cal.slice(cal.indexOf("A.dayPick ="), cal.indexOf("A.dayPick =") + 300)).toMatch(/logPrayer\(S, key, p, next/);
     expect(body("function toggleChip(")).toMatch(/logAllowed\(S, key, "Isha", next/);
-    expect(body("function toggleChip(")).toMatch(/logAllowed\(S, key, owner, !was/);
+    // sunnah chips and the Good deeds sheet's nafl ticks share tickSunnah
+    expect(body("function toggleChip(")).toMatch(/tickSunnah\(/);
+    expect(body("function tickSunnah(")).toMatch(/logAllowed\(S, key, owner, !was/);
     expect(src.slice(src.indexOf("A.rememberAt ="), src.indexOf("A.rememberAt =") + 400)).toMatch(/logAllowed\(S, key, p, on/);
     expect(src.slice(src.indexOf("A.cuSave ="), src.indexOf("A.cuSave =") + 500)).toMatch(/logAllowed\(S, yk, p, k/);
     expect(src.slice(src.indexOf("A.prayerSheet ="), src.indexOf("A.prayerSheet =") + 600)).toMatch(/!canLog\(S, key, p, NOW\(\)\)/);

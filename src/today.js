@@ -14,8 +14,11 @@
 import * as store from "./store.js";
 import { logAllowed, madeUpAllowed } from "./logging.js";
 import { navTabs, isOn } from "./features.js";
-import { timesFor } from "./times.js";
-import { PRAYERS, dkey } from "./util.js";
+import { timesFor, currentWindow, nextPrayer } from "./times.js";
+import { PRAYERS, dkey, addDays, parseKey } from "./util.js";
+import { prayerStreak, sunnahMeasureDay } from "./stats.js";
+import { sheetCount } from "./reading.js";
+import { NAFL_ADDON, itemById, madhhabOf } from "./rules/madhhab.js";
 
 /** The Now chapter's buttons, in order (statuses; the first is the primary button). */
 export function logButtons(S) {
@@ -147,4 +150,84 @@ export function makeupsLine(S, key) {
   if (prayers > 0 || fasts > 0) return { prayers, fasts };
   const logged = Object.values(S.qada?.monthLog || {}).some(m => (m?.prayers || 0) + (m?.fasts || 0) > 0);
   return logged ? { prayers: 0, fasts: 0, clear: true } : null;
+}
+
+/* ---------- the Now chapter after logging (19 Nov 2026: "Now moves on to the next prayer") ---------- */
+/**
+ * What the Now chapter is about at `now`:
+ * - { kind: "open", p, key, cur }: a prayer's time is open and it is not logged yet (the one-tap buttons);
+ * - { kind: "next", p, key, time, tomorrow, after }: otherwise, the next prayer, with no buttons until it begins.
+ *   `after` is the prayer just logged (its window is still open), or null (between sunrise and Zuhr).
+ * Edits to a logged prayer are made on the Today chapter, so a logged prayer is never shown here again.
+ */
+export function nowFocus(S, now = new Date()) {
+  const cur = currentWindow(now, S.settings);
+  if (cur && !store.prayerStatus(S, dkey(cur.date), cur.p)) return { kind: "open", p: cur.p, key: dkey(cur.date), cur };
+  const nx = nextPrayer(now, S.settings);
+  return { kind: "next", p: nx.p, key: nx.tomorrow ? dkey(addDays(now, 1)) : dkey(now), time: nx.time, tomorrow: !!nx.tomorrow, after: cur ? cur.p : null };
+}
+
+/**
+ * The "all five prayed" moment on Now (M6): { key, streak } once every fard of the day whose prayers are current
+ * (last night's ʿIshāʾ window belongs to yesterday) is prayed, else null. Not on an excused day.
+ */
+export function allFiveMoment(S, now = new Date()) {
+  const cur = currentWindow(now, S.settings);
+  const key = cur ? dkey(cur.date) : dkey(now);
+  if (store.isExcusedDay(S, key)) return null;
+  if (!PRAYERS.every(p => store.isPrayed(store.prayerStatus(S, key, p)))) return null;
+  return { key, streak: prayerStreak(S, now) };
+}
+
+/* ---------- the nafl add-on in the Good deeds sheet ---------- */
+/**
+ * The nafl add-on items the user chose to show (settings.naflShow), in order: [{ key, id, item }]. With a day
+ * `key`: none on an excused day (no ṣalāh is prayed then; store.setSunnah refuses them too).
+ */
+export function naflShown(S, key = "") {
+  if (key && store.isExcusedDay(S, key)) return [];
+  const want = Array.isArray(S.settings.naflShow) ? S.settings.naflShow : [];
+  const m = madhhabOf(S);
+  return NAFL_ADDON.filter(x => want.includes(x.key)).map(x => ({ ...x, item: itemById(x.id, m) })).filter(x => x.item);
+}
+
+/**
+ * Today's actual times for the nafl guidance (all Dates): Ishrāq from 15 min after sunrise (FORBIDDEN_MIN),
+ * Duhā until 10 min before Zuhr (zawāl), Awwābīn after Maghrib, Tahajjud until the next Fajr.
+ */
+export function naflTimes(key, settings, now = new Date()) {
+  const d = parseKey(key), t = timesFor(d, settings), m = 60000;
+  const fajr = now < t.Fajr || key !== dkey(now) ? t.Fajr : timesFor(addDays(d, 1), settings).Fajr;
+  return {
+    ishraq: new Date(+t.Sunrise + FORBIDDEN_MIN.afterSunrise * m),
+    duha: new Date(+t.Dhuhr - FORBIDDEN_MIN.beforeZuhr * m),
+    awwabin: t.Maghrib,
+    tahajjud: fajr,
+  };
+}
+
+/* ---------- the quiet lines on the Today chapter ---------- */
+/**
+ * "Good deeds · n of m" (always shown while the Good deeds feature is on): the deeds that are not read in Read,
+ * plus the nafl prayers shown in the sheet. empty: nothing to tick (the line says "add your own"). Null when off.
+ */
+export function deedsLine(S, key) {
+  if (!isOn(S, "deeds")) return null;
+  const c = sheetCount(S, key), nf = naflShown(S, key);
+  const naflDone = nf.filter(x => store.sunnahDone(S, key, x.id)).length;
+  const done = c.done + naflDone, of = c.of + nf.length;
+  return { done, of, empty: of === 0, inRead: c.inRead };
+}
+
+/**
+ * "Sunnah · 6 of 12 rakʿahs · Witr ✓" (M7), only with the Sunnah feature on and not on an excused day:
+ * { got, of, kind, witr: "done" | "missed" | "todo" | "" } ("todo" only once ʿIshāʾ has begun at `now`).
+ */
+export function sunnahLine(S, key, now = new Date()) {
+  if (!isOn(S, "sunnah") || store.isExcusedDay(S, key)) return null;
+  const m = sunnahMeasureDay(S, key);
+  if (m.excused) return null;
+  const w = store.witrChip(S, key);
+  const witr = !w.allowed ? "" : w.done ? "done" : w.status === "missed" ? "missed" : logAllowed(S, key, "Isha", true, now) ? "todo" : "";
+  return { got: m.got, of: m.of, kind: m.kind, witr };
 }

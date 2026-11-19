@@ -394,6 +394,8 @@
 .rd-row .t{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
 .rd-row .t b{display:block;font-size:16px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
 .rd-row .t small{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--mute);margin-top:2px;line-height:1.35}
+.rd-row .t small.rd-s2{margin-top:1px;font-size:12.5px}
+.rd-vol{margin:14px 4px 0}
 .rd-btn{flex:none;min-height:40px;min-width:64px;padding:0 16px!important;border-radius:12px;background:var(--soft)!important;color:var(--on-soft)!important;font-size:15px!important;font-weight:600!important;text-align:center!important}
 .rd-tick{flex:none;width:44px;height:44px;display:grid!important;place-items:center;margin-right:-6px}
 .rd-bx{width:28px;height:28px;border-radius:9px;box-shadow:inset 0 0 0 1.5px var(--faint);display:grid;place-items:center;color:var(--on-acc)}
@@ -466,13 +468,17 @@
 #v-tools[data-screen=quran] .tl-qr{flex:1}
 /* Arabic in the OG Calm colour (forest in light, soft gold in dark) */
 #v-tools .tl-ar,#v-tools .tl-q,#v-tools .tl-dar{color:var(--arabic)}
-/* large text or a narrow phone: the Read button and the tick move under the name */
+/* large text or a narrow phone: the Read button and the tick move under the name.
+   No :has() anywhere: Chromium merges every :has() rule's targets into one invalidation set, so with the old
+   ".rd-row:has(.rd-tick) .t" and ".phone:has(#v-tools.on …) .toast" any "on" class change (a chapter name, the toast)
+   restyled and repainted every ".t" in the app, hundreds in Progress: the lag when swiping chapters (19 Nov 2026).
+   For today's rows carry .tk instead (views/read.js), and toast() sets .lift (app.js). */
 .rd-list{container-type:inline-size}
 @container (max-width:310px){
-  .rd-row:has(.rd-tick){flex-wrap:wrap;row-gap:8px}
-  .rd-row:has(.rd-tick) .t{flex:1 1 calc(100% - 60px)}
-  .rd-row:has(.rd-tick) .rd-btn{margin-left:48px}
-  .rd-row:has(.rd-tick) .rd-tick{margin-left:auto}
+  .rd-row.tk{flex-wrap:wrap;row-gap:8px}
+  .rd-row.tk .t{flex:1 1 calc(100% - 60px)}
+  .rd-row.tk .rd-btn{margin-left:48px}
+  .rd-row.tk .rd-tick{margin-left:auto}
 }
 /* a toast in a reader sits above the done bar, not over it */
-.phone[data-nav=off]:has(#v-tools.on .rd-bar) .toast{bottom:calc(96px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))}
+.phone[data-nav=off] .toast.lift{bottom:calc(96px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))}

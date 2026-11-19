@@ -44,6 +44,8 @@ export function defaultState(now = new Date()) {
       jumuah: true, // on Friday, Dhuhr shows the Jumu'ah sunnah list
       sunnahGhayr: true, // show ghayr mu'akkadah chips (outlined)
       sunnahNafl: false, // show nafl chips (hidden by default)
+      naflShow: ["ishraq", "duha", "awwabin", "tahajjud"], // the nafl add-on in the Good deeds sheet (madhhab.NAFL_ADDON keys)
+      seerahNotify: true, // the Friday sīrah notification (Settings → Reminders)
       excusedDays: true, // offer excused days (hayd / nifas)
       makeupNudge: true, // "Still time to make up Asr today"
       features: defaultFeatures(), // module switches, see features.js
@@ -122,6 +124,7 @@ export function normalize(s, now = new Date()) {
   migrateMadhhab(s, out);
   out.settings.features = normalizeFeatures(out.settings.features);
   out.settings.hiddenTools = Array.isArray(out.settings.hiddenTools) ? out.settings.hiddenTools : [];
+  if (!Array.isArray(out.settings.naflShow)) out.settings.naflShow = d.settings.naflShow.slice();
   out.settings.provisions = normalizeProvisions(out.settings.provisions);
   // Only approximate location is kept (about 1 km); round anything saved before that rule
   const loc = out.settings.location;
@@ -256,7 +259,7 @@ export function applyGender(S, g, { todayKey: key, excusedPrayers = [], undoHome
  *   witrAuto?: true                    // Witr was marked missed automatically because ʿIshāʾ was missed
  *   excused?: true                     // excused day (hayd / nifas): unlogged prayers count as excused
  *   remember?: { Fajr: true, ... }     // remembrance at prayer time, only on excused prayers (setRemember)
- *   reads?: { hizb: true, mulk: true, kahf: true, manzil: true } // readings done in Read (setRead; points.readsByDay)
+ *   reads?: { hizb: true, mulk: true, kahf: true, manzil: true, yasinAm: true, yasinPm: true } // readings done in Read (setRead; points.readsByDay)
  *   first?: ms                        // when the user first logged anything for this day; set once (markLogged)
  *   u: ms                              // last edit, for cloud merges
  * }
@@ -497,7 +500,7 @@ export function setRemember(S, key, p, on, now = new Date(), { allowed } = {}) {
  * the readers prune their history (points.readsByDay). Not a user log of the day: day.first isn't stamped.
  */
 export function setRead(S, key, id, on) {
-  if (!["hizb", "mulk", "kahf", "manzil"].includes(id)) return false;
+  if (!["hizb", "mulk", "kahf", "manzil", "yasinAm", "yasinPm"].includes(id)) return false;
   if (on) {
     const day = ensureDay(S, key);
     if (day.reads?.[id]) return true;
@@ -651,15 +654,107 @@ function mergeCore(local, remote) {
 }
 
 const isObj = v => v && typeof v === "object" && !Array.isArray(v);
+
+/* ---------- cleared tool stamps (sync tombstones) ----------
+ * The readers keep "done" as a time stamp in S.tools: adhkar[day][set].done, manzil[day][slot], read[day][id],
+ * hizb.weeks[week].read[m], durud[day].done, afterSalah[day][prayer].done. mergeTools joins both copies' maps, so a
+ * stamp that was simply deleted on this phone came straight back from the cloud copy on the next sync (an untick, or
+ * the Undo of a tick, that "comes back as done" a few seconds later).
+ * So removing a stamp leaves a note: S.tools.cleared["adhkar/2026-11-18/evening/done"] = when it was cleared (ms).
+ * The merge drops a stamp that is not newer than its note; ticking again later writes a newer stamp, which stays.
+ * A negative note (-ms) says the clear was undone at ms (Undo right after an untick): of two notes for the same
+ * stamp, the later one wins. Notes are kept for CLEARED_MS.
+ */
+export const CLEARED_MS = 60 * 86400e3;
+const atPath = (obj, keys) => keys.reduce((o, k) => (isObj(o) ? o[k] : undefined), obj);
+
+/** Both copies' notes, the later one per stamp, without the expired ones. */
+function joinNotes(a, b, now = Date.now()) {
+  const out = {};
+  for (const src of [a, b]) {
+    if (!isObj(src)) continue;
+    for (const [p, v] of Object.entries(src)) {
+      if (!Number.isFinite(v) || v === 0 || now - Math.abs(v) > CLEARED_MS) continue;
+      if (!(p in out) || Math.abs(v) > Math.abs(out[p])) out[p] = v;
+    }
+  }
+  return out;
+}
+
+/** Drop every stamp in tools `t` that a (positive) note says was cleared after it was set. */
+function applyNotes(t, notes) {
+  for (const [p, at] of Object.entries(notes)) {
+    if (!(at > 0)) continue;
+    const keys = p.split("/"), last = keys.pop(), parent = atPath(t, keys);
+    if (isObj(parent) && typeof parent[last] === "number" && parent[last] <= at) delete parent[last];
+  }
+}
+
+/**
+ * Remove a reader's done stamp (path into S.tools, "/"-separated, e.g. "manzil/2026-11-18/evening") and note when,
+ * so the cloud copy can't bring it back. Returns the stamp that was there (or undefined). Caller saves.
+ */
+export function clearToolStamp(S, path, now = Date.now()) {
+  const t = (S.tools ||= {}), keys = path.split("/"), last = keys.pop(), parent = atPath(t, keys);
+  const had = isObj(parent) ? parent[last] : undefined;
+  if (isObj(parent)) delete parent[last];
+  const notes = joinNotes(t.cleared, null, now);
+  notes[path] = Math.max(now, typeof had === "number" ? had : 0, notes[path] > 0 ? notes[path] : 0);
+  t.cleared = notes;
+  return had;
+}
+
+/**
+ * A done stamp at `path` was just set again (a tick after an untick): turn its note into "set again" (negative,
+ * later than the clear), so the merge keeps the new stamp whichever clock wrote it. Caller saves.
+ */
+export function noteToolSet(S, path, now = Date.now()) {
+  const n = S.tools?.cleared?.[path];
+  if (n > 0) S.tools.cleared[path] = -Math.max(now, n + 1);
+}
+
+/** The numeric leaves of a tools tree (the done stamps among them), by path. Arrays and the notes are left out. */
+function stampLeaves(t, prefix = "", out = new Map()) {
+  if (!isObj(t)) return out;
+  for (const [k, v] of Object.entries(t)) {
+    if (!prefix && (k === "cleared" || k === "prefs")) continue;
+    const p = prefix ? `${prefix}/${k}` : k;
+    if (typeof v === "number") out.set(p, v);
+    else if (isObj(v)) stampLeaves(v, p, out);
+  }
+  return out;
+}
+
+/**
+ * Put S.tools back to an earlier copy (an Undo), noting what that removes (cleared now) and what it puts back over
+ * a clear (the clear undone), so the next sync keeps exactly the restored state. Caller saves.
+ */
+export function restoreTools(S, snap, now = Date.now()) {
+  const cur = isObj(S.tools) ? S.tools : {}, next = isObj(snap) ? JSON.parse(JSON.stringify(snap)) : {};
+  const notes = joinNotes(cur.cleared, next.cleared, now);
+  const before = stampLeaves(cur), after = stampLeaves(next);
+  for (const [p, v] of before) if (!after.has(p)) notes[p] = Math.max(now, v);
+  for (const [p] of after) if (!before.has(p) && notes[p] > 0) notes[p] = -Math.max(now, notes[p] + 1);
+  if (Object.keys(notes).length) next.cleared = notes; else delete next.cleared;
+  S.tools = next;
+}
+
 /**
  * Tool progress (S.tools: adhkar counts, durūd read, Hizb weeks, Qurʾān position and pages read) from both
  * phones. Maps keyed by day or week are combined, so reading on one phone never erases reading on the other;
  * for the same field the side saved last wins, except "read" lists (pages, durūd) which are joined and the
- * Hizb khatm count, which keeps the higher number.
+ * Hizb khatm count, which keeps the higher number. A done stamp cleared on either phone stays cleared unless it was
+ * set again after the clear (S.tools.cleared, clearToolStamp).
  */
 export function mergeTools(newer, older) {
   if (!isObj(older)) return isObj(newer) ? JSON.parse(JSON.stringify(newer)) : newer;
   if (!isObj(newer)) return JSON.parse(JSON.stringify(older));
+  const out = deepTools(newer, older);
+  const notes = joinNotes(newer.cleared, older.cleared);
+  if (Object.keys(notes).length) { out.cleared = notes; applyNotes(out, notes); } else delete out.cleared;
+  return out;
+}
+function deepTools(newer, older) {
   const deep = (a, b, key, parent) => {
     if (a === undefined) return JSON.parse(JSON.stringify(b));
     if (b === undefined) return JSON.parse(JSON.stringify(a));

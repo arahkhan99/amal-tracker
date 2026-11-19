@@ -12,7 +12,7 @@ import { timesFor, currentWindow, nextPrayer, windowEnd, ishaBestBefore, madeUpD
 import { canLog, logAllowed, madeUpAllowed } from "../logging.js";
 import { hijriLabel } from "../hijri.js";
 import * as st from "../stats.js";
-import { isOn, toolVisible } from "../features.js";
+import { isOn } from "../features.js";
 import { madhhabOf, tierLabel, TIERS, itemById } from "../rules/madhhab.js";
 import { thisWeek, pastSahabi, setSahabiStart, monthIndex, contentReady, loadContent, whenContent } from "../content.js";
 import { gloss } from "../glossary.js";
@@ -20,9 +20,12 @@ import * as T from "../strings.js";
 import { HOME_X, NOT_YET, TODAY } from "../strings.js";
 import { reportLink } from "../feedback.js";
 import { homeChip as pvChip, homeOffer as pvOffer } from "./provisions.js";
-import { logButtons, otherOptions, logPrayer, snapshotDays, restoreSnapshot, todayChapters, guideLineDue, makeUpNowFor, makeupsLine, TODAY_ROWS } from "../today.js";
+import { logButtons, otherOptions, logPrayer, snapshotDays, restoreSnapshot, todayChapters, guideLineDue, makeUpNowFor, makeupsLine, TODAY_ROWS, nowFocus, allFiveMoment, naflShown, naflTimes, deedsLine, sunnahLine } from "../today.js";
+import { NAFL_ADDON } from "../rules/madhhab.js";
+import { qiblaDegrees } from "./qibla-page.js";
 import { sheetDeeds, sheetCount } from "../reading.js";
-import { READ } from "../strings.js";
+import { makeChapters, setHTML } from "./chapters.js";
+import { READ, NAFL, SUNNAH_NAME, MEASURE } from "../strings.js";
 
 const { APP, COMMON, STATUS, HOME, TIMES, LOG, DEEDS, EXCUSED, SUNNAH_UI, TIER, WEEK_UI } = T;
 export { STATUS };
@@ -48,6 +51,8 @@ const I = {
   beads: '<circle cx="12" cy="5" r="2"/><circle cx="6" cy="9" r="2"/><circle cx="18" cy="9" r="2"/><circle cx="7.5" cy="16" r="2"/><circle cx="16.5" cy="16" r="2"/>',
   sun: '<path d="M12 4v2M5.6 9.6l1.4 1.4M18.4 9.6L17 11M3 17h2M19 17h2M8 17a4 4 0 0 1 8 0M3 20h18"/>',
   note: '<path d="M5 4h10l4 4v12H5z"/><path d="M15 4v4h4M8.5 12.5h7M8.5 16h5"/>',
+  compass: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+  layers: '<path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/>',
 };
 export const ic = (n, cls = "i", extra = "") => `<svg class="${cls}" viewBox="0 0 24 24" ${extra} aria-hidden="true">${I[n]}</svg>`;
 
@@ -64,7 +69,6 @@ const hm = ms => { const m = Math.max(0, Math.round(ms / 60000)); return TODAY.h
 export const statusMark = (s, cls = "") => SICON[sk(s)] ? `<span class="z-mk z-${sk(s)} ${cls}">${ic(SICON[sk(s)], "")}</span>` : `<span class="z-mk ${cls}"></span>`;
 export const marker = s => SICON[sk(s)] ? `<span class="mk ${sk(s)}">${ic(SICON[sk(s)], "")}</span>` : `<span class="mk"></span>`;
 const tierCls = t => (t === "ghayr" ? "gm" : t === "nafl" ? "nf" : "mu");
-const reduceMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export function dayLabel(key) {
   if (key === todayKey()) return "";
@@ -135,11 +139,14 @@ function toggleChip(el) {
     store.setWitr(S, key, next, now);
     commit(); return;
   }
-  const id = el.dataset.chip;
+  if (tickSunnah(el.dataset.chip, key, owner, now)) commit();
+}
+/** Tick or untick sunnah item `id` on day `key` (same rules everywhere). Returns true when it changed; caller commits. */
+function tickSunnah(id, key, owner = itemById(id, madhhabOf(S))?.prayer, now = NOW()) {
   const was = store.sunnahDone(S, key, id);
-  if (!logAllowed(S, key, owner, !was, now)) { notYetToast(owner, key); return; } // unticking is always allowed
-  if (!store.setSunnah(S, key, id, !was, now)) { toast(SUNNAH_UI.notAfterMissed); return; }
-  commit();
+  if (!logAllowed(S, key, owner, !was, now)) { notYetToast(owner, key); return false; } // unticking is always allowed
+  if (!store.setSunnah(S, key, id, !was, now)) { toast(id === "maghrib-awwabin" ? NAFL.afterMissed : SUNNAH_UI.notAfterMissed); return false; }
+  return true;
 }
 
 A.chipInfo = (id, key, witr) => {
@@ -369,15 +376,57 @@ A.saveDetail = (id, key) => {
   if (back) { commit(); back(); } else { closeSheet(); commit(); }
   toast(DEEDS.saved);
 };
-A.addAmal = () => openSheet(zz(`<div class="sh"><h3>${DEEDS.addTitle}</h3><p class="sub">${DEEDS.addLead}</p>
+/** "+ Add a good deed" (M1): a name and a type (tick / note / count). From the Good deeds sheet, Add returns there. */
+let addFrom = null;
+A.addAmal = (key = "", back = "") => { addFrom = key ? () => A.deedsSheet(key, back) : null; addSheet(); };
+const addSheet = () => openSheet(zz(`<div class="sh"><h3>${DEEDS.addTitle}</h3><p class="sub">${DEEDS.addLead}</p>
   <div class="field"><label for="nIn">${DEEDS.name}</label><input id="nIn" placeholder="${esc(DEEDS.namePlaceholder)}"></div>
   <div class="field"><label for="nType">${DEEDS.whenCheck}</label><select id="nType"><option value="none">${DEEDS.typeNone}</option><option value="note">${DEEDS.typeNote}</option><option value="count">${DEEDS.typeCount}</option></select></div>
-  <div class="shfoot"><button class="gbtn" onclick="A.closeSheet()">${COMMON.cancel}</button><button class="pbtn" onclick="A.saveAmal()">${DEEDS.addToList}</button></div></div>`));
+  <div class="shfoot"><button class="gbtn" onclick="A.addCancel()">${COMMON.cancel}</button><button class="pbtn" onclick="A.saveAmal()">${DEEDS.addToList}</button></div></div>`));
+A.addCancel = () => { const back = addFrom; addFrom = null; if (back) back(); else closeSheet(); };
 A.saveAmal = () => {
-  const n = $("#nIn").value.trim(); if (!n) return;
-  S.amalList.push({ id: "c" + Date.now(), name: n, hint: DEEDS.addedByYou, detail: $("#nType").value });
-  closeSheet(); commit(); toast(DEEDS.added);
+  const n = $("#nIn").value.trim(); if (!n) { $("#nIn").focus(); return; }
+  const type = $("#nType").value;
+  S.amalList.push({ id: "c" + Date.now(), name: n, hint: DEEDS.addedByYou, detail: ["none", "note", "count"].includes(type) ? type : "none" });
+  const back = addFrom; addFrom = null;
+  if (back) { commit(); back(); } else { closeSheet(); commit(); }
+  toast(DEEDS.added);
 };
+
+/* ---------- the nafl add-on in the Good deeds sheet (Ishrāq, Duhā, Awwābīn, Tahajjud) ----------
+   The ticks write the same day.sunnah[id] as the sunnah chips (store.setSunnah, same rules), so nothing is
+   tracked twice; points.js counts each as one good deed. Which ones show: settings.naflShow ("Choose"). */
+A.naflTick = (id, key = todayKey()) => {
+  const snap = snapshot(key), was = store.sunnahDone(S, key, id);
+  if (!tickSunnah(id, key)) { refreshLive(); return; }
+  commit();
+  const x = NAFL_ADDON.find(n => n.id === id);
+  toast(was ? DEEDS.unchecked : DEEDS.doneToast(SUNNAH_NAME[x?.key] || id), undoable(snap));
+};
+A.naflShowToggle = k => {
+  const cur = Array.isArray(S.settings.naflShow) ? S.settings.naflShow : [];
+  const on = !cur.includes(k);
+  S.settings.naflShow = NAFL_ADDON.map(n => n.key).filter(x => (x === k ? on : cur.includes(x)));
+  commit();
+};
+A.naflChoose = (key = todayKey(), back = "") => showSheet(() => {
+  const cur = S.settings.naflShow || [];
+  const rows = NAFL_ADDON.map(n => { const on = cur.includes(n.key); return `<div class="drow"><span class="t"><b>${esc(SUNNAH_NAME[n.key])}</b></span><button class="nsw ${on ? "on" : ""}" role="switch" aria-checked="${on}" aria-label="${esc(SUNNAH_NAME[n.key])}" onclick="A.naflShowToggle('${n.key}')"></button></div>`; }).join("");
+  return `<div class="sh"><div class="lhd"><div><h3>${esc(NAFL.chooseTitle)}</h3><p class="sub">${esc(NAFL.chooseLead)}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
+    <div class="drows">${rows}</div><div class="shfoot"><button class="pbtn" onclick="A.deedsSheet('${key}','${back}')">${COMMON.done}</button></div></div>`;
+});
+function naflGroup(key, back) {
+  if (store.isExcusedDay(S, key)) return "";
+  const shown = naflShown(S);
+  const head = `<div class="lsec nfh"><span>${esc(NAFL.title)}</span>${xi("nafl")}<button class="link chs" data-f="nafl-choose" onclick="A.naflChoose('${key}','${back}')">${esc(NAFL.choose)}</button></div>`;
+  if (!shown.length) return head + `<p class="note2">${esc(NAFL.noneShown)}</p>`;
+  const tm = naflTimes(key, S.settings, NOW());
+  return head + `<div class="drows">${shown.map(x => {
+    const done = store.sunnahDone(S, key, x.id), name = SUNNAH_NAME[x.key];
+    const sub = NAFL.when[x.key](fmt12(tm[x.key]));
+    return `<div class="drow"><button class="t" onclick="A.naflTick('${x.id}','${key}')"><b>${esc(name)}</b><small>${esc(sub)}</small></button><button class="tick" role="checkbox" aria-checked="${done}" aria-label="${esc(name)}" data-f="nafl-${x.key}" onclick="A.naflTick('${x.id}','${key}')"><span class="bx ${done ? "on" : ""}">${done ? ic("check", "") : ""}</span></button></div>`;
+  }).join("")}</div>`;
+}
 
 /** Good deeds done / on the list for a day. */
 export function deedsCount(key) {
@@ -406,7 +455,8 @@ A.deedsSheet = (key = todayKey(), back = "") => showSheet(() => {
   const from = back === "day" ? "day" : "deeds";
   const whole = back === "day";
   const list = whole ? store.amalForDay(S, key) : sheetDeeds(S, key), day = store.getDay(S, key);
-  const sc = sheetCount(S, key), c = whole ? deedsCount(key) : sc;
+  const sc = sheetCount(S, key), base = whole ? deedsCount(key) : sc;
+  const nf = naflShown(S, key), c = { done: base.done + nf.filter(x => store.sunnahDone(S, key, x.id)).length, of: base.of + nf.length };
   const rows = list.map(a => {
     const s0 = day.amal[a.id] || {};
     const sub = s0.done ? (s0.detail || DEEDS.doneWord) : amalHint(a, key);
@@ -416,7 +466,9 @@ A.deedsSheet = (key = todayKey(), back = "") => showSheet(() => {
   const label = key === todayKey() ? COMMON.today : longDate(parseKey(key));
   return `<div class="sh"><div class="lhd"><div><h3>${esc(TODAY.goodDeeds)}</h3><p class="sub">${esc(TODAY.deedsSub(label, c.done, c.of))}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
     <div class="drows">${rows || `<div class="empty">${DEEDS.empty}</div>`}</div>
+    <button type="button" class="addd" data-f="add-deed" onclick="A.addAmal('${key}','${back}')">${ic("plus", "")}<span>${esc(TODAY.addDeed)}</span></button>
     ${!whole && sc.inRead ? `<p class="note2">${esc(READ.deedsInRead)}</p>` : ""}
+    ${naflGroup(key, back)}
     <div class="shfoot"><button class="gbtn" onclick="A.amalListSheet?.()">${esc(TODAY.editList)}</button><button class="pbtn" onclick="${back === "day" ? `A.daySheet('${key}')` : "A.closeSheet()"}">${back === "day" ? COMMON.back : COMMON.done}</button></div></div>`;
 });
 
@@ -586,16 +638,6 @@ function openCard(cur, now, { compact = false } = {}) {
     <div class="zt-other"><button type="button" class="zt-link" data-f="other" onclick="A.logSheet('${p}','${key}')">${esc(TODAY.other)}</button></div>${guide}
     ${compact ? "" : sunnahRow(p, key) + nextRow(now)}</div>`;
 }
-/** The card after the current prayer is logged: its status, Change, adhkār after ṣalāh, and the next prayer. */
-function loggedCard(cur, now, status) {
-  const p = cur.p, key = dkey(cur.date), day = store.getDay(S, key);
-  const at = day.at?.[p] ? TODAY.loggedAt(fmt12(new Date(day.at[p]))) : "";
-  const prayed = store.isPrayed(status);
-  const after = prayed && toolVisible(S, "afterSalah")
-    ? `<button type="button" class="zt-row tap" data-f="after" onclick="A.openAfterSalah?.('${p}','${key}')"><span class="zt-ico">${ic("beads", "i")}</span><span class="t"><b>${esc(TODAY.afterSalah)}</b><small>${esc(TODAY.afterSalahSub)}</small></span>${ic("chev", "i zt-cv")}</button>` : "";
-  return `<div class="zt-card pad"><div class="zt-done">${statusMark(status)}<div class="t"><b>${esc(TODAY.prayedAs[status] || STATUS[status])}</b>${at ? `<small>${esc(at)}</small>` : ""}</div><button type="button" class="zt-link" data-f="change" onclick="A.prayerSheet('${p}','${key}')">${esc(TODAY.change)}</button></div>
-    ${after}${prayed ? sunnahRow(p, key) : ""}${nextRow(now, true)}</div>`;
-}
 /** Excused days (hayḍ, nifās): remembrance at prayer time instead of the log buttons. */
 function excusedCard(cur, now, key) {
   const mode = S.excusedMode?.since;
@@ -636,24 +678,41 @@ function makeUpNowCard(now, key) {
     <div class="zt-mkb"><button type="button" class="zt-btn soft sm" data-f="mknow" onclick="A.mkNow('${p}')">${ic("check")}${esc(HOME.madeItUp)}</button><button type="button" class="zt-link" data-f="mknow-later" onclick="A.mkNowLater('${p}')">${esc(COMMON.notNow)}</button></div></div>`;
 }
 
+/** "Qibla 119°": a small secondary button beside the prayer's name; opens the Qibla page (views/qibla-page.js). */
+function qiblaBtn() {
+  const deg = qiblaDegrees(S.settings.location);
+  return `<button type="button" class="zt-qb" data-f="qibla" aria-label="${esc(TODAY.qiblaAria(deg))}" onclick="A.openQibla()">${ic("compass", "i")}<span>${esc(TODAY.qibla(deg))}</span></button>`;
+}
+/** The Now chapter's head: the kicker with the Qibla button on its right, then the prayer's name. */
+const nowHead = (title, kick, sub = "") => `<header class="zt-chh"><div class="zt-khr"><p class="zt-kick">${kick}</p>${qiblaBtn()}</div><h1 class="zt-title xl">${title}</h1>${sub ? `<p class="zt-sub">${sub}</p>` : ""}</header>`;
+/** The next prayer, once the current one is logged (or none is open): when it begins, no buttons until then. */
+function nextCard(f, now) {
+  const t = fmt12(f.time) + (f.tomorrow ? ` ${COMMON.tomorrow}` : "");
+  const notes = [TODAY.inLeft(hm(f.time - now))];
+  if (f.p === "Fajr") notes.push(TODAY.endsAtSunrise(fmt12(timesFor(parseKey(f.key), S.settings).Sunrise)));
+  return `<div class="zt-card pad zt-nextc"><div class="zt-left"><b>${esc(TODAY.begins(t))}</b></div><p class="zt-note">${notes.map(esc).join(" · ")}</p></div>`;
+}
+/** All five prayed (M6): one calm line for that day, with the run of days when it is more than one. */
+function allFiveCard(now) {
+  const m = allFiveMoment(S, now);
+  if (!m) return "";
+  return `<div class="zt-card zt-five" role="status"><span class="zt-ico">${ic("check", "i")}</span><p><b>${esc(TODAY.allFive)}</b>${m.streak >= 2 ? ` · ${esc(TODAY.allFiveStreak(m.streak))}` : ""}</p></div>`;
+}
+
 function nowChapter(now, key) {
   const cur = currentWindow(now, S.settings);
   const ck = cur ? dkey(cur.date) : null;
-  const kick = cur ? `${dot}${esc(ck === key ? TODAY.now : TODAY.lastNight)}` : esc(TODAY.next);
   if (store.isExcusedDay(S, ck || key)) {
+    const kick = cur ? `${dot}${esc(ck === key ? TODAY.now : TODAY.lastNight)}` : esc(TODAY.next);
     const title = cur ? pName(cur.p, ck) : pName(nextPrayer(now, S.settings).p, key);
     const sub = cur ? esc(leftLineOf(cur, leftParts(cur, now)[0])) : "";
-    return head(esc(title), sub, kick, "xl") + excusedCard(cur, now, ck || key) + `<div class="zt-fill"></div>` + excusedFoot(ck || key);
+    return nowHead(esc(title), kick, sub) + excusedCard(cur, now, ck || key) + `<div class="zt-fill"></div>` + excusedFoot(ck || key);
   }
-  if (cur) {
-    const status = store.prayerStatus(S, ck, cur.p);
-    const card = status ? loggedCard(cur, now, status) : openCard(cur, now);
-    return head(esc(pName(cur.p, ck)), "", kick, "xl") + card + makeUpNowCard(now, key) + `<div class="zt-fill"></div>` + weekLine(now);
-  }
-  // nothing open (between sunrise and Zuhr): the next prayer, and no buttons until it begins
-  const nx = nextPrayer(now, S.settings), nk = nx.tomorrow ? dkey(addDays(now, 1)) : key;
-  return head(esc(pName(nx.p, nk)), "", kick, "xl") +
-    `<div class="zt-card pad"><div class="zt-left"><b>${esc(TODAY.begins(fmt12(nx.time)))}</b></div><p class="zt-note">${esc(TODAY.in(hm(nx.time - now)))}</p></div>` + makeUpNowCard(now, key) + `<div class="zt-fill"></div>` + weekLine(now);
+  // Once the current prayer is logged, Now moves on to the next one (edits are made on the Today chapter)
+  const f = nowFocus(S, now);
+  const rest = allFiveCard(now) + makeUpNowCard(now, key) + `<div class="zt-fill"></div>` + weekLine(now);
+  if (f.kind === "open") return nowHead(esc(pName(f.p, f.key)), `${dot}${esc(f.key === key ? TODAY.now : TODAY.lastNight)}`) + openCard(f.cur, now) + rest;
+  return nowHead(esc(pName(f.p, f.key)), esc(TODAY.next)) + nextCard(f, now) + rest;
 }
 
 /** One prayer on the Today chapter: status mark, name, what it is now, and its time or a Log button. */
@@ -713,6 +772,8 @@ function todayChapter(now, key, { lean = false } = {}) {
   const prayed = PRAYERS.filter(p => store.isPrayed(store.prayerStatus(S, key, p))).length;
   const sub = day.excused && !prayed ? esc(TODAY.excusedToday) : `<b>${esc(TODAY.nOf5(prayed))}</b> ${esc(TODAY.prayedWord)}${prayed === 5 ? ` · ${esc(COMMON.alhamdulillah.replace(/\.$/, ""))}` : ""}`;
   const parts = [head(esc(TODAY.todayTitle), sub)];
+  // Excused day (M10): remembrance still counts
+  if (store.isExcusedDay(S, key)) parts.push(`<p class="zt-exnote">${ic("moon", "i")}<span>${esc(TODAY.stillCount)}</span></p>`);
   // prayers only: the Now card sits on top of the list (no Now chapter)
   if (lean && cur) {
     const ck = dkey(cur.date);
@@ -721,11 +782,19 @@ function todayChapter(now, key, { lean = false } = {}) {
   }
   parts.push(yesterdayMakeups(now));
   parts.push(`<div class="zt-card list">${TODAY_ROWS.map(p => (p === "Sunrise" ? sunriseRow(key) : prayerRow(p, key, now, cur))).join("")}</div>`);
-  parts.push(naflRow(key));
+  if (!isOn(S, "deeds")) parts.push(naflRow(key)); // with Good deeds on, the nafl are in its sheet
   const yu = yesterdayUnlogged(now);
   if (yu.length) parts.push(line("history", esc(TODAY.yesterday(yu.length)), esc(LOG.review), "A.catchSheet()", "catch"));
-  // Good deeds that are not reading (the reading ones are ticked in Read); hidden when Read holds the whole list
-  if (isOn(S, "deeds")) { const c = sheetCount(S, key); if (c.of || !c.inRead) parts.push(line("hand", esc(TODAY.goodDeeds), `<b>${esc(COMMON.nOfM(c.done, c.of))}</b>`, `A.deedsSheet('${key}')`, "deeds")); }
+  // "Sunnah · 6 of 12 rakʿahs · Witr ✓" (M7): opens the day's sunnah chips and Witr
+  const sl = sunnahLine(S, key, now);
+  if (sl) {
+    const w = sl.witr ? ` · ${esc(sl.witr === "done" ? TODAY.witrDone : sl.witr === "missed" ? TODAY.witrMissed : TODAY.witrToDo)}` : "";
+    const v = sl.kind === "rakahs" ? TODAY.sunnahRakahs(sl.got, sl.of) : MEASURE.raghibahWitrValue(sl.got, sl.of);
+    parts.push(line("layers", esc(sl.kind === "rakahs" ? TODAY.sunnahLine : MEASURE.raghibahWitr), `<b>${esc(v)}</b>${sl.kind === "rakahs" ? w : ""}`, `A.daySunnah('${key}','today')`, "sunnah"));
+  }
+  // Good deeds (always, while the feature is on): the deeds not read in Read, and the nafl add-on. Above Make-ups.
+  const dl = deedsLine(S, key);
+  if (dl) parts.push(line("hand", esc(TODAY.goodDeeds), dl.empty ? esc(TODAY.deedsAddOwn) : `<b>${esc(COMMON.nOfM(dl.done, dl.of))}</b>`, `A.deedsSheet('${key}')`, "deeds"));
   // "Make-ups · 8 left" (today.makeupsLine): opens the "I made one up" sheet; "all caught up" opens the chapter
   const mk = makeupsLine(S, key);
   if (mk) parts.push(mk.clear
@@ -741,76 +810,45 @@ function todayChapter(now, key, { lean = false } = {}) {
 
 function topBar(now) {
   const cal = `<button type="button" class="zt-ib" aria-label="${esc(TODAY.calendar)}" onclick="A.calOpen()">${ic("cal", "i")}</button>`;
-  return `<div class="zt-dt"><b>${DOW[now.getDay()]}, ${now.getDate()} ${MON[now.getMonth()]}</b><small>${esc(hijriLabel(now))}</small></div>${avatarBtn(cal + pvChip())}`;
+  const name = (S.profile?.name || "").trim();
+  const hi = `<span class="zt-hi">${esc(name ? HOME.greetingName(name) : HOME.greeting)}</span>`;
+  return `<div class="zt-dt">${hi}<b>${DOW[now.getDay()]}, ${now.getDate()} ${MON[now.getMonth()]}</b><small>${esc(hijriLabel(now))}</small></div>${avatarBtn(cal + pvChip())}`;
 }
 
-/* ---------- chapters: swipe (scroll-snap) or tap their names; keyboard: arrows, Home, End ---------- */
-let chapters = [];
-const track = () => $("#v-home .zt-track");
+/* ---------- chapters: swipe (scroll-snap) or tap their names; keyboard: arrows, Home, End (views/chapters.js) ---------- */
+let homeChs = [];
+const CH = makeChapters({
+  prefix: "zt", label: TODAY.chaptersLabel, scrollBar: false,
+  get: () => homeChs[UI.todayCh] || homeChs[0],
+  set: id => { UI.todayCh = Math.max(0, homeChs.indexOf(id)); },
+});
 /** Show chapter i (0 = Now). focus: move focus to its tab (keyboard). */
-A.todayChapter = (i, { focus = false, instant = false } = {}) => {
-  const tr = track(); if (!tr || i < 0 || i >= chapters.length) return;
-  UI.todayCh = i;
-  markChapter(i);
-  tr.scrollTo({ left: i * tr.clientWidth, behavior: instant || reduceMotion() ? "auto" : "smooth" });
-  if (focus) $(`#zt-tab-${chapters[i]}`)?.focus();
-};
-function markChapter(i) {
-  chapters.forEach((c, j) => {
-    const tab = $(`#zt-tab-${c}`), panel = $(`#zt-ch-${c}`);
-    if (tab) { tab.setAttribute("aria-selected", String(i === j)); tab.tabIndex = i === j ? 0 : -1; tab.classList.toggle("on", i === j); }
-    if (panel) panel.inert = chapters.length > 1 && i !== j; // the chapter off screen is out of the tab order
-  });
-}
-function onTrackScroll() {
-  const tr = track(); if (!tr || !tr.clientWidth) return;
-  const i = Math.max(0, Math.min(chapters.length - 1, Math.round(tr.scrollLeft / tr.clientWidth)));
-  if (i !== UI.todayCh) { UI.todayCh = i; }
-  markChapter(i);
-}
-let scrollT = null;
-function buildShell(el, chs) {
-  chapters = chs;
-  const bar = chs.length > 1 ? `<div class="zt-cb" role="tablist" aria-label="${esc(TODAY.chaptersLabel)}">${chs.map((c, i) => `<button type="button" role="tab" id="zt-tab-${c}" aria-controls="zt-ch-${c}" aria-selected="${i === UI.todayCh}" tabindex="${i === UI.todayCh ? 0 : -1}" onclick="A.todayChapter(${i})">${esc(TODAY.chapters[c])}</button>`).join("")}</div>` : "";
-  el.innerHTML = `<div class="zt-top"></div>${bar}<div class="zt-track ${chs.length > 1 ? "" : "one"}">${chs.map(c => `<section class="zt-ch" id="zt-ch-${c}" ${chs.length > 1 ? `role="tabpanel" aria-labelledby="zt-tab-${c}"` : ""}></section>`).join("")}</div>`;
-  el.dataset.sig = chs.join();
-  const tr = track();
-  tr.addEventListener("scroll", () => { clearTimeout(scrollT); scrollT = setTimeout(onTrackScroll, 90); }, { passive: true });
-  el.querySelector(".zt-cb")?.addEventListener("keydown", e => {
-    const k = e.key, n = chapters.length, i = UI.todayCh;
-    const to = k === "ArrowRight" ? (i + 1) % n : k === "ArrowLeft" ? (i - 1 + n) % n : k === "Home" ? 0 : k === "End" ? n - 1 : -1;
-    if (to < 0) return;
-    e.preventDefault(); A.todayChapter(to, { focus: true });
-  });
-}
-/** Replace a node's content only when it changed; keep keyboard focus on the same control (data-f). */
-function setHTML(node, html) {
-  if (!node || node._h === html) return;
-  const f = node.contains(document.activeElement) ? document.activeElement.dataset?.f : null;
-  node._h = html; node.innerHTML = html;
-  if (f) node.querySelector(`[data-f="${f}"]`)?.focus({ preventScroll: true });
+A.todayChapter = (i, { focus = false, instant = false } = {}) => CH.show(i, { focus, instant });
+
+/* "Welcome, {name}" once set-up is finished (set-up ends by going to Today). */
+let setupSeen = !!S.profile?.onboarded;
+function welcomeOnce() {
+  if (setupSeen || !S.profile?.onboarded) return;
+  setupSeen = true;
+  toast(TODAY.welcome((S.profile.name || "").trim()));
 }
 
 function renderHome() {
   if (UI.view !== "home") { refreshLive(); return; }
+  welcomeOnce();
   const el = $("#v-home"); if (!el) return;
   const now = NOW(), key = todayKey(), chs = todayChapters(S);
-  if (el.dataset.sig !== chs.join() || !track()) {
-    if (UI.todayCh >= chs.length) UI.todayCh = 0;
-    buildShell(el, chs);
-  }
-  setHTML(el.querySelector(".zt-top"), topBar(now));
+  if (UI.todayCh >= chs.length) UI.todayCh = 0;
+  homeChs = chs;
+  CH.ensure(el, chs, TODAY.chapters);
+  setHTML(CH.top(), topBar(now));
   for (const c of chs) {
     const html = c === "now" ? nowChapter(now, key) : todayChapter(now, key, { lean: chs.length === 1 });
-    setHTML($(`#zt-ch-${c}`), withRead(html, now));
+    setHTML(CH.panel(c), withRead(html, now));
   }
-  // land on the remembered chapter without animating (on open, and after a rotation)
-  const tr = track();
-  if (tr && tr.clientWidth && Math.round(tr.scrollLeft / tr.clientWidth) !== UI.todayCh) tr.scrollLeft = UI.todayCh * tr.clientWidth;
-  markChapter(UI.todayCh);
+  CH.land(); // the remembered chapter, without animating (on open, after a rotation); never while a swipe is moving
   refreshLive();
 }
-addEventListener("resize", () => { const tr = track(); if (tr && UI.view === "home") tr.scrollLeft = UI.todayCh * tr.clientWidth; });
 
 onRender(renderHome);
 A.weekTiles = weekTiles;

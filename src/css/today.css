@@ -182,9 +182,19 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .z-bx.z-on{background:var(--acc);color:var(--on-acc);box-shadow:none}
 .z-bx svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 /* a day's picker: one row per prayer, a column per status */
-.z-pd{display:grid;grid-template-columns:minmax(72px,1fr) repeat(4,minmax(48px,64px));align-items:center;min-height:56px;border-top:1px solid var(--line)}
-.z-pd.z-hd{min-height:0;border-top:0;padding:4px 0 6px}
-.z-pd .z-ch{font-size:11px;color:var(--mute);text-align:center;font-weight:600;line-height:1.2}
+/* Equal status columns with a small gap; the heads wrap onto two lines (Congre-gation hyphenates only when it
+   must), so they never run into each other at 360px or with large text. */
+.z-pd{display:grid;grid-template-columns:minmax(64px,1.25fr) repeat(4,minmax(0,1fr));column-gap:4px;align-items:center;min-height:56px;border-top:1px solid var(--line)}
+.z-pd.z-hd{min-height:0;border-top:0;padding:4px 0 8px;align-items:end}
+.z-pd .z-ch{font-size:11.5px;color:var(--mute);text-align:center;font-weight:600;line-height:1.2;min-width:0;hyphens:manual;padding:0 1px}
+.z-pdg{container:pdg / inline-size}
+.z-pdl{display:none;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--mute);font-weight:600;padding:2px 0 10px}
+.z-pdl > span{display:inline-flex;align-items:center;gap:6px}
+.z-pdl .z-mk{width:22px;height:22px}
+.z-pdl .z-mk svg{width:12px;height:12px}
+.z-sh .z-pdl .z-mk.z-ghost{color:var(--mute);box-shadow:inset 0 0 0 1.5px var(--faint)}
+@container pdg (max-width: 300px){ .z-pd.z-hd{display:none} .z-pdl{display:flex} }
+.z-sub .z-hj{color:var(--mute)}
 .z-pd .z-nm{text-align:left;min-height:48px;display:flex;flex-direction:column;justify-content:center}
 .z-pd .z-nm b{display:block;font-size:16px;font-weight:600;color:var(--ink)}
 .z-pd .z-nm small{font-size:13px;color:var(--mute)}
@@ -196,7 +206,8 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .z-dline{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;border-top:1px solid var(--line);padding:0 2px;color:var(--ink)}
 .z-dline .z-lc{width:18px;height:18px;color:var(--acc2)}
 .z-dline .z-l{flex:1;font-size:15px;font-weight:500;text-align:left}
-.z-dline .z-v{font-size:15px;color:var(--mute)}
+.z-dline .z-v{font-size:15px;color:var(--mute);text-align:right;min-width:0;flex:0 1 auto}
+.z-dline .z-l{flex-shrink:0;max-width:60%}
 .z-dline .z-v b{color:var(--ink);font-weight:600}
 .z-dline .z-cv{width:18px;height:18px;color:var(--faint)}
 .z-dline svg{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -247,3 +258,29 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 
 /* Settings → Widgets: the Quick Settings button row (Android) */
 .settings .tileadd{flex:none;min-height:40px;padding:0 16px;border-radius:12px;background:var(--soft);color:var(--on-soft);font-weight:600;font-size:14px}
+
+/* ---------- 19 Nov 2026 round: greeting, Qibla button, next prayer, all five, the Today lines, deeds sheet ---------- */
+.zt-hi{display:block;font-size:13px;color:var(--mute);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zt-khr{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:32px;margin-bottom:4px}
+.zt-khr .zt-kick{margin:0}
+.zt-qb{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:16px;border:1px solid var(--card-line)!important;background:var(--card)!important;color:var(--ink2,var(--ink));font-size:13px;font-weight:600;white-space:nowrap;flex:none;position:relative}
+.zt-qb::before{content:"";position:absolute;inset:-6px 0}
+.zt-qb svg{width:16px;height:16px;color:var(--acc2)}
+.zt-nextc .zt-left{margin-bottom:6px}
+.zt-nextc .zt-note{margin-top:0}
+.zt-five{display:flex;align-items:center;gap:12px;padding:12px 16px;margin-top:12px}
+.zt-five p{margin:0;font-size:15px;color:var(--mute);line-height:1.4}
+.zt-five b{color:var(--ink);font-weight:600}
+.zt-exnote{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mute);margin:-6px 0 14px}
+.zt-exnote svg{width:16px;height:16px;color:var(--mute)}
+.zt-line .l{flex:1 1 auto}
+.zt-line .v{min-width:0;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto}
+.z-addd{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;border-top:1px solid var(--line)!important;color:var(--acc2)!important;font-weight:600;font-size:15px;text-align:left}
+.z-addd svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.z-lsec.z-nfh{margin-top:22px}
+.z-lsec .z-chs{margin-left:auto;font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--acc2);min-height:36px;padding:0 4px}
+.z-nsw{width:46px;height:28px;border-radius:14px;background:var(--switch-off)!important;position:relative;flex:none;transition:background .2s}
+.z-nsw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--surface2,#fff);transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.z-nsw.z-on{background:var(--leaf,var(--acc))!important}
+.z-nsw.z-on::after{left:21px}
+@media (prefers-reduced-motion:reduce){.z-nsw,.z-nsw::after{transition:none}}

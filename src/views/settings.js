@@ -17,7 +17,10 @@ import {
   SETTINGS as T, APP, COMMON, MADHHAB_UI, ASR_UI, SUNNAH_UI, EXCUSED, MAKEUPS, FEATURE,
   STATUS, prayerName, WITR_STATUS, DEED_NAME, NAV,
 } from "../strings.js";
-import { SETTINGS_X, GUIDE, GENDER, TRAVEL } from "../strings.js";
+import { SETTINGS_X, GUIDE, GENDER, TRAVEL, FEEDBACK, DEEDS, NAFL, SUNNAH_NAME } from "../strings.js";
+import { locationSummary } from "../travel.js";
+import { NAFL_ADDON } from "../rules/madhhab.js";
+import { qiblaDegrees } from "./qibla-page.js";
 import { excusedSoFar } from "../times.js";
 import { helpPage } from "./help.js";
 import { featureRow as pvFeatureRow, settingsGroup as pvGroup, pvIcon } from "./provisions.js";
@@ -196,20 +199,36 @@ A.setGender = k => {
 // and normalize), so flipping !S.settings[k] is the same as their old "=== false" toggles.
 
 /* ---------- location ---------- */
-A.locationSheet = () => {
-  const loc = S.settings.location;
-  openSheet(`<h3>${esc(T.location)}</h3><p>${loc ? esc(T.locSet(loc.label, loc.lat.toFixed(3), loc.lng.toFixed(3))) : esc(T.locNotSet(FALLBACK_LOCATION.label))}</p>
-  <div class="cta"><button class="btn primary" onclick="A.useGps()">${esc(T.useMyLocation)}</button></div>
-  <div class="field"><label for="cityIn">${esc(T.orSearch)}</label><div style="display:flex;gap:8px"><input id="cityIn" placeholder="${esc(T.cityPlaceholder)}" onkeydown="if(event.key==='Enter')A.findCity()"><button class="btn ghost" style="flex:none;padding:12px 16px" onclick="A.findCity()">${esc(COMMON.search)}</button></div></div>
-  <div class="results" id="cityResults"></div>
+/* Current location is the default way (19 Nov 2026): what Zad uses now, "Use my location" as the main action and
+   "Update location when I travel" with it; choosing a city is the fallback, a small link underneath that opens
+   the search. Also opened by the Qibla page's "Change" (A.openLocation). */
+let cityOpen = false;
+/** The words for what the location is now (travel.locationSummary). */
+function locStatus(s) {
+  return s.kind === "gps" ? T.locGps(s.label) : s.kind === "city" ? T.locCity(s.label) : s.kind === "unknown" ? T.locOld(s.label) : T.locNone(FALLBACK_LOCATION.label);
+}
+A.locationSheet = (city = false) => {
+  cityOpen = !!city;
+  const s = locationSummary(S.settings), st = S.settings;
+  const travel = s.kind === "gps" ? `<div class="locsw"><span class="t"><b>${esc(TRAVEL.row)}</b><small>${esc(TRAVEL.rowSub)}</small></span>${sw("autoLocation", st.autoLocation !== false, TRAVEL.row, "A.locTravel()")}</div>` : "";
+  const cityPart = cityOpen
+    ? `<div class="field"><label for="cityIn">${esc(T.orSearch)}</label><div style="display:flex;gap:8px"><input id="cityIn" placeholder="${esc(T.cityPlaceholder)}" onkeydown="if(event.key==='Enter')A.findCity()"><button class="btn ghost" style="flex:none;padding:12px 16px" onclick="A.findCity()">${esc(COMMON.search)}</button></div></div>
+  <div class="results" id="cityResults"></div>`
+    : `<p class="loccity"><button type="button" class="link" id="locCityLink" onclick="A.locationSheet(true)">${esc(T.chooseCity)}</button></p>`;
+  openSheet(`<h3>${esc(T.location)}</h3><div class="locnow ${s.kind}">${svg("pin")}<span>${esc(locStatus(s))}</span></div>
+  <div class="cta"><button class="btn primary" id="locGps" onclick="A.useGps()">${esc(s.kind === "gps" ? T.updateMyLocation : T.useMyLocationShort)}</button></div>
+  ${travel}${cityPart}
   <p class="note">${esc(T.locNote)}</p>`);
+  if (cityOpen) $("#cityIn")?.focus();
 };
+A.locTravel = () => { S.settings.autoLocation = S.settings.autoLocation === false; commit(); A.locationSheet(cityOpen); };
 A.useGps = async () => {
   toast(T.finding);
   try {
     const { lat, lng } = await currentPosition();
     const label = await cityName(lat, lng);
     S.settings.location = { lat, lng, label, source: "gps" };
+    S.settings.autoLocation = true; // current location: prayer times follow you (switch it off in the sheet)
     closeSheet(); commit(); toast(T.locSetToast(label));
   } catch (e) { toast(T.locFailed); }
 };
@@ -357,6 +376,7 @@ function drawDeedsEditor() {
   openSheet(`<h3>${esc(X.deeds)}</h3><p>${esc(X.deedsLead)}</p><div style="margin-top:12px">
   ${draft.map((a, i) => `<div class="edrow"><input value="${esc(a.name)}" oninput="A.edName(${i},this.value)" aria-label="${esc(X.profileTitle)}"><button onclick="A.edMove(${i},-1)" ${i === 0 ? "disabled" : ""} aria-label="${esc(X.move)} ↑">↑</button><button onclick="A.edMove(${i},1)" ${i === draft.length - 1 ? "disabled" : ""} aria-label="${esc(X.move)} ↓">↓</button><button class="del" onclick="A.edDel(${i})" aria-label="${esc(X.remove)}">✕</button></div>`).join("") || `<div class="note">${esc(X.deedsEmpty)}</div>`}
   </div><div class="edadd"><input id="edNew" placeholder="${esc(X.deedPlaceholder)}" onkeydown="if(event.key==='Enter')A.edAdd()" aria-label="${esc(X.deedPlaceholder)}"><button class="btn ghost" onclick="A.edAdd()">${esc(X.deedAdd)}</button></div>
+  <div class="edtype"><label for="edType">${esc(DEEDS.whenCheck)}</label><select id="edType"><option value="none">${esc(DEEDS.typeNone)}</option><option value="note">${esc(DEEDS.typeNote)}</option><option value="count">${esc(DEEDS.typeCount)}</option></select></div>
   <div class="cta"><button class="btn ghost" onclick="A.closeSheet()">${esc(COMMON.cancel)}</button><button class="btn primary" onclick="A.edSave()">${esc(COMMON.save)}</button></div>`);
 }
 A.edName = (i, v) => { draft[i].name = v; };
@@ -364,7 +384,8 @@ A.edMove = (i, d) => { const [x] = draft.splice(i, 1); draft.splice(i + d, 0, x)
 A.edDel = i => { draft.splice(i, 1); drawDeedsEditor(); };
 A.edAdd = () => {
   const v = $("#edNew").value.trim(); if (!v) return;
-  draft.push({ id: "c" + Date.now().toString(36), name: v, hint: "", detail: "none" });
+  const type = $("#edType")?.value;
+  draft.push({ id: "c" + Date.now().toString(36), name: v, hint: "", detail: ["note", "count"].includes(type) ? type : "none" });
   drawDeedsEditor();
 };
 A.edSave = () => { S.amalList = draft.filter(a => a.name.trim()).map(a => ({ ...a, name: a.name.trim() })); closeSheet(); commit(); toast(X.deedsSaved); };
@@ -530,6 +551,12 @@ function sunnahPage() {
 }
 
 /* ---------- features page ---------- */
+/** Which nafl prayers the Good deeds sheet shows (settings.naflShow; the same switch as the sheet's "Choose"). */
+function naflGroupS() {
+  if (!feat.isOn(S, "deeds")) return "";
+  const cur = S.settings.naflShow || [];
+  return `<section class="sgroup" id="set-nafl"><h2>${esc(NAFL.title)}</h2><div class="card scard">${NAFL_ADDON.map(n => { const on = cur.includes(n.key); return `<div class="srow ${on ? "" : "off"}"><div class="srow-main static">${tile("layers", on ? "green" : "grey")}<span class="t"><b>${esc(SUNNAH_NAME[n.key])}</b></span>${sw("nafl-" + n.key, on, SUNNAH_NAME[n.key], `A.naflShowToggle('${n.key}')`)}</div></div>`; }).join("")}</div><p class="sfoot">${esc(NAFL.chooseLead)}</p></section>`;
+}
 function featuresPage() {
   const rows = feat.featureRows(S).map(r => `<div class="srow ${r.on ? "" : "off"}"><div class="srow-main static">${tile(FEATURE_ICON[r.id], r.on ? "green" : "grey")}<span class="t"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span>${r.locked ? `<span class="lockic">${svg("lock")}</span>` : `<button class="switch${r.on ? " on" : ""}" role="switch" aria-checked="${r.on}" aria-label="${esc(r.name)}" onclick="A.featToggle('${r.id}')"></button>`}</div></div>${r.id === "progress" ? pvFeatureRow(tone => `<span class="ic ${tone}">${pvIcon("bag", "")}</span>`) : ""}`).join("");
   const toolsOn = feat.isOn(S, "tools");
@@ -540,7 +567,7 @@ function featuresPage() {
   const bar = `<div class="barprev"><h3>${esc(FEATURE.bottomBar)}</h3><div class="bar-in">${barIds.map(id => `<span class="${tabs.length > 1 && tabs.some(t => t.id === id) ? (id === "home" ? "on" : "") : "gone"}">${svg(id === "home" ? "sun" : id === "tools" ? "book" : id === "community" ? "user" : "bars")}<i>${esc(NAV[id])}</i></span>`).join("")}</div></div>`;
   const { on, of } = feat.featureCount(S);
   return `${head(FEATURE.title)}<p class="spage-lead">${esc(FEATURE.intro)}</p>
-  <div class="sec" style="padding-top:0"><div class="card scard">${rows}</div></div>${pvGroup(svg("chev"))}${tools}${bar}<p class="sfoot center">${esc(FEATURE.count(on, of))}</p><div class="space"></div>`;
+  <div class="sec" style="padding-top:0"><div class="card scard">${rows}</div></div>${pvGroup(svg("chev"))}${naflGroupS()}${tools}${bar}<p class="sfoot center">${esc(FEATURE.count(on, of))}</p><div class="space"></div>`;
 }
 
 /* ---------- main page ---------- */
@@ -565,13 +592,14 @@ function mainPage() {
     navRow({ icon: "book", tone: "green", title: MADHHAB_UI.title, sub: info.summary, value: info.name, onclick: "A.madhhabSheet()", gl: "" }),
     switchRow({ icon: "mosque", tone: "green", title: GENDER.jumuah, sub: GENDER.jumuahSub, key: "jumuah", on: st.jumuah !== false }),
     ...(isOnF("sunnah") ? [navRow({ icon: "layers", tone: "green", title: SUNNAH_UI.pageTitle, value: SUNNAH_UI.tiersOn(sunnahTiers), onclick: "A.settingsPage('sunnah')" })] : []),
-    navRow({ icon: "pin", tone: "green", title: T.location, value: loc ? loc.label : "", sub: loc ? "" : T.locNotSet(FALLBACK_LOCATION.label), onclick: "A.locationSheet()" }),
+    navRow({ icon: "pin", tone: "green", title: T.location, value: loc ? loc.label : "", sub: loc ? (loc.source === "gps" ? T.locRowGps : loc.source === "city" ? T.locRowCity : "") : T.locNotSet(FALLBACK_LOCATION.label), onclick: "A.locationSheet()", id: "locRow" }),
     // Only for a location from "Use my current location"; a searched city never changes on its own. An older save
     // that didn't record its source gets a hint (opening the location sheet) instead of the switch.
     ...(loc?.source === "gps" ? [switchRow({ icon: "refresh", tone: "green", title: TRAVEL.row, sub: TRAVEL.rowSub, key: "autoLocation", on: st.autoLocation !== false })]
       : loc?.source === "unknown" ? [navRow({ icon: "refresh", tone: "green", title: TRAVEL.row, sub: TRAVEL.unknownHint, onclick: "A.locationSheet()" })] : []),
     navRow({ icon: "compass", tone: "green", title: T.method, value: METHOD_SHORT[st.method] || st.method, onclick: "A.methodSheet()" }),
     navRow({ icon: "sun", tone: "green", title: ASR_UI.title, value: st.asr === "hanafi" ? ASR_UI.hanafi : ASR_UI.standard, onclick: "A.asrSheet()" }),
+    navRow({ icon: "compass", tone: "green", title: T.qiblaRow, sub: T.qiblaRowSub, value: qiblaDegrees(loc) == null ? "" : `${qiblaDegrees(loc)}°`, onclick: "A.openQibla()", id: "qiblaRow" }),
   ]));
   const lead = [5, 10, 15, 30].map(x => `<button class="${+st.leadMin === x ? "on" : ""}" aria-pressed="${+st.leadMin === x}" onclick="A.setLead(${x})">${esc(COMMON.minutes(x))}</button>`).join("");
   // Widgets (phone app only): plain switches, off by default; the widgets pick them up from the snapshot
@@ -587,6 +615,8 @@ function mainPage() {
     ...(isOnF("makeups") ? [switchRow({ icon: "refresh", title: T.makeupNudge, sub: T.makeupNudgeSub, key: "makeupNudge", on: st.makeupNudge !== false, tag: X.newTag })] : []),
     switchRow({ icon: "sunrise", title: T.prayerAlerts, key: "prayerAlerts", on: !!st.prayerAlerts }),
     switchRow({ icon: "moon", title: T.evening, sub: T.eveningSub, key: "evening", on: !!st.evening }),
+    // the Friday sīrah moment (notify.js, settings.seerahNotify, on unless switched off)
+    switchRow({ icon: "book", title: T.seerah, sub: T.seerahSub, key: "seerahNotify", on: st.seerahNotify !== false }),
     ...(exactAllowed === false ? [navRow({ icon: "bell", title: T.exactOff.split(" · ")[0], sub: T.exactOff, onclick: "A.exactAlarms()" })] : []),
   ]));
   g.push(group(T.groups.tracking, [
@@ -612,6 +642,7 @@ function mainPage() {
     ...(cloud.available && cloud.user ? [navRow({ icon: "userx", title: T.deleteGo, danger: true, onclick: "A.deleteSheet()" })] : []),
   ], cloud.available && cloud.user ? T.deleteFoot : ""));
   g.push(`<section class="sgroup"><h2>${esc(T.groups.about)}</h2><div class="card scard"><div class="why"><small>${esc(T.whyZad.toUpperCase())}</small><p>${esc(APP.mission)}</p></div>
+    ${navRow({ icon: "help", title: T.feedbackRow, sub: FEEDBACK.rowSub, onclick: "A.feedback()", id: "feedbackRow" })}
     <div class="srow"><div class="srow-main static">${tile("info", "grey")}<span class="t"><b>${esc(APP_NAME())}</b></span><span class="val">${esc(APP.version(APP_VERSION))}</span></div></div>
     ${[["privacy.html", T.privacy, "shield", X.privacySub], ["terms.html", T.terms, "file", ""], ["support.html", T.support, "help", X.supportSub], ["delete-account.html", X.deleteAcct, "userx", ""], ["release-notes.html", X.releaseNotes, "history", ""]].map(([p, l, ic, sub]) => `<a class="srow-main arow" href="${pageUrl(p)}" target="_blank" rel="noopener">${tile(ic, "grey")}<span class="t"><b>${esc(l)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span><span class="chev">${svg("chev")}</span></a>`).join("")}</div>
     <p class="sfoot center">${esc(APP.madeWithCare)}</p></section><div class="space"></div>`);

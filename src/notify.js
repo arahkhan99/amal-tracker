@@ -71,7 +71,8 @@ export function planNotifications(S, now = new Date()) {
       const unlogged = PRAYERS.filter(p => !statusOf(day, p)).length + amalForDay(S, key).filter(a => !day.amal[a.id]?.done).length;
       if (at > now && unlogged) out.push({ id: 3000 + i, at, title: NOTIFY.eveningTitle, body: NOTIFY.eveningBody });
     }
-    if (st.seerah && date.getDay() === 5) {
+    // Friday sīrah moment: Settings → Reminders → "Friday sīrah moment" (settings.seerahNotify, on unless switched off)
+    if (st.seerahNotify !== false && date.getDay() === 5) {
       const at = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 9, 0);
       if (at > now) out.push({ id: 4000 + i, at, title: NOTIFY.seerahTitle, body: seerahFor(date) });
     }
@@ -144,11 +145,29 @@ export function actionLog(a) {
   return { date: x.date, p: x.p, status };
 }
 
-async function onAction(a) {
+/** How many days back a notification button may still log (yesterday's ʿIshāʾ tapped this morning is fine). */
+export const ACTION_MAX_DAYS = 2;
+/**
+ * The pending-log entry for a button tap, or null (not a log, or a stale one). Its id is fixed for that notification,
+ * day, prayer and button, so the same tap delivered again can never log twice: Capacitor re-sends the action of the
+ * intent that launched the app every time the activity is created again (BridgeActivity.load → onNewIntent(getIntent()),
+ * e.g. after Android ended the app in the background), and pending.js remembers the ids it merged. Without this, a
+ * prayer cleared in the app after a notification tap came back as logged.
+ */
+export function actionEntry(a, now = new Date()) {
   const log = actionLog(a);
-  if (!log || !lastS?.profile?.onboarded) return;
-  const { applyEntriesNow, makeEntry } = await import("./pending.js");
-  await applyEntriesNow(lastS, [makeEntry(log.date, log.p, log.status, "notif")]); // the plugin has already dismissed the notification
+  if (!log) return null;
+  if (log.date < dkey(addDays(now, -ACTION_MAX_DAYS))) return null;
+  const nid = Number.isInteger(a?.notification?.id) ? a.notification.id : 0;
+  return { id: `notif:${nid}:${log.date}:${log.p}:${log.status}`, date: log.date, prayer: log.p, status: log.status, at: now.getTime(), src: "notif" };
+}
+
+async function onAction(a) {
+  if (!lastS?.profile?.onboarded) return;
+  const entry = actionEntry(a);
+  if (!entry) return;
+  const { applyEntriesNow } = await import("./pending.js");
+  await applyEntriesNow(lastS, [entry]); // the plugin has already dismissed the notification
 }
 
 async function exactAlarmsAllowed(LocalNotifications) {

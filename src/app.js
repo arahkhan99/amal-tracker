@@ -4,12 +4,13 @@ import { reschedule } from "./notify.js";
 import { dkey } from "./util.js";
 import { setStatusBar } from "./platform.js";
 import { navTabs, isOn } from "./features.js";
-import { resolveView, routeName, tabFor, landing } from "./routes.js";
+import { resolveView, routeName, tabFor, landing, tabOf, tabToReset, viewsOfTab, OVER_PAGES } from "./routes.js";
+import { resetChapters } from "./views/chapters.js";
 import { NAV } from "./strings.js";
 import { applyScales } from "./appearance.js";
 
 export const S = store.load();
-export const UI = { view: "home", range: "day", selDay: 0, trkDay: 0, lastView: "home", todayCh: 0, progressCh: "" };
+export const UI = { view: "home", range: "day", selDay: 0, trkDay: 0, lastView: "home", lastTab: "", todayCh: 0, progressCh: "" };
 export const A = (window.A = {}); // actions callable from inline handlers
 
 let now = new Date();
@@ -22,7 +23,8 @@ export const $$ = s => document.querySelectorAll(s);
 
 const renderers = [];
 export function onRender(fn) { renderers.push(fn); }
-export function render() { for (const r of renderers) r(); }
+/** Redraw every view. why: { tick: true } from the 20 s clock tick (a view with nothing time-based may skip it). */
+export function render(why) { for (const r of renderers) r(why); }
 
 const commitHooks = [];
 /** Run after every user change (cloud sync listens here). */
@@ -101,7 +103,7 @@ const NAV_ICON = {
 };
 let navSig = "";
 /** Views without the bottom bar: set-up, and Settings (a full page with its own back). */
-const NO_NAV = ["onboard", "settings"];
+const NO_NAV = ["onboard", "settings", "qibla"];
 function renderNav() {
   const tabs = navTabs(S), on = tabFor(UI.view);
   // With one tab only (prayers only) there is no tab bar at all. A reader (Read) hides it too (UI.navHidden).
@@ -116,8 +118,21 @@ function renderNav() {
 onRender(() => { applyTheme(); syncStatusBar(); renderNav(); });
 A.syncNav = renderNav;
 
-/** A bottom-bar tab. Progress opens Make-ups when Progress itself is off. */
-A.tab = id => go(id === "progress" && !isOn(S, "progress") ? "qada" : id);
+/** Every chapters frame of a tab back to its first chapter, scrolled to the top (views/chapters.js). */
+function resetTab(tab, now = false) { for (const v of viewsOfTab(tab)) resetChapters(document.getElementById("v-" + v), { now }); }
+
+/**
+ * A bottom-bar tab. Progress opens Make-ups when Progress itself is off.
+ * Tapping the tab you are already on goes back to its first chapter, at the top (Today → Now, Read → For today,
+ * Progress → Reflections); from the calendar, the Today icon goes back to Today and does the same.
+ */
+A.tab = id => {
+  const to = id === "progress" && !isOn(S, "progress") ? "qada" : id;
+  if (tabOf(UI.view) !== id) { go(to); return; }
+  if (UI.view !== to) go(to);
+  resetTab(id, true);
+  $("#screen").scrollTop = 0;
+};
 
 /**
  * Show a view. Takes a view id or a route name; old names redirect (routes.js): "tracker" opens the calendar,
@@ -128,8 +143,13 @@ export function go(v) {
   v = resolveView(v) || "home";
   // Make-ups is a chapter of Progress while Progress is on: #makeups, #qada and old links land there
   const land = landing(v, S);
+  // Leaving a tab resets it (its first chapter, at the top, next time it shows). Done before a deep link's chapter
+  // is applied, so #makeups or the Provisions chip still land on their chapter.
+  const leave = tabToReset(UI.lastTab, v);
+  if (leave) resetTab(leave);
+  if (tabOf(v)) UI.lastTab = tabOf(v);
   if (land.chapter) { v = land.view; UI.progressCh = land.chapter; }
-  if (v !== "settings" && v !== "onboard") UI.lastView = v; // where Settings goes back to
+  if (!OVER_PAGES.includes(v)) UI.lastView = v; // where Settings (and the Qibla page) go back to
   if (v !== "tools") UI.navHidden = false; // a reader in Read hides the bar while it is open
   UI.view = v;
   $$(".view").forEach(e => e.classList.toggle("on", e.id === "v-" + v));
@@ -166,6 +186,8 @@ export function toast(m, { undo } = {}) {
     t.append(" ", b);
   }
   t.classList.toggle("has-undo", !!undo);
+  // in a reader with the done bar (views/tools/donebar.js), above the bar
+  t.classList.toggle("lift", !!document.querySelector("#v-tools.on .rd-bar"));
   t.classList.add("on");
   clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), undo ? 5000 : 1800);
 }

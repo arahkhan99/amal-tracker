@@ -13,6 +13,7 @@ import "./css/progress.css";
 import "./css/settings.css";
 import "./css/tour.css";
 import "./css/gender.css";
+import "./css/qibla.css";
 
 import { S, UI, A, $, go, render, tick, closeSheet, commit, todayKey, toast, syncStatusBar } from "./app.js";
 import { resolveView } from "./routes.js";
@@ -27,6 +28,8 @@ import "./views/community.js";
 import "./views/qada.js";
 import "./views/progress.js";
 import "./views/settings.js";
+// The Qibla page (#qibla), from the Now card and Settings → Qibla finder
+import "./views/qibla-page.js";
 // Tools: registers the #v-tools renderer and the Home cards
 import "./views/tools/index.js";
 // Home tour (coach marks), after Home so its overlay finds the drawn cards
@@ -66,6 +69,7 @@ onBackButton(() => {
   if (UI.view === "tools" && A.toolsBack?.()) return true; // closes a sheet, or steps back inside Tools
   if ($("#scrim").classList.contains("on")) { closeSheet(); return true; }
   if (UI.view === "settings" && A.settingsBack) { A.settingsBack(); return true; } // sub-page → Settings → where it was opened
+  if (UI.view === "qibla") { A.closeQibla(); return true; } // back to where the Qibla page was opened
   if (UI.view === "qada" && isOn(S, "progress")) { go("progress"); return true; } // Make-ups is pushed from Progress
   if (UI.view === "onboard") return !!A.obHardwareBack?.(); // one set-up step back
   if (UI.view !== "home") { go("home"); return true; }
@@ -76,7 +80,7 @@ onBackButton(() => {
 setInterval(() => {
   const newDay = tick();
   if (newDay) { if (syncExcusedMode(S, todayKey())) commit(); else reschedule(S); }
-  if (!$("#scrim").classList.contains("on") || newDay) render();
+  if (!$("#scrim").classList.contains("on") || newDay) render(newDay ? undefined : { tick: true });
 }, 20000);
 
 /* ---------- app lock (Android) ---------- */

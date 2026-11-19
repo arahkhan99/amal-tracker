@@ -1,6 +1,6 @@
 /* Adhkār after Salāh: the poster's list with tap counters, a 33·33·33·1 tasbīh counter, Āyat al-Kursī and the Quls
    (3× after Fajr and Maghrib, 1× otherwise). Qurʾānic parts come from the Quran data (IndoPak + Pickthall). */
-import { A, S, $, NOW, esc, I, T, open, redraw, part, persist, prune, prefs, toast, headWords, COMMON, APP, dkey, addDays, topIn } from "./core.js";
+import { A, S, $, NOW, esc, I, T, open, redraw, part, persist, prune, prefs, toast, headWords, COMMON, APP, dkey, addDays, topIn, store } from "./core.js";
 import { AFTER_SALAH, AFTER_SALAH_META, PRAYERS5, unitsFor, qulsCount } from "../../tools/data/after-salah.js";
 import { timesFor } from "../../times.js";
 import { fmt12 } from "../../util.js";
@@ -179,7 +179,7 @@ A.asTap = n => {
   const doneNow = c.every((x, k) => x >= need[k]);
   vibrate(doneNow ? 25 : c[i] >= need[i] ? 18 : 8);
   const pg = asProgress(prayer, key);
-  if (pg.complete && !st.done) { st.done = Date.now(); toast(TT.asDone(pname(prayer))); }
+  if (pg.complete && !st.done) { st.done = Date.now(); store.noteToolSet(S, `afterSalah/${key}/${prayer}/done`); toast(TT.asDone(pname(prayer))); }
   prune(S.tools.afterSalah, 14);
   persist();
   const y = $("#screen").scrollTop;
@@ -195,7 +195,7 @@ A.asUndo = n => {
   const st = store_(prayer, key);
   const c = st.c[n]; if (!c) return;
   for (let i = c.length - 1; i >= 0; i--) if (c[i] > 0) { c[i]--; break; }
-  delete st.done;
+  if (st.done) store.clearToolStamp(S, `afterSalah/${key}/${prayer}/done`);
   persist(); redraw();
 };
 

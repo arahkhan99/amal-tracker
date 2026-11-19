@@ -67,12 +67,12 @@ describe("For today: what is due", () => {
   it("in ʿAsr: evening adhkār first, due now until Maghrib; the rest in order", () => {
     const S = fresh(), now = at(S, TUE, "Asr");
     const items = readItems(S, now);
-    expect(items.map(i => i.id)).toEqual(["evening", "morning", "hizb", "quran", "manzil", "mulk", "durud"]);
+    expect(items.map(i => i.id)).toEqual(["evening", "morning", "hizb", "quran", "yasinAm", "yasinPm", "manzil", "mulk", "durud"]);
     expect(items[0].now).toBe(true);
     expect(items[0].sub).toBe(READ.nowUntil("Maghrib"));
     expect(items.filter(i => i.now)).toHaveLength(1); // one gold dot
     expect(items.find(i => i.id === "hizb").sub).toBe(READ.hizbSub(4, "Tue")); // Saturday is manzil 1
-    expect(readCount(S, now)).toEqual({ done: 0, of: 7 });
+    expect(readCount(S, now)).toEqual({ done: 0, of: 9 });
   });
   it("in the morning: morning adhkār is due now until ʿAsr, evening starts at ʿAsr", () => {
     const S = fresh(), now = at(S, TUE, "Fajr");
@@ -88,7 +88,7 @@ describe("For today: what is due", () => {
     expect(items.at(-1).id).toBe("morning");
     expect(items.at(-1).done).toBe(true);
     expect(items.at(-1).sub).toMatch(/^Done at /);
-    expect(readCount(S, now)).toEqual({ done: 1, of: 7 });
+    expect(readCount(S, now)).toEqual({ done: 1, of: 9 });
   });
   it("al-Kahf on Jumuʿah: from Thursday's Maghrib, kept under Friday", () => {
     const S = fresh(), thu = new Date(2026, 10, 19), fri = new Date(2026, 10, 20);
@@ -115,7 +115,7 @@ describe("For today: what is due", () => {
   it("items follow Settings → Features: hidden readers leave the list, Tools off empties it", () => {
     const S = fresh(), now = at(S, TUE, "Asr");
     F.setToolHidden(S, "hizb", true); F.setToolHidden(S, "manzil", true);
-    expect(readItems(S, now).map(i => i.id)).toEqual(["evening", "morning", "quran", "mulk", "durud"]);
+    expect(readItems(S, now).map(i => i.id)).toEqual(["evening", "morning", "quran", "yasinAm", "yasinPm", "mulk", "durud"]);
     F.setFeature(S, "tools", false);
     expect(readItems(S, now)).toEqual([]);
     // Read's tab stays while "This week" is on, and hides when nothing is left

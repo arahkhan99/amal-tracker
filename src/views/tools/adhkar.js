@@ -177,6 +177,7 @@ A.tlTap = n => {
   const pg = progress(set);
   if (pg.complete && !wasComplete) {
     st.done = Date.now();
+    store.noteToolSet(S, `adhkar/${todayKey()}/${set}/done`);
     tickAmal(amalId(set));
     prune(S.tools.adhkar);
     commit(); // ticks the good deed and redraws
@@ -192,9 +193,8 @@ A.tlTap = n => {
   }
 };
 A.tlUntick = set => {
-  const st = store_(set);
   untickAmal(amalId(set));
-  delete st.done;
+  store.clearToolStamp(S, `adhkar/${todayKey()}/${set}/done`); // with a note, so a sync can't tick it again
   commit(); // keeps the counts, only the tick is removed
   toast(TT.undone);
 };

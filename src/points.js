@@ -13,6 +13,8 @@
  *   Visibility settings (ghayr / nafl / Jumuʿah) don't remove what was logged.
  * - Witr: only where the Witr chip is allowed (store.witrChip: not on an excused day, not when ʿIshāʾ is excused).
  * - Remembrance at prayer time: only on a prayer whose status is excused.
+ * - The nafl add-on (madhhab.NAFL_ADDON: Ishrāq, Duhā, Awwābīn, Tahajjud) is logged as sunnah items but counts as
+ *   good deeds: 1 each, inside the good deeds' daily cap, and not in the sunnah count (so each counts once).
  * - Readings done in Read (Hizb, al-Mulk, al-Kahf, the Manzil; readsByDay) count as good deeds, one each a
  *   day, inside the same daily cap. Al-Mulk, al-Kahf and the Manzil are recitation, so they count nothing on
  *   an excused day (Read leaves them off that day's list too); the Hizb is duʿāʾ and still counts.
@@ -23,7 +25,7 @@
  */
 import { PRAYERS, dkey, addDays, parseKey } from "./util.js";
 import { statusOf } from "./store.js";
-import { madhhabOf, itemById, sunnahAllowed } from "./rules/madhhab.js";
+import { madhhabOf, itemById, sunnahAllowed, NAFL_ADDON_IDS } from "./rules/madhhab.js";
 
 /** Versioned weights. The scholar tunes a new version (v2, ...); everything is recalculated from history. */
 export const WEIGHTS = {
@@ -44,8 +46,8 @@ export const weightsFor = version => WEIGHTS[version] || WEIGHTS[CURRENT];
  * Readings that count as one good deed each when done that day (scholar, 18 Nov 2026), without being on the
  * editable deeds list. QURAN_READS are left out on an excused day.
  */
-export const READ_IDS = ["hizb", "mulk", "kahf", "manzil"];
-const QURAN_READS = new Set(["mulk", "kahf", "manzil"]);
+export const READ_IDS = ["hizb", "mulk", "kahf", "manzil", "yasinAm", "yasinPm"];
+const QURAN_READS = new Set(["mulk", "kahf", "manzil", "yasinAm", "yasinPm"]);
 const isKey = k => /^\d{4}-\d{2}-\d{2}$/.test(k);
 
 /**
@@ -53,7 +55,7 @@ const isKey = k => /^\d{4}-\d{2}-\d{2}$/.test(k);
  * - day.reads (store.setRead: written by Read's ticks and the readers, kept in the day log so the count stays
  *   after the readers' own history below is pruned), and
  * - the readers' own dated state, so days done before day.reads existed count too:
- *   S.tools.read[day].mulk / .kahf (al-Kahf under its Friday), S.tools.manzil[day] (morning or evening), and
+ *   S.tools.read[day].mulk / .kahf / .yasinAm / .yasinPm (al-Kahf under its Friday), S.tools.manzil[day] (morning or evening), and
  *   the Hizb weeks (S.tools.hizb.weeks[saturday].read[m]: manzil m is the one due on the week's m-th day).
  */
 export function readsByDay(S) {
@@ -61,7 +63,7 @@ export function readsByDay(S) {
   const add = (k, id) => { if (!isKey(k)) return; const l = (out[k] ||= []); if (!l.includes(id)) l.push(id); };
   for (const [k, d] of Object.entries(S.days || {})) for (const id of READ_IDS) if (d?.reads?.[id]) add(k, id);
   const t = S.tools || {};
-  for (const [k, r] of Object.entries(t.read || {})) { if (r?.mulk) add(k, "mulk"); if (r?.kahf) add(k, "kahf"); }
+  for (const [k, r] of Object.entries(t.read || {})) for (const id of ["mulk", "kahf", "yasinAm", "yasinPm"]) if (r?.[id]) add(k, id);
   for (const [k, m] of Object.entries(t.manzil || {})) if (m?.morning || m?.evening) add(k, "manzil");
   for (const [wk, w] of Object.entries(t.hizb?.weeks || {})) {
     if (!isKey(wk)) continue;
@@ -96,6 +98,7 @@ export function levelFor(total) {
  */
 export function dayProvisions(day, { w = WEIGHTS[CURRENT], homeFull = false, makeups = 0, reads, madhhab, started } = {}) {
   const parts = [];
+  let nafl = [];
   if (day) {
     const excusedDay = !!day.excused;
     for (const p of PRAYERS) {
@@ -111,17 +114,20 @@ export function dayProvisions(day, { w = WEIGHTS[CURRENT], homeFull = false, mak
     const witrAllowed = !excusedDay && statusOf(day, "Isha") !== "excused";
     if (day.witr && witrAllowed) parts.push({ id: "witr", kind: "witr", status: day.witr, n: w.witr[day.witr] ?? 0 });
     const m = madhhabOf({ madhhab });
-    const sun = Object.keys(day.sunnah || {}).filter(id => {
+    const logged = Object.keys(day.sunnah || {}).filter(id => {
       if (!day.sunnah[id]) return false;
       const item = itemById(id, m);
       return !!item && sunnahAllowed(item, item.prayer ? statusOf(day, item.prayer) : null, { excusedDay });
-    }).length;
+    });
+    // The nafl add-on (Ishrāq, Duhā, Awwābīn, Tahajjud) counts as good deeds (below), never also as sunnah
+    nafl = logged.filter(id => NAFL_ADDON_IDS.includes(id));
+    const sun = logged.length - nafl.length;
     if (sun) parts.push({ id: "sunnah", kind: "sunnah", count: sun, n: Math.min(sun * w.sunnah.each, w.sunnah.cap) });
   }
-  // good deeds, and the readings (a day with only a reading may have no day record)
+  // good deeds, the nafl add-on and the readings (a day with only a reading may have no day record), one cap
   const rd = countedReads(day, reads);
-  const deeds = Object.values(day?.amal || {}).filter(a => a?.done).length + rd.length;
-  if (deeds) parts.push({ id: "deeds", kind: "deeds", count: deeds, n: Math.min(deeds * w.deeds.each, w.deeds.cap), ...(rd.length ? { reads: rd } : {}) });
+  const deeds = Object.values(day?.amal || {}).filter(a => a?.done).length + rd.length + nafl.length;
+  if (deeds) parts.push({ id: "deeds", kind: "deeds", count: deeds, n: Math.min(deeds * w.deeds.each, w.deeds.cap), ...(rd.length ? { reads: rd } : {}), ...(nafl.length ? { nafl } : {}) });
   if (makeups > 0) parts.push({ id: "makeups", kind: "makeups", count: makeups, n: Math.min(makeups * w.makeups.each, w.makeups.cap) });
   return { total: parts.reduce((a, b) => a + b.n, 0), parts };
 }

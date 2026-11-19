@@ -10,10 +10,12 @@ import { PRAYERS, DOW, MON, fmt12, dkey, parseKey, addDays, daysBetween, esc } f
 import { timesFor, weekIndex } from "../times.js";
 import { canLog, madeUpAllowed } from "../logging.js";
 import { isOn } from "../features.js";
-import { COMMON, STATUS, LOG, EXCUSED, TODAY, CALENDAR, WEEK_LETTERS_SUN, TRACKER } from "../strings.js";
+import { COMMON, STATUS, STATUS_SHORT, LOG, EXCUSED, TODAY, CALENDAR, WEEK_LETTERS_SUN, TRACKER } from "../strings.js";
 import { trackerChip as pvTrackerChip } from "./provisions.js";
 import { zz, ic, X, pName, chipsFor, chipLegend, chipHTML, snapshot, restore, showSheet, marker, deedsCount } from "./home.js";
-import { logPrayer, logButtons } from "../today.js";
+import { logPrayer, logButtons, sunnahLine, naflShown } from "../today.js";
+import { hijriLabel } from "../hijri.js";
+import { dayPct } from "../stats.js";
 
 export const MAX_BACK = 365; // how far back the calendar goes
 const shortDate = d => `${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()].slice(0, 3)}`;
@@ -75,28 +77,53 @@ function pick(p, c, key, cur, now) {
   const MK = { congregation: "dcheck", ontime: "check", madeup: "clock", missed: "dash" };
   return `<button type="button" class="pick ${sel ? "sel" : ""}" role="radio" aria-checked="${sel}" aria-label="${esc(STATUS[c])}" ${off ? "disabled" : ""} onclick="A.dayPick('${p}','${c}','${key}')">${sel ? marker(c) : `<span class="mk ghost">${ic(MK[c], "")}</span>`}</button>`;
 }
+/** The run of excused days holding `key`: { n, m } (day n of m). */
+export function excusedRun(S0, key) {
+  const ex = k => !!S0.days[k]?.excused;
+  let a = parseKey(key), b = parseKey(key);
+  while (ex(dkey(addDays(a, -1)))) a = addDays(a, -1);
+  while (ex(dkey(addDays(b, 1)))) b = addDays(b, 1);
+  return { n: daysBetween(a, parseKey(key)) + 1, m: daysBetween(a, b) + 1 };
+}
+/** A column head: the word, allowed to wrap onto two lines (Congre-gation hyphenates only when it must). */
+const colHead = c => esc(CALENDAR.col[c]).replace("Congregation", "Congre&shy;gation");
 function dayHTML(key) {
   const d = parseKey(key), day = store.getDay(S, key), now = NOW();
   const n = PRAYERS.filter(p => isPrayed(store.prayerStatus(S, key, p))).length;
-  const head = `<div class="lhd"><div><h3>${esc(`${DOW[d.getDay()]}, ${d.getDate()} ${MON[d.getMonth()]}`)}</h3><p class="sub">${day.excused ? esc(CALENDAR.excused) : CALENDAR.daySub(n)}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>`;
+  // The day's summary (M8): prayed, the day's %, the Hijri date; excused days say which day of the run
+  const hj = hijriLabel(d), pct = dayPct(S, d, now);
+  const bits = [];
+  if (day.excused) { const r = excusedRun(S, key); bits.push(esc(CALENDAR.excused), esc(X.dayNOfM(r.n, r.m))); }
+  else { bits.push(CALENDAR.daySub(n)); if (pct != null) bits.push(`${pct}%`); }
+  if (key < S.createdKey && !day.excused) bits.push(esc(CALENDAR.before));
+  const head = `<div class="lhd"><div><h3>${esc(`${DOW[d.getDay()]}, ${d.getDate()} ${MON[d.getMonth()]}`)}</h3><p class="sub">${bits.join(" · ")}${hj ? `<br><span class="hj">${esc(hj)}</span>` : ""}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>`;
   let body;
   if (day.excused) {
     body = `<div class="pdex">${ic("moon")}<p>${esc(X.excusedLine)}</p><div class="acts"><button class="gbtn" onclick="A.excusedCal('${key}')">${esc(X.editDates)}</button><button class="gbtn" onclick="A.notExcused('${key}')">${esc(X.notExcused)}</button></div></div>`;
   } else {
     const cols = COLS();
-    const hdr = `<div class="pd hd" aria-hidden="true"><span class="nm"></span>${cols.map(c => `<span class="ch">${esc(CALENDAR.col[c])}</span>`).join("")}</div>`;
+    const hdr = `<div class="pd hd" aria-hidden="true"><span class="nm"></span>${cols.map(c => `<span class="ch">${colHead(c)}</span>`).join("")}</div>`;
     const rows = PRAYERS.map(p => {
       const t = timesFor(d, S.settings)[p], cur = store.prayerStatus(S, key, p);
       const nm = `<button type="button" class="nm" onclick="A.prayerSheet('${p}','${key}')"><b>${esc(pName(p, key))}</b><small>${fmt12(t)}</small></button>`;
       if (!canLog(S, key, p, now)) return `<div class="pd">${nm}<span class="pdn">${esc(TODAY.begins(fmt12(t)))}</span></div>`;
       return `<div class="pd" role="radiogroup" aria-label="${esc(pName(p, key))}">${nm}${cols.map(c => pick(p, c, key, cur, now)).join("")}</div>`;
     }).join("");
-    body = hdr + rows;
+    // Very narrow (large text on a small phone): the heads give way to a legend of the marks the cells show
+    const MKI = { congregation: "dcheck", ontime: "check", madeup: "clock", missed: "dash" };
+    const legend = `<div class="pdl">${cols.map(c => `<span><span class="mk ghost">${ic(MKI[c], "")}</span>${esc(STATUS_SHORT[c])}</span>`).join("")}</div>`;
+    body = `<div class="pdg">${legend}${hdr}${rows}</div>`;
   }
   const lines = [];
   const sunnah = !day.excused && (isOn(S, "sunnah") || store.witrChip(S, key).inQada);
-  if (sunnah) lines.push(`<button type="button" class="dline" onclick="A.daySunnah('${key}')">${ic("check", "i lc")}<span class="l">${esc(CALENDAR.sunnah)}</span>${ic("chev", "i cv")}</button>`);
-  if (isOn(S, "deeds")) { const c = deedsCount(key); lines.push(`<button type="button" class="dline" onclick="A.deedsSheet('${key}','day')">${ic("hand", "i lc")}<span class="l">${esc(TODAY.goodDeeds)}</span><span class="v"><b>${esc(COMMON.nOfM(c.done, c.of))}</b></span>${ic("chev", "i cv")}</button>`); }
+  if (sunnah) {
+    // its value: the sunnah measure and Witr ("6 of 12 rakʿahs · Witr ✓"), or Witr alone with Sunnah off
+    const sl = sunnahLine(S, key, now), w = store.witrChip(S, key);
+    const ws = !w.allowed ? "" : w.done ? TODAY.witrDone : w.status === "missed" ? TODAY.witrMissed : key === todayKey() && canLog(S, key, "Isha", now) ? TODAY.witrToDo : "";
+    const v = [sl && sl.kind === "rakahs" ? TODAY.sunnahRakahs(sl.got, sl.of) : sl ? `${sl.got}/${sl.of}` : "", ws].filter(Boolean).join(" · ");
+    lines.push(`<button type="button" class="dline" onclick="A.daySunnah('${key}')">${ic("check", "i lc")}<span class="l">${esc(CALENDAR.sunnah)}</span>${v ? `<span class="v">${esc(v)}</span>` : ""}${ic("chev", "i cv")}</button>`);
+  }
+  if (isOn(S, "deeds")) { const c0 = deedsCount(key), nf = naflShown(S, key), c = { done: c0.done + nf.filter(x => store.sunnahDone(S, key, x.id)).length, of: c0.of + nf.length }; lines.push(`<button type="button" class="dline" onclick="A.deedsSheet('${key}','day')">${ic("hand", "i lc")}<span class="l">${esc(TODAY.goodDeeds)}</span><span class="v"><b>${esc(COMMON.nOfM(c.done, c.of))}</b></span>${ic("chev", "i cv")}</button>`); }
   lines.push(`<button type="button" class="dline" onclick="A.noteSheet('${key}')">${ic("note", "i lc")}<span class="l">${esc(CALENDAR.note)}</span><span class="v">${esc(day.note ? CALENDAR.editNote : CALENDAR.addNote)}</span>${ic("chev", "i cv")}</button>`);
   const pv = pvTrackerChip(key); // "+N provisions", only with Settings → Provisions → Provisions in the calendar
   return `<div class="sh">${head}${body}<div class="dlines">${lines.join("")}</div>${pv ? `<div class="dpv">${pv}</div>` : ""}
@@ -114,13 +141,13 @@ A.dayPick = (p, c, key) => {
   toast(next === "missed" && isOn(S, "makeups") ? LOG.missedToast(n) : LOG.setToast(n, next ? STATUS[next] : COMMON.clear.toLowerCase()), { undo: () => restore(r.snap) });
 };
 
-/** A day's sunnah chips and Witr (long-press a chip for its tier). */
-A.daySunnah = key => showSheet(() => {
+/** A day's sunnah chips and Witr (long-press a chip for its tier). from "today": the Sunnah line on Today (Done). */
+A.daySunnah = (key, from = "") => showSheet(() => {
   const rows = PRAYERS.map(p => { const ch = chipsFor(p, key); return ch.length ? `<div class="lsec">${esc(pName(p, key))}</div><div class="scs">${ch.join("")}</div>` : ""; }).join("");
   const nafl = isOn(S, "sunnah") && S.settings.sunnahNafl ? store.sunnahChips(S, key, "day") : [];
   const day = nafl.length ? `<div class="lsec">${esc(X.moreSunnah)}</div><div class="scs">${nafl.map(c => chipHTML(c, key)).join("")}</div>` : "";
   return `<div class="sh"><div class="lhd"><div><h3>${esc(CALENDAR.sunnah)}</h3><p class="sub">${esc(shortDate(parseKey(key)))}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
-    ${rows}${day}${isOn(S, "sunnah") ? chipLegend() : ""}<div class="shfoot"><button class="pbtn" onclick="A.daySheet('${key}')">${COMMON.back}</button></div></div>`;
+    ${rows}${day}${isOn(S, "sunnah") ? chipLegend() : ""}<div class="shfoot">${from === "today" ? `<button class="pbtn" onclick="A.closeSheet()">${COMMON.done}</button>` : `<button class="pbtn" onclick="A.daySheet('${key}')">${COMMON.back}</button>`}</div></div>`;
 });
 
 /** The day's note. */

@@ -1,6 +1,7 @@
 /*
  * Make-ups (qaḍāʾ): what is left to make up, this month's goal and pace, logging a make-up prayer or fast,
- * restored so far, each month, and the projection. One builder, makeupsChapter(), draws it as the Progress tab's
+ * restored so far, each month, and the projection, in three sub-tabs: Left · Goal · History (views/subtabs.js).
+ * One builder, makeupsChapter(), draws it as the Progress tab's
  * Make-ups chapter (views/progress.js) and, when Progress is off, as its own page (#v-qada, the tab opens it).
  * Layout: design-review/mockups2/redesign/final/fin-prog-makeups-*. Styles: css/progress.css (mk-).
  */
@@ -12,6 +13,8 @@ import { esc, MON, MON3, addDays } from "../util.js";
 import { qadaClearedTotal } from "../stats.js";
 import { MAKEUPS as M, COMMON, NAV, PRAYER_NAME, PROG, prayerName } from "../strings.js";
 import { MAKEUPS_X } from "../strings.js";
+import { subOf, resetSubs, onSubTab, subTabsHTML, subPanel } from "./subtabs.js";
+import { setHTML } from "./chapters.js";
 
 /* Make-ups-only labels (strings.js MAKEUPS_X). */
 const X = MAKEUPS_X;
@@ -72,8 +75,8 @@ A.mkSeeAll = () => {
 const when = d => `${MON3[d.getMonth()]} ${d.getFullYear()}`;
 const num = n => n.toLocaleString("en");
 
-/** The Make-ups chapter (and page). */
-export function makeupsChapter() {
+/** The Make-ups chapter (and page: group "mkpage"). Only the chosen sub-tab is built. */
+export function makeupsChapter(group = "makeups") {
   const q = S.qada, now = NOW(), m = store.monthLog(S, now), keys = store.qadaKeys(S), hasWitr = keys.includes("Witr");
   const split = store.qadaSplit(S), owed = store.qadaOwed(S);
   const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), dom = now.getDate(), daysLeft = dim - dom + 1;
@@ -94,10 +97,11 @@ export function makeupsChapter() {
 
   const head = `<header class="zt-chh"><h1 class="zt-title">${esc(NAV.qada)}</h1><p class="zt-sub pr-subi">${esc(PROG.mkSub)} <span class="pr-ar">(qaḍāʾ)</span>${glossBtn("qada")}</p></header>`;
   const rows = keys.map(p => `<div class="mk-row"><span class="t">${esc(nameOf(p))}${p === "Witr" ? ` <small>${esc(X.witrTag)}</small>${glossBtn("witr")}` : ""}</span><b class="${q[p] ? "" : "z"}">${num(q[p] || 0)}</b></div>`).join("");
+  const goalLine = `<div class="mk-bar" role="progressbar" aria-label="${esc(PROG.madeThisMonth(m.prayers, goal))}" aria-valuenow="${m.prayers}" aria-valuemin="0" aria-valuemax="${goal}"><i style="width:${pctG}%"></i><u style="left:${pace}%" title="${esc(X.paceFor)}"></u></div>
+    <div class="mk-line"><span>${esc(PROG.madeThisMonth(m.prayers, goal))} · <b>${esc(paceWord)}</b>${m.prayers < goal ? `<small>${esc(M.moreInDays(goal - m.prayers, daysLeft, Math.ceil((goal - m.prayers) / Math.max(1, daysLeft))))}</small>` : ""}</span><button type="button" class="zt-link" data-f="mkgoal" onclick="A.goalSheet()">${esc(X.changeGoal)}</button></div>`;
   const main = `<div class="zt-card pad mk-main">
     ${owed > 0 ? `<div class="pr-big"><b>${num(owed)}</b><span>${esc(PROG.leftToMakeUp)}</span></div>` : `<p class="mk-clear">${esc(M.clear)}</p>`}
-    <div class="mk-bar" role="progressbar" aria-label="${esc(PROG.madeThisMonth(m.prayers, goal))}" aria-valuenow="${m.prayers}" aria-valuemin="0" aria-valuemax="${goal}"><i style="width:${pctG}%"></i><u style="left:${pace}%" title="${esc(X.paceFor)}"></u></div>
-    <div class="mk-line"><span>${esc(PROG.madeThisMonth(m.prayers, goal))} · <b>${esc(paceWord)}</b>${m.prayers < goal ? `<small>${esc(M.moreInDays(goal - m.prayers, daysLeft, Math.ceil((goal - m.prayers) / Math.max(1, daysLeft))))}</small>` : ""}</span><button type="button" class="zt-link" data-f="mkgoal" onclick="A.goalSheet()">${esc(X.changeGoal)}</button></div>
+    <p class="mk-p mk-mo">${esc(PROG.madeThisMonth(m.prayers, goal))} · ${esc(paceWord)}</p>
     <div class="mk-rows">${rows}</div>
     <button type="button" class="zt-btn pri" data-f="mkone" ${owed > 0 ? "" : "disabled"} onclick="A.mkPick()">${icon("plus")}${esc(PROG.madeOneUp)}</button>
     ${added > 0 ? `<p class="mk-today">${esc(M.plusToday(added))}</p>` : ""}
@@ -113,15 +117,20 @@ export function makeupsChapter() {
     <div class="zt-card mk-keep">${proj.map(([a, b, d]) => `<div class="r"><span>${esc(a)}${b ? `<small>${esc(b)}</small>` : ""}</span><em>${esc(when(d))}</em></div>`).join("")}</div>
     <p class="pr-cap">${esc(X.guide)}${hasWitr ? esc(X.witrNote(q.Witr || 0)) : ""}</p>` : "";
   const adjust = `<button type="button" class="zt-btn soft mk-adj" data-f="mkadj" onclick="A.balanceSheet()">${esc(M.adjustTitle)}</button>`;
-  return head + main + fasts + sameDay + restored + each + keep + adjust + `<div class="zt-fill"></div>`;
+  const goalCard = `<div class="zt-card pad mk-goal">${goalLine}</div>`;
+  const items = [["left", PROG.sub.left, () => main + fasts + sameDay + adjust], ["goal", PROG.sub.goal, () => goalCard + keep], ["history", PROG.sub.history, () => restored + each]];
+  const cur = subOf(group, items.map(x => x[0]));
+  return head + subTabsHTML(group, items, cur, PROG.subLabel.makeups) + subPanel(group, cur, items.find(x => x[0] === cur)[2]()) + `<div class="zt-fill"></div>`;
 }
 
 /** Make-ups as its own page: only while Progress is off (otherwise #makeups lands on the Progress chapter). */
+let away = true;
 function render() {
   const root = $("#v-qada");
-  if (!root || UI.view !== "qada") return;
-  const html = `<div class="zt-top"><span></span>${avatarBtn()}</div><div class="zt-ch mk-page">${makeupsChapter()}</div>`;
-  if (root._h === html) return;
-  root._h = html; root.innerHTML = html;
+  if (!root || UI.view !== "qada") { away = true; return; }
+  if (away) { away = false; resetSubs("mkpage"); } // back on the page: its first sub-tab
+  const html = `<div class="zt-top"><span></span>${avatarBtn()}</div><div class="zt-ch mk-page">${makeupsChapter("mkpage")}</div>`;
+  setHTML(root, html); // unchanged: nothing touched; focus stays on the same control
 }
 onRender(render);
+onSubTab("mkpage", render);
