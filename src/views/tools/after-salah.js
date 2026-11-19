@@ -138,7 +138,7 @@ export function afterSalahView() {
   const chips = PRAYERS5.map(p => `<button role="tab" aria-selected="${p === prayer}" class="${p === prayer ? "on" : ""}" onclick="A.asPick('${p}')">${esc(TT.asShort[p])}</button>`).join("");
   const first = AFTER_SALAH.indexOf(nowItem);
   return `<div class="tl-hero tl-rd">
-      <svg class="pattern" viewBox="0 0 390 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="100%" height="100%" fill="url(#st)"/></svg>
+      
       <div class="tl-hrow"><button type="button" class="tl-hbtn" aria-label="${COMMON.back}" onclick="A.tlBack()">${I.back}</button>
         <div class="tl-ht"><h1>${esc(TT.asTitle)}</h1></div>
         <button type="button" class="tl-hbtn aa" aria-label="${TT.aa}" onclick="A.tlAa('afterSalah')">Aa</button></div>

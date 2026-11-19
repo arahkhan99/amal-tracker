@@ -1,9 +1,11 @@
-/* Settings (SE-B): a list of icon rows with sub-pages for Features and Sunnah prayers, and sheets for the rest. */
+/* Settings (SE-B; redesign final/fin-settings-*): a full page with "Done" (no tab bar), a list of icon rows, sub-pages
+ * (Features, Sunnah prayers, Appearance, Zad Plus, Help & tour) with a "‹ Settings" link, and sheets for the rest. */
 import { S, UI, A, $, $$, NOW, onRender, commit, toast, openSheet, closeSheet, replaceState, glossBtn, systemIsDark } from "../app.js";
 import * as store from "../store.js";
-import { PRAYERS, esc, dkey, addDays } from "../util.js";
-import { METHODS, METHOD_SHORT, FALLBACK_LOCATION } from "../times.js";
-import { isNative, pageUrl, currentPosition, cityName, searchCity, saveFile, pickFile, biometryAvailable, authenticate } from "../platform.js";
+import { PRAYERS, esc, dkey, addDays, fmt12 } from "../util.js";
+import { METHODS, METHOD_SHORT, FALLBACK_LOCATION, timesFor } from "../times.js";
+import { isNative, pageUrl, currentPosition, cityName, searchCity, saveFile, pickFile, biometryAvailable, authenticate, requestNotifications } from "../platform.js";
+import { refreshWidgets, addTile } from "../widget-bridge.js";
 import { cloud, signIn, signOut, sync, deleteAccount, keepAccount } from "../cloud.js";
 import { signInSheetHtml, consentTicked, signInError } from "./consent.js"; // also registers A.consentSheet (c3)
 import { CONSENT } from "../strings.js";
@@ -24,6 +26,8 @@ import { setHijriSource, currentHijri, normalizeHijri, hijriLabel, hijriParts, c
 import { COMMITTEES, committeeById, committeeData, regionCache, editorMonths, plausibleStart, monthId } from "../hijri-committees.js";
 import { hijriEditors, refreshHijriCommittee, saveCommitteeMonth } from "../cloud.js";
 import { setCrashReporting } from "../crash.js";
+import { TEXT_SIZES, AR_SIZES, textSizeIndex, arSizeIndex, setSize, applyScales } from "../appearance.js";
+import { plusPage } from "./plus.js";
 
 /* Settings-only labels (strings.js SETTINGS_X). */
 const X = SETTINGS_X;
@@ -63,6 +67,7 @@ const P = {
   grid: '<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><path d="M17.25 13.5v7.5M13.5 17.25H21"/>',
   half: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>',
   chev: '<path d="M9 6l6 6-6 6"/>',
+  leaf: '<path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 15"/><path d="M5 19c3-4 6-7 10-9"/>',
   play: '<circle cx="12" cy="12" r="9"/><path d="M10 8.5l5 3.5-5 3.5z"/>',
   checkc: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
   back: '<path d="M15 5l-7 7 7 7"/>',
@@ -83,13 +88,17 @@ function switchRow({ icon, title, sub = "", key, on, tone = "gold", tag = "", gl
   return `<div class="srow"><div class="srow-main static">${tile(icon, tone)}<span class="t"><b>${esc(title)}${tag ? `<em class="newtag">${esc(tag)}</em>` : ""}${gl}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span>${sw(key, on, title, fn)}</div>${extra}</div>`;
 }
 const group = (title, rows, foot = "") => `<section class="sgroup"><h2>${esc(title)}</h2><div class="card scard">${rows.join("")}</div>${foot ? `<p class="sfoot">${esc(foot)}</p>` : ""}</section>`;
-const head = (title, back = "A.settingsBack()") => `<header class="shead"><button class="back" onclick="${back}" aria-label="${esc(COMMON.back)}">${svg("back")}</button><h1>${esc(title)}</h1></header>`;
+/** A sub-page header: "‹ Settings" (or "‹ Help & tour" inside Help), then the page title. */
+const head = (title, back = "A.settingsBack()") => `<header class="shead"><button class="sback" onclick="${back}">${svg("back")}<span>${esc(HELP_SUBS.includes(page) ? GUIDE.helpTitle : T.title)}</span></button><h1>${esc(title)}</h1></header>`;
+/** The main page's header: "Done" at the top right (back to where Settings was opened), then "Settings". */
+const mainHead = () => `<header class="shead main"><button class="sdone" onclick="A.settingsDone()">${esc(COMMON.done)}</button><h1>${esc(T.title)}</h1></header>`;
+const HELP_SUBS = ["hStatus", "hMakeups"];
 
 /* ---------- page state ---------- */
-let page = "main"; // "main" | "features" | "sunnah" | "help" | "hStatus" | "hMakeups" (Help & tour, views/help.js)
+let page = "main"; // "main" | "features" | "sunnah" | "appearance" | "plus" | "help" | "hStatus" | "hMakeups" (Help & tour, views/help.js)
 let backTo = ""; // "tools" when the Features page was opened from the Tools hub
 A.settingsPage = p => { page = p; backTo = ""; $("#screen").scrollTop = 0; UI.settingsPage = p; renderSettings(); };
-A.settingsBack = () => { if (backTo) { const v = backTo; backTo = ""; page = "main"; A.go(v); } else if (page === "hStatus" || page === "hMakeups") A.settingsPage("help"); else if (page !== "main") A.settingsPage("main"); else A.go("home"); };
+A.settingsBack = () => { if (backTo) { const v = backTo; backTo = ""; page = "main"; A.go(v); } else if (page === "hStatus" || page === "hMakeups") A.settingsPage("help"); else if (page !== "main") A.settingsPage("main"); else A.settingsDone(); };
 /** From the Tools hub: open Settings → Features, scrolled to the Tools section. Back returns to Tools. */
 A.settingsTools = () => {
   A.go("settings"); A.settingsPage("features"); backTo = "tools";
@@ -115,20 +124,54 @@ A.crashToggle = () => {
   commit();
   toast(on ? T.crashReportsOnToast : T.crashReportsOffToast);
 };
+/* Settings → Widgets: plain booleans (off by default). The Now notification needs notification permission first. */
+A.widgetToggle = async k => {
+  if (!["showTimesOnly", "ongoingNow", "lockDots"].includes(k)) return;
+  const on = S.settings[k] !== true;
+  if (k === "ongoingNow" && on && !(await requestNotifications())) { toast(X.notifDenied); return; }
+  S.settings[k] = on;
+  commit();
+  refreshWidgets().catch(e => console.warn("widgets", e));
+};
+/** Android: ask the system to add the Quick Settings tile (13+), or show the manual steps on older Android. */
+A.addTile = async () => {
+  const r = await addTile();
+  if (!r) return;
+  if (r.unsupported) openSheet(`<h3>${esc(X.tileStepsTitle)}</h3><p>${esc(X.tileSteps)}</p><div class="cta"><button class="btn primary" onclick="A.closeSheet()">${esc(COMMON.gotIt)}</button></div>`);
+  else if (r.added) toast(X.tileAdded);
+};
 A.setLead = m => { S.settings.leadMin = +m; commit(); toast(T.leadToast(m)); };
 A.featToggle = f => { feat.setFeature(S, f, !feat.isOn(S, f)); commit(); };
 A.toolToggle = t => { feat.setToolHidden(S, t, feat.toolRows(S).find(r => r.id === t).visible); commit(); };
 
-/* ---------- appearance (AP1) ---------- */
-A.appearanceSheet = () => {
-  const cur = S.settings.appearance || "system";
-  const opt = (k, icon) => `<button class="${cur === k ? "on" : ""}" role="radio" aria-checked="${cur === k}" onclick="A.setAppearance('${k}')">${svg(icon)}<span>${esc(T.appearanceOpts[k])}</span></button>`;
-  openSheet(`<h3>${esc(T.appearance)}</h3><p>${esc(X.appearanceLead)}</p>
-    <div class="seg3" role="radiogroup" aria-label="${esc(T.appearance)}">${opt("system", "half")}${opt("light", "sun")}${opt("dark", "moon")}</div>
-    ${cur === "system" ? `<p class="follow"><i></i>${esc(X.appearanceFollow(systemIsDark()))}</p>` : ""}
-    <div class="cta"><button class="btn primary" onclick="A.closeSheet()">${esc(COMMON.done)}</button></div>`);
+/* ---------- appearance: Mode, Text size, Arabic text size (a page; mockup final/og/og-appearance-*) ---------- */
+// No theme picker: one theme (OG Calm), light and dark. Sizes live in src/appearance.js (CSS variables on <html>).
+A.appearanceSheet = () => A.settingsPage("appearance"); // older callers
+A.setAppearance = k => { if (!["system", "light", "dark"].includes(k)) return; S.settings.appearance = k; commit(); };
+/** A size slider moved: apply it live (no redraw, so the drag isn't interrupted); save = true on release. */
+A.setSize = (kind, v, save = false) => {
+  const i = setSize(S, kind, v), n = (kind === "ar" ? AR_SIZES : TEXT_SIZES).length;
+  applyScales(S);
+  const el = document.getElementById(kind === "ar" ? "apAr" : "apText");
+  if (el) { el.style.setProperty("--p", `${(i / (n - 1)) * 100}%`); el.setAttribute("aria-valuetext", X.sizeOf(i + 1, n)); }
+  if (save) commit();
 };
-A.setAppearance = k => { S.settings.appearance = k; commit(); A.appearanceSheet(); };
+function sizeSlider(kind, i, n, label, lo, hi, cls = "") {
+  return `<div class="ap-row"><span class="ap-a s ${cls}" aria-hidden="true">${lo}</span><input type="range" class="ap-range" id="${kind === "ar" ? "apAr" : "apText"}" min="0" max="${n - 1}" step="1" value="${i}" style="--p:${(i / (n - 1)) * 100}%" aria-label="${esc(label)}" aria-valuetext="${esc(X.sizeOf(i + 1, n))}" oninput="A.setSize('${kind}',this.value)" onchange="A.setSize('${kind}',this.value,true)"><span class="ap-a l ${cls}" aria-hidden="true">${hi}</span></div>`;
+}
+function appearancePage() {
+  const cur = S.settings.appearance || "system";
+  const opt = k => `<button class="${cur === k ? "on" : ""}" role="radio" aria-checked="${cur === k}" onclick="A.setAppearance('${k}')">${esc(T.appearanceOpts[k])}</button>`;
+  const asr = fmt12(timesFor(NOW(), S.settings).Asr);
+  return `${head(T.appearance)}<div class="ap">
+    <p class="ap-lab" id="apModeL">${esc(T.mode)}</p><div class="ap-seg" role="radiogroup" aria-labelledby="apModeL">${opt("system")}${opt("light")}${opt("dark")}</div>
+    ${cur === "system" ? `<p class="sfoot">${esc(X.appearanceFollow(systemIsDark()))}</p>` : ""}
+    <p class="ap-lab">${esc(X.textSize)}</p><div class="card ap-card">${sizeSlider("text", textSizeIndex(S), TEXT_SIZES.length, X.textSize, "A", "A")}
+      <p class="ap-smp">${esc(prayerName("Asr"))} · ${esc(asr)}<small>${esc(X.textSizeNote)}</small></p></div>
+    <p class="ap-lab">${esc(X.arSize)}</p><div class="card ap-card">${sizeSlider("ar", arSizeIndex(S), AR_SIZES.length, X.arSize, "ع", "ع", "ar-a")}
+      <p class="ar ap-arsample" lang="ar" dir="rtl">${esc(GUIDE.previewAr)}</p><p class="ap-smp"><small>${esc(X.arSizeNote)}</small></p></div>
+  </div><div class="space"></div>`;
+}
 
 /* ---------- set up for (brother / sister, store.applyGender) ---------- */
 const genderVal = g => (g === "f" ? GENDER.sister : g === "m" ? GENDER.brother : GENDER.notSet);
@@ -492,8 +535,9 @@ function featuresPage() {
   const toolsOn = feat.isOn(S, "tools");
   const tools = toolsOn ? `<section class="sgroup" id="set-tools"><h2>${esc(X.toolsHead)}</h2><div class="card scard">${feat.toolRows(S).map(r => `<div class="srow ${r.visible ? "" : "off"}"><div class="srow-main static">${tile(TOOL_ICON[r.id], r.visible ? "green" : "grey")}<span class="t"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span><button class="switch${r.visible ? " on" : ""}" role="switch" aria-checked="${r.visible}" aria-label="${esc(r.name)}" onclick="A.toolToggle('${r.id}')"></button></div></div>`).join("")}</div><p class="sfoot">${esc(X.toolsLead)}</p></section>` : "";
   const tabs = feat.navTabs(S);
-  const barIds = ["home", "tracker", "tools", "qada", "progress"];
-  const bar = `<div class="barprev"><h3>${esc(FEATURE.bottomBar)}</h3><div class="bar-in">${barIds.map(id => `<span class="${tabs.some(t => t.id === id) ? (id === "home" ? "on" : "") : "gone"}">${svg(id === "home" ? "mosque" : id === "tracker" ? "list" : id === "tools" ? "grid" : id === "qada" ? "refresh" : "bars")}<i>${esc(NAV[id])}</i></span>`).join("")}</div></div>`;
+  // Today · Read · Progress (Community only with Zad Plus). With one tab only there is no bar at all.
+  const barIds = ["home", "tools", "progress", ...(feat.plusOn(S) ? ["community"] : [])];
+  const bar = `<div class="barprev"><h3>${esc(FEATURE.bottomBar)}</h3><div class="bar-in">${barIds.map(id => `<span class="${tabs.length > 1 && tabs.some(t => t.id === id) ? (id === "home" ? "on" : "") : "gone"}">${svg(id === "home" ? "sun" : id === "tools" ? "book" : id === "community" ? "user" : "bars")}<i>${esc(NAV[id])}</i></span>`).join("")}</div></div>`;
   const { on, of } = feat.featureCount(S);
   return `${head(FEATURE.title)}<p class="spage-lead">${esc(FEATURE.intro)}</p>
   <div class="sec" style="padding-top:0"><div class="card scard">${rows}</div></div>${pvGroup(svg("chev"))}${tools}${bar}<p class="sfoot center">${esc(FEATURE.count(on, of))}</p><div class="space"></div>`;
@@ -508,10 +552,12 @@ function mainPage() {
   const profile = `<button class="profile card" onclick="A.${cloud.available ? "cloudSheet" : "nameSheet"}()"><span class="avatar">${esc((name[0] || APP.name[0]).toUpperCase())}</span><span class="t"><b>${esc(name || X.profileTitle)}</b>${cloud.available ? `<small><i class="dotg ${cloud.user ? "on" : ""}"></i>${esc(cloud.user ? (cloud.syncing ? T.cloudSyncing(cloud.user.email).replace(/^On · /, "") : T.cloudOn(cloud.user.email, cloud.error || T.synced(ago(cloud.lastSync))).replace(/^On · /, "")) : `${T.cloud} · ${COMMON.off}`)}</small>` : ""}</span><span class="chev">${svg("chev")}</span></button>`;
   const appearanceVal = T.appearanceOpts[st.appearance || "system"];
   const g = [];
+  // Zad Plus: one quiet row (its only place besides its own page; no badges, no prompts)
+  g.push(`<section class="sgroup plusrow"><div class="card scard">${navRow({ icon: "leaf", title: X.plusRow, sub: X.plusRowSub, onclick: "A.settingsPage('plus')" })}</div></section>`);
   g.push(group(X.general, [
-    navRow({ icon: "palette", title: T.appearance, value: appearanceVal, onclick: "A.appearanceSheet()" }),
+    navRow({ icon: "toggles", title: FEATURE.title, value: FEATURE.count(on, of), onclick: "A.settingsPage('features')" }),
+    navRow({ icon: "palette", title: T.appearance, value: appearanceVal, onclick: "A.settingsPage('appearance')" }),
     navRow({ icon: "calendar", title: H.title, value: hijriSummary(), onclick: "A.hijriSheet()" }),
-    navRow({ icon: "toggles", title: FEATURE.title, sub: FEATURE.summary, value: FEATURE.count(on, of), onclick: "A.settingsPage('features')" }),
     navRow({ icon: "info", title: GUIDE.helpRow, sub: GUIDE.helpRowSub, tag: helpIsNew(S) ? GUIDE.newTag : "", onclick: "A.helpOpen()" }),
   ]));
   g.push(group(T.groups.prayer, [
@@ -528,6 +574,14 @@ function mainPage() {
     navRow({ icon: "sun", tone: "green", title: ASR_UI.title, value: st.asr === "hanafi" ? ASR_UI.hanafi : ASR_UI.standard, onclick: "A.asrSheet()" }),
   ]));
   const lead = [5, 10, 15, 30].map(x => `<button class="${+st.leadMin === x ? "on" : ""}" aria-pressed="${+st.leadMin === x}" onclick="A.setLead(${x})">${esc(COMMON.minutes(x))}</button>`).join("");
+  // Widgets (phone app only): plain switches, off by default; the widgets pick them up from the snapshot
+  const plat = Capacitor.getPlatform();
+  if (plat === "android" || plat === "ios") g.push(group(X.widgetsHead, [
+    switchRow({ icon: "lock", title: X.showTimesOnly, sub: X.showTimesOnlySub, key: "showTimesOnly", on: st.showTimesOnly === true, fn: "A.widgetToggle('showTimesOnly')" }),
+    ...(plat === "android" ? [`<div class="srow"><div class="srow-main static">${tile("toggles")}<span class="t"><b>${esc(X.tile)}</b><small>${esc(X.tileSub)}</small></span><button type="button" class="tileadd" onclick="A.addTile()">${esc(X.tileAdd)}</button></div></div>`] : []),
+    ...(plat === "android" ? [switchRow({ icon: "bell", title: X.ongoingNow, sub: X.ongoingNowSub, key: "ongoingNow", on: st.ongoingNow === true, fn: "A.widgetToggle('ongoingNow')" })] : []),
+    ...(plat === "ios" ? [switchRow({ icon: "checkc", title: X.lockDots, sub: X.lockDotsSub, key: "lockDots", on: st.lockDots === true, fn: "A.widgetToggle('lockDots')" })] : []),
+  ]));
   g.push(group(T.groups.reminders, [
     switchRow({ icon: "bell", title: T.preQada, sub: st.preQada ? T.preQadaMin(st.leadMin) : T.preQadaSub, key: "preQada", on: !!st.preQada, extra: st.preQada ? `<div class="leadseg"><div class="seg" role="group">${lead}</div></div>` : "" }),
     ...(isOnF("makeups") ? [switchRow({ icon: "refresh", title: T.makeupNudge, sub: T.makeupNudgeSub, key: "makeupNudge", on: st.makeupNudge !== false, tag: X.newTag })] : []),
@@ -561,7 +615,7 @@ function mainPage() {
     <div class="srow"><div class="srow-main static">${tile("info", "grey")}<span class="t"><b>${esc(APP_NAME())}</b></span><span class="val">${esc(APP.version(APP_VERSION))}</span></div></div>
     ${[["privacy.html", T.privacy, "shield", X.privacySub], ["terms.html", T.terms, "file", ""], ["support.html", T.support, "help", X.supportSub], ["delete-account.html", X.deleteAcct, "userx", ""], ["release-notes.html", X.releaseNotes, "history", ""]].map(([p, l, ic, sub]) => `<a class="srow-main arow" href="${pageUrl(p)}" target="_blank" rel="noopener">${tile(ic, "grey")}<span class="t"><b>${esc(l)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span><span class="chev">${svg("chev")}</span></a>`).join("")}</div>
     <p class="sfoot center">${esc(APP.madeWithCare)}</p></section><div class="space"></div>`);
-  return `${head(T.title)}${profile}${g.join("")}`;
+  return `${mainHead()}${profile}${g.join("")}`;
 }
 const APP_NAME = () => APP.name;
 const HELP_PAGES = ["help", "hStatus", "hMakeups"];
@@ -573,7 +627,7 @@ function renderSettings() {
   // Redrawing while typing or scrolling is unnecessary: only redraw when this view is showing
   if (UI.view !== "settings") return;
   const y = $("#screen").scrollTop;
-  root.innerHTML = `<div class="settings">${page === "features" ? featuresPage() : page === "sunnah" ? sunnahPage() : HELP_PAGES.includes(page) ? helpPage(page, { head, group, navRow }) : mainPage()}</div>`;
+  root.innerHTML = `<div class="settings">${page === "features" ? featuresPage() : page === "sunnah" ? sunnahPage() : page === "appearance" ? appearancePage() : page === "plus" ? plusPage({ head }) : HELP_PAGES.includes(page) ? helpPage(page, { head, group, navRow }) : mainPage()}</div>`;
   $("#screen").scrollTop = y;
   if (exactAllowed === null) refreshExact();
 }

@@ -1,10 +1,11 @@
 /* Al-Hizb al-Aʿzam: weekly overview (HZ1) and the continuous reader (HR1). Saturday = manzil 1. */
-import { A, S, $, NOW, esc, I, T, open, redraw, part, persist, prune, prefs, toast, openSheet, head, info, COMMON, APP, arNum, dayName, minutesFor, wordCount, weekKey, dkey, topIn } from "./core.js";
+import { A, S, $, NOW, esc, I, T, open, redraw, part, persist, prune, prefs, toast, openSheet, head, info, COMMON, APP, arNum, dayName, minutesFor, wordCount, weekKey, dkey, topIn, store } from "./core.js";
 import { manzilFor, weekDates, weekRangeLabel, HIZB_WEEK_START } from "../../times.js";
 import { commit } from "../../app.js";
 import { TT } from "./strings-tools.js";
 import { toolTip } from "./tips.js";
 import { getTranslation } from "../../tools/quran-data.js";
+import { doneBar } from "./donebar.js";
 
 /* ---------- data (loaded on demand: it is large) ---------- */
 let DATA = null, loading = null;
@@ -58,7 +59,7 @@ export function hizbView() {
       <span class="tl-mt"><b>${TT.manzil(k)}</b><small>${esc(sub)}</small></span><span class="tl-mm">${TT.mins(mins(k))}</span></button>`;
   }).join("");
   return `${head({ title: "Hizb al-Aʿzam", ar: TT.arName.hizb, sub: TT.hizbSub })}
-    <div class="tl-hero tl-week"><svg class="pattern" viewBox="0 0 390 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="100%" height="100%" fill="url(#st)"/></svg>
+    <div class="tl-hero tl-week">
       <div class="tl-wk1"><span>${esc(TT.weekHd(weekRangeLabel(now, 0, HIZB_WEEK_START)))}</span><em>${TT.satStart}</em></div>
       <h2>${TT.todayManzil(m)}</h2><p>${esc(tmw)}</p>
       <div class="tl-wdays">${days}</div>
@@ -108,8 +109,8 @@ export function hizbReadView() {
       <div class="tl-bar g tl-thin"><i id="hzBar" style="width:${Math.round(100 * (startI + 1) / total)}%"></i></div></div>
     ${showPick ? `<div class="tl-pick-b" id="hzPicked"><span>${I.bookmark}<b>${TT.pickedUp}</b></span><button type="button" onclick="A.tlHizbStart()">${TT.startOfManzil}</button></div>` : ""}
     <div class="tl-hzwrap">${toolTip("hizb", "hz")}${body}</div>
-    <div class="tl-dock hz"><div><b id="hzCount">${TT.duaOf(startI + 1, total)}</b><span>${TT.savedScroll}</span></div>
-      <button class="tl-cta" onclick="A.tlHizbFinish(${m})">${I.check} ${done ? TT.manzilDone(m) : m === manzilToday() ? TT.finishManzil : TT.finishOther(m)}</button></div>`;
+    ${(m === manzilToday() && doneBar("hizb", { next: "A.readNextCard('.tl-hz')" })) || `<div class="tl-dock hz"><div><b id="hzCount">${TT.duaOf(startI + 1, total)}</b><span>${TT.savedScroll}</span></div>
+      <button class="tl-cta" onclick="A.tlHizbFinish(${m})">${I.check} ${done ? TT.manzilDone(m) : m === manzilToday() ? TT.finishManzil : TT.finishOther(m)}</button></div>`}`;
 }
 
 export function hizbReadAfter() {
@@ -165,6 +166,9 @@ A.tlHizbFinish = m => {
   const ws = weekState(NOW(), true);
   const was = !!ws.read[m];
   if (!was) ws.read[m] = Date.now();
+  // the day log too (store.setRead), under the day manzil m is due: it counts as a good deed in Provisions
+  const due = dkey(weekDates(NOW(), 0, HIZB_WEEK_START)[m - 1]);
+  if (due <= dkey(NOW())) store.setRead(S, due, "hizb", true);
   delete ws.pos;
   let khatm = false;
   if (Object.keys(ws.read).length >= 7 && !ws.khatm) { ws.khatm = Date.now(); root().khatms = (root().khatms || 0) + 1; khatm = true; }

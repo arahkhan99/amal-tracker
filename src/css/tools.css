@@ -4,7 +4,7 @@
    in the fallback (Amiri), which lacks the IndoPak marks (U+089C madd, U+08D5–U+08E2) and shows boxes. */
 @font-face{font-family:"DigitalKhatt IndoPak";src:url(/quran/fonts/DigitalKhattIndoPak.ttf) format("truetype");font-display:block}
 @font-face{font-family:"DigitalKhatt New Madina";src:url(/quran/fonts/DigitalKhattNewMadina.ttf) format("truetype");font-display:block}
-#v-tools{--tl-ar:28px;--tl-honey:#E5C55C;--tl-goldt:var(--gold-fg);--tl-chip:var(--inset);--tl-tile:var(--icon-green-bg);--tl-tilefg:var(--icon-green-fg);--tl-edge:#E9D9A6}
+#v-tools{--tl-ar:28px;--tl-honey:var(--honey);--tl-goldt:var(--gold-fg);--tl-chip:var(--inset);--tl-tile:var(--icon-green-bg);--tl-tilefg:var(--icon-green-fg);--tl-edge:#E9D9A6}
 :root[data-theme=dark] #v-tools{--tl-edge:rgba(229,197,92,.3)}
 #v-tools[data-sz="0"]{--tl-ar:24px}#v-tools[data-sz="2"]{--tl-ar:32px}#v-tools[data-sz="3"]{--tl-ar:36px}
 .tl-root{min-height:100%}
@@ -87,9 +87,7 @@
 .tl-tile.soon small{font-size:10px;font-weight:800;letter-spacing:.1em;color:var(--ink3)}
 
 /* ---------- forest hero (readers' header, Hizb week) ---------- */
-.tl-hero{position:relative;background:radial-gradient(120% 100% at 50% 0%,#1B5A43,var(--forest));color:var(--parchment);overflow:hidden}
-:root[data-theme=dark] .tl-hero{background:radial-gradient(120% 100% at 50% 0%,#17483A,var(--forest))}
-.tl-hero .pattern{position:absolute;inset:0;width:100%;height:100%;opacity:.14;pointer-events:none}
+.tl-hero{position:relative;background:var(--forest);color:var(--parchment);overflow:hidden} /* flat: no gradient or pattern (OG Calm) */
 .tl-hero>*{position:relative}
 .tl-rd{border-radius:0 0 34px 34px;padding:52px 18px 18px}
 .tl-hrow{display:flex;align-items:center;gap:12px}
@@ -379,3 +377,102 @@
 .tl-tsall{font-size:13px;font-weight:800;color:var(--ink2)}
 .tl-tsundo{font-size:12.5px;font-weight:800;color:var(--link);padding:8px 4px;text-decoration:underline}
 .tl-tsundo:disabled{opacity:.35;text-decoration:none}
+
+/* =====================================================================================================
+   Read front page: chapters For today · Qurʾān · Adhkār (views/read.js). The chapter frame (.zt-cb, .zt-track,
+   .zt-ch), cards and heads come from css/today.css, so Read looks and moves like Today. OG Calm A, flat.
+   ===================================================================================================== */
+#v-tools[data-screen=hub]{background:var(--bg);color:var(--ink);font-family:var(--sans);font-variant-numeric:tabular-nums}
+#v-tools.on[data-screen=hub]{display:flex;flex-direction:column;height:100%;min-height:0}
+:where(#v-tools[data-screen=hub],#v-tools .rd-bar) button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:inherit;padding:0}
+#v-tools .zt-ch svg{display:block}
+.rd-list{padding:4px 16px}
+.rd-list + .rd-list,.zt-card + .rd-week,.rd-list + .zt-note + .rd-week{margin-top:12px}
+.rd-row{display:flex;align-items:center;gap:12px;min-height:68px;padding:10px 0;border-top:1px solid var(--line);width:100%;text-align:left;color:var(--ink)}
+.rd-row:first-child{border-top:0}
+.rd-row .zt-ico svg{width:20px;height:20px}
+.rd-row .t{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.rd-row .t b{display:block;font-size:16px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.rd-row .t small{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--mute);margin-top:2px;line-height:1.35}
+.rd-btn{flex:none;min-height:40px;min-width:64px;padding:0 16px!important;border-radius:12px;background:var(--soft)!important;color:var(--on-soft)!important;font-size:15px!important;font-weight:600!important;text-align:center!important}
+.rd-tick{flex:none;width:44px;height:44px;display:grid!important;place-items:center;margin-right:-6px}
+.rd-bx{width:28px;height:28px;border-radius:9px;box-shadow:inset 0 0 0 1.5px var(--faint);display:grid;place-items:center;color:var(--on-acc)}
+.rd-bx.on{background:var(--acc);box-shadow:none}
+.rd-bx svg{width:16px;height:16px}
+.rd-cv{flex:none;color:var(--faint)}
+.rd-cv svg{width:18px;height:18px}
+.rd-tag{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:15px;font-weight:600;color:var(--acc2)}
+.rd-tag svg{width:16px;height:16px}
+:root[data-theme=dark] .rd-tag{color:var(--acc)}
+.rd-week{display:block;width:100%;padding:14px 16px 4px;text-align:left}
+.rd-wh{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--mute)}
+.rd-wh span:first-child{font-weight:600}
+.rd-week .rd-row{border-top:0;min-height:64px}
+.rd-cont .rd-kick{font-size:13px;font-weight:600;color:var(--mute);margin:0}
+.rd-cont .rd-big{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:6px 0 16px}
+.rd-cont .rd-big b{font-size:22px;font-weight:600;color:var(--ink)}
+.rd-cont .rd-big span{font-size:15px;color:var(--mute)}
+.rd-cont .zt-btn svg{width:20px;height:20px}
+.rd-cont + .rd-list{margin-top:12px}
+.rd-choose{display:flex;justify-content:center;margin-top:8px}
+.rd-choose .zt-link{font-size:14px;padding:0 12px}
+.rd-tips p{font-size:14.5px;line-height:1.55;color:var(--ink);margin-top:10px}
+.rd-wsheet .z-sec{margin:4px 0 0;padding:0}
+.rd-wsheet .z-sec h2{display:none}
+
+/* ---------- the bar at the bottom of a reader: tick "… done · Ticks it off for today", and Next ---------- */
+.rd-gap{height:20px}
+.rd-bar{position:sticky;bottom:0;z-index:6;display:flex;align-items:center;gap:10px;padding:10px 16px calc(12px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));background:var(--bg);border-top:1px solid var(--line);color:var(--ink);font-family:var(--sans)}
+.rd-tickl{flex:1;min-width:0;display:flex!important;align-items:center;gap:14px;min-height:48px;text-align:left}
+.rd-tickl .rd-bx{width:28px;height:28px;flex:none}
+.rd-tickl .t{min-width:0}
+.rd-tickl .t b{display:block;font-size:16px;font-weight:600;color:var(--ink)}
+.rd-tickl .t small{display:block;font-size:13px;color:var(--mute);margin-top:1px}
+.rd-next{flex:none;display:inline-flex!important;align-items:center;gap:6px;min-height:44px;padding:0 14px 0 18px!important;border-radius:14px;background:var(--soft)!important;color:var(--on-soft)!important;font-size:16px!important;font-weight:600!important}
+.rd-next svg{width:18px;height:18px}
+.rd-prev{flex:none;width:44px;height:44px;border-radius:14px;display:grid!important;place-items:center;background:var(--neutral)!important;color:var(--ink)!important}
+.rd-prev svg{width:18px;height:18px}
+/* the mushaf: the bar shows while reading, and gives way to the reader's own bars */
+.tl-qr .rd-bar{margin-top:auto}
+.tl-qr.bars .rd-bar{display:none}
+
+/* ---------- readers' header: calm and light (OG Calm A has no green card) ---------- */
+.tl-hero.tl-rd,.tl-hero.tl-week{background:var(--bg);color:var(--ink);border-radius:0}
+.tl-rd{padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 40px) 16px 8px;border-bottom:1px solid var(--line)}
+.tl-rd .tl-hbtn,.tl-week .tl-hbtn{background:var(--neutral);color:var(--ink)}
+.tl-rd .tl-ht h1{color:var(--ink)}
+.tl-segw{background:var(--neutral);border-color:var(--line)}
+.tl-segw button{color:var(--mute);opacity:1}
+.tl-segw button.on{background:var(--card);color:var(--ink);box-shadow:0 0 0 1px var(--card-line)}
+.tl-auto{color:var(--mute);opacity:1}
+.tl-autob{color:var(--acc2);border-color:var(--acc2)}
+.tl-prog{color:var(--mute)}
+.tl-prog b{color:var(--ink)}
+.tl-prog .tl-bar{background:var(--track)}
+.tl-prog .tl-bar i{background:var(--acc2)}
+.tl-week{background:var(--card)!important;border:1px solid var(--card-line);border-radius:20px!important}
+.tl-wk1,.tl-wfoot b{color:var(--acc2)}
+.tl-wk1 em{border-color:var(--acc2)}
+.tl-wd{color:var(--ink)}
+.tl-wd.today{background:var(--neutral);border-color:var(--acc2)}
+.tl-wd i svg{color:var(--on-acc)}
+.tl-wd i.d{background:var(--acc)}
+.tl-wd i.t{border-color:var(--acc2);color:var(--acc2)}
+.tl-wd i.f{border-color:var(--line);color:var(--mute)}
+.tl-wd i.x{border-color:var(--faint);color:var(--mute)}
+/* the mushaf fills the screen, so its done bar sits at the bottom even on a short page */
+#v-tools.on[data-screen=quran]{display:flex;flex-direction:column}
+#v-tools[data-screen=quran] .tl-root{flex:1;display:flex;flex-direction:column}
+#v-tools[data-screen=quran] .tl-qr{flex:1}
+/* Arabic in the OG Calm colour (forest in light, soft gold in dark) */
+#v-tools .tl-ar,#v-tools .tl-q,#v-tools .tl-dar{color:var(--arabic)}
+/* large text or a narrow phone: the Read button and the tick move under the name */
+.rd-list{container-type:inline-size}
+@container (max-width:310px){
+  .rd-row:has(.rd-tick){flex-wrap:wrap;row-gap:8px}
+  .rd-row:has(.rd-tick) .t{flex:1 1 calc(100% - 60px)}
+  .rd-row:has(.rd-tick) .rd-btn{margin-left:48px}
+  .rd-row:has(.rd-tick) .rd-tick{margin-left:auto}
+}
+/* a toast in a reader sits above the done bar, not over it */
+.phone[data-nav=off]:has(#v-tools.on .rd-bar) .toast{bottom:calc(96px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))}

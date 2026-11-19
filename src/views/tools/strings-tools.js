@@ -1,6 +1,6 @@
 /* Tools-only wording. Everything else comes from src/strings.js. Same spelling rules (light transliteration). */
 export const TT = {
-  title: "Tools",
+  title: "Read",
   yourTools: "Your tools",
   voluntary: "Your wird is voluntary. It never changes your prayer score, streaks or make-ups.",
   comingLater: "Coming later",
@@ -59,7 +59,7 @@ export const TT = {
   times: n => (n === 1 ? "ONCE" : `${n} TIMES`),
   doneCard: set => `${set} done`,
   doneMeta: (n, rec) => `${n} adhkār · ${rec} ${rec === 1 ? "recitation" : "recitations"}`,
-  ticked: set => `${set} ticked in Good Deeds`,
+  ticked: set => `${set} ticked off for today`,
   eveningOpensAt: asr => `Evening adhkār open after ʿAsr (${asr})`,
   undone: "Unticked",
   virtue: "Virtue",
@@ -93,7 +93,7 @@ export const TT = {
   fridayLine: "Daily, at least on Friday",
   durudCompleteTitle: "Forty durūd complete",
   durudCompleteBody: "Allah and His angels send blessings on the Prophet ﷺ (33:56).",
-  durudTicked: "Salawāt ticked in Good Deeds",
+  durudTicked: "Ticked off for today",
   readNext: "Read · next",
   readLast: "Read · finish",
   prev: "Previous", next: "Next",
@@ -162,8 +162,8 @@ export const TT = {
   mushafBtn: "Mushaf",
   pageOf: (n, m) => `Page ${n} of ${m}`,
   pagesOf: (a, b, m) => `Pages ${a}–${b} of ${m}`, // two-page spread (tablet, landscape)
-  paraN: n => `Para ${n}`, juzN: n => `Juz ${n}`,
-  tabSurah: "Surah", tabPara: "Para", tabJuz: "Juz", tabPage: "Page",
+  paraN: n => `Juzʾ\u00a0${n}`, juzN: n => `Juzʾ\u00a0${n}`, // "Juzʾ" for every mushaf (scholar, 18 Nov 2026), never "Para"; no break before the number
+  tabSurah: "Surah", tabPara: "Juzʾ", tabJuz: "Juzʾ", tabPage: "Page",
   searchSurah: "Search a surah",
   goPage: "Go to page",
   noBookmarks: "No bookmarks yet. Tap the bookmark in the top bar.",

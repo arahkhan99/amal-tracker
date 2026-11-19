@@ -7,7 +7,7 @@
  * and the yesterday catch-up. store.endExcused only writes "excused" for the prayers its callers pass, which
  * are times.startedPrayers (prayers already begun), so it never logs a prayer that hasn't started.
  */
-import { notStarted } from "./times.js";
+import { notStarted, canStillMakeUp } from "./times.js";
 import { PRAYERS, parseKey } from "./util.js";
 
 /**
@@ -25,4 +25,13 @@ export function canLog(S, key, p, now = new Date()) {
  */
 export function logAllowed(S, key, p, value, now = new Date()) {
   return !value || canLog(S, key, p, now);
+}
+
+/**
+ * "Made up later" means prayed after its time, before the next Fajr. So it can be chosen only once the prayer's
+ * own time has ended (and the next Fajr hasn't come). A prayer already stored as made up keeps the choice.
+ */
+export function madeUpAllowed(S, key, p, now = new Date()) {
+  if (!PRAYERS.includes(p)) return false;
+  return canStillMakeUp(parseKey(key), p, now, S.settings);
 }

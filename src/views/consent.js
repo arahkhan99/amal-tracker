@@ -23,6 +23,8 @@ export const APPLE_LOGO = '<svg viewBox="0 0 24 24" class="al" aria-hidden="true
  *  only fail. Flip to true once that's done. */
 export const APPLE_READY = false;
 export const appleAvailable = () => APPLE_READY;
+/** The "what is stored" text. It names only the accounts actually offered: Google alone while Apple is hidden. */
+export const consentWhat = () => C.what(appleAvailable());
 const appleFirst = () => Capacitor.getPlatform() === "ios";
 
 const policyLink = cls => `<a class="${cls}" href="${page("privacy.html#sensitive")}" target="_blank" rel="noopener">${ext}${esc(C.policy)}</a>`;
@@ -33,7 +35,7 @@ const box = (id, cls) => `<label class="${cls}"><input type="checkbox" id="${id}
 
 /** Google and Apple buttons, disabled until the box is ticked. `fn` is called with "google" or "apple". */
 export function signInButtons(fn, { onboarding = false } = {}) {
-  const g = `<button class="btn ${onboarding ? "white" : "primary"} sib" data-consent disabled onclick="${fn}('google')">${GOOGLE_G}<span>${esc(onboarding ? SETUP_X.continueGoogle : T.signInGoogle)}</span></button>`;
+  const g = `<button class="btn ${onboarding ? "ob-out" : "primary"} sib" data-consent disabled onclick="${fn}('google')">${GOOGLE_G}<span>${esc(onboarding ? SETUP_X.continueGoogle : T.signInGoogle)}</span></button>`;
   const a = appleAvailable() ? `<button class="btn apple sib" data-consent disabled onclick="${fn}('apple')">${APPLE_LOGO}<span>${esc(onboarding ? C.continueApple : C.signInApple)}</span></button>` : "";
   return appleFirst() ? a + g : g + a;
 }
@@ -41,27 +43,32 @@ export function signInButtons(fn, { onboarding = false } = {}) {
 /** c1: Settings → Cloud backup, signed out. */
 export function signInSheetHtml() {
   return `<div class="cs"><h3>${esc(T.cloud)}</h3><p>${esc(C.settingsLead)}</p>
-  <div class="cs-box"><p class="cs-what">${C.what}</p>${policyLink("cs-pol")}</div>
+  <div class="cs-box"><p class="cs-what">${consentWhat()}</p>${policyLink("cs-pol")}</div>
   ${box("cloudOk", "chk")}
   <div class="cta col">${signInButtons("A.cloudSignIn")}</div>
   <p class="terms">${termsLine()}</p></div>`;
 }
 
-/** c2: the bottom of onboarding → Log in. */
-export function loginBottomHtml() {
-  return `<div class="ocs"><p>${C.what}</p>${policyLink("pol")}</div>
-  ${box("obOk", "ochk")}
-  <div class="ob-sib">${signInButtons("A.obRestore", { onboarding: true })}</div>
-  <button class="btn ghost eq" onclick="A.obStart()">${esc(C.notNow)}</button>
+/** c2: onboarding → Log in ("I already use Zad"). The body: the consent card and the unticked box. */
+export function loginBodyHtml() {
+  return `<div class="ocs"><p>${consentWhat()}</p>${policyLink("pol")}</div>
+  <label class="ochk"><input type="checkbox" id="obOk" oninput="A.consentTick(this)" onchange="A.consentTick(this)"><span>${esc(C.agree)}</span></label>`;
+}
+/** c2, the buttons: Google (disabled until the box is ticked) and an equal "Not now" that starts set-up instead. */
+export function loginButtonsHtml() {
+  return `<div class="ob-sib">${signInButtons("A.obRestore", { onboarding: true })}</div>
+  <button class="btn ob-out" onclick="A.obStart()">${esc(C.notNow)}</button>
   <p class="terms">${termsLine()}</p>`;
 }
+/** Both parts together. */
+export const loginBottomHtml = () => loginBodyHtml() + loginButtonsHtml();
 
 /** True when the consent box on screen (Settings sheet or onboarding) is ticked. */
 export const consentTicked = () => !!($("#cloudOk")?.checked || $("#obOk")?.checked);
 
 A.consentTick = el => {
   el.closest("label")?.classList.toggle("on", el.checked);
-  const root = el.closest(".cs, .onb-inner") || document;
+  const root = el.closest(".cs, .onb") || document;
   for (const b of root.querySelectorAll("[data-consent]")) b.disabled = !el.checked;
 };
 

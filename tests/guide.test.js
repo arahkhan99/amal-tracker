@@ -49,32 +49,38 @@ describe("reading answer → tool prefs", () => {
 });
 
 describe("tour steps follow the features", () => {
-  it("everything on: 7 steps, Tracker step covers Make-ups too", () => {
+  it("everything on: 7 steps; Progress covers Make-ups, the calendar replaces Tracker", () => {
     const S = fresh();
-    expect(ids(S)).toEqual(["prayer", "status", "deeds", "tools", "progress", "tracker", "finish"]);
-    const tr = G.tourSteps(S).find(s => s.id === "tracker");
-    expect(tr.tabs).toEqual(["tracker", "qada"]);
-    expect(tr.variant).toBe("makeups");
+    expect(ids(S)).toEqual(["prayer", "status", "deeds", "read", "progress", "calendar", "finish"]);
+    const pr = G.tourSteps(S).find(s => s.id === "progress");
+    expect(pr.tabs).toEqual(["progress"]);
+    expect(pr.variant).toBe("both");
+    expect(G.tourSteps(S).find(s => s.id === "calendar").target).toBe("cal");
   });
-  it("Just prayers: no Good Deeds, Tools, Progress or Make-ups", () => {
+  it("Just prayers: no Good Deeds, Read, Progress or Make-ups", () => {
     const S = fresh(); F.applyPreset(S, "prayers");
-    expect(ids(S)).toEqual(["prayer", "status", "tracker", "finish"]);
-    expect(G.tourSteps(S).find(s => s.id === "tracker").tabs).toEqual(["tracker"]);
+    expect(ids(S)).toEqual(["prayer", "status", "calendar", "finish"]);
   });
   it("each switch removes only its own step", () => {
-    for (const [f, gone] of [["deeds", "deeds"], ["tools", "tools"], ["progress", "progress"]]) {
-      const S = fresh(); F.setFeature(S, f, false);
+    for (const [f, gone] of [["deeds", "deeds"], ["tools", "read"]]) {
+      const S = fresh(); F.setFeature(S, f, false); if (f === "tools") F.setFeature(S, "week", false);
       expect(ids(S)).not.toContain(gone);
       expect(ids(S)).toHaveLength(6);
     }
     const S = fresh(); F.setFeature(S, "makeups", false);
-    expect(G.tourSteps(S).find(s => s.id === "tracker").variant).toBe("only");
+    expect(G.tourSteps(S).find(s => s.id === "progress").variant).toBe("progress");
+    F.setFeature(S, "makeups", true); F.setFeature(S, "progress", false);
+    expect(G.tourSteps(S).find(s => s.id === "progress").variant).toBe("makeups");
+    F.setFeature(S, "makeups", false);
+    expect(ids(S)).not.toContain("progress");
   });
-  it("all tools hidden one by one hides the Tools step (the tab is gone)", () => {
+  it("all tools hidden and no weekly readings hides the Read step (the tab is gone)", () => {
     const S = fresh(); for (const t of F.TOOLS) F.setToolHidden(S, t, true);
-    expect(ids(S)).not.toContain("tools");
+    expect(ids(S)).toContain("read"); // the weekly readings still live in Read
+    F.setFeature(S, "week", false);
+    expect(ids(S)).not.toContain("read");
   });
-  it("without the ··· button, step 1 points at Salāh today and Every choice is dropped", () => {
+  it("without the one-tap buttons, step 1 points at the Today chapter and Every choice is dropped", () => {
     const S = fresh(), st = G.tourSteps(S, { hasDots: false });
     expect(st.map(s => s.id)).not.toContain("status");
     expect(st[0]).toMatchObject({ id: "prayer", target: "today", variant: "today" });

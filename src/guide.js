@@ -66,10 +66,11 @@ export function markHelpOpened(S) { helpState(S).opened = true; }
 
 /* ---------- tour steps ---------- */
 /**
- * The tour's steps for this user, in order. Steps whose tab or feature is hidden are left out.
- * env.hasDots: whether Home is showing the ··· button right now (the Now card with an unlogged prayer).
- * Without it the "Every choice" step is dropped and step 1 points at "Salāh today" instead.
- * Each step: { id, target: "now" | "today" | "dots" | "deeds" | "tab", tabs?: [view ids], variant? }
+ * The tour's steps for this user, in order (Settings → Help & tour → Replay; a new user gets one guide line on
+ * Today instead, see today.js guideLineDue). Steps whose tab or feature is hidden are left out.
+ * env.hasDots: whether the Now card with its one-tap buttons and "Other" is showing right now (a prayer is open and
+ * not logged). Without it the "Every choice" step is dropped and step 1 points at the Today chapter instead.
+ * Each step: { id, target: "now" | "today" | "dots" | "deeds" | "cal" | "tab", tabs?: [view ids], variant? }
  */
 export function tourSteps(S, env = {}) {
   const tabs = navTabs(S).map(t => t.id);
@@ -78,10 +79,12 @@ export function tourSteps(S, env = {}) {
   out.push(hasDots ? { id: "prayer", target: "now" } : { id: "prayer", target: "today", variant: "today" });
   if (hasDots) out.push({ id: "status", target: "dots" });
   if (isOn(S, "deeds")) out.push({ id: "deeds", target: "deeds" });
-  if (tabs.includes("tools")) out.push({ id: "tools", target: "tab", tabs: ["tools"] });
-  if (tabs.includes("progress")) out.push({ id: "progress", target: "tab", tabs: ["progress"] });
-  const tq = tabs.includes("qada");
-  out.push({ id: "tracker", target: "tab", tabs: tq ? ["tracker", "qada"] : ["tracker"], variant: tq ? "makeups" : "only" });
+  if (tabs.includes("tools")) out.push({ id: "read", target: "tab", tabs: ["tools"] });
+  if (tabs.includes("progress")) {
+    const p = isOn(S, "progress"), m = isOn(S, "makeups");
+    out.push({ id: "progress", target: "tab", tabs: ["progress"], variant: p && m ? "both" : p ? "progress" : "makeups" });
+  }
+  out.push({ id: "calendar", target: "cal" });
   out.push({ id: "finish", target: null });
   return out;
 }

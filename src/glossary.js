@@ -27,7 +27,7 @@ export const GLOSSARY = {
   salawat: { term: "Salawāt", ar: "صلوات", meaning: "Blessings on the Prophet ﷺ, the same act as durūd. Count as many as you like.", draft: false },
   hizb: { term: "Hizb al-Aʿzam", ar: "الحزب الأعظم", meaning: "A collection of duʿāʾs from the Qurʾān and hadith by Mulla ʿAli al-Qari, divided into 7 daily portions (manzils), starting on Saturday.", draft: false },
   manzil: { term: "Manzil", ar: "منزل", meaning: "A daily portion of a longer reading. The Hizb al-Aʿzam has 7, one for each day of the week.", draft: false },
-  para: { term: "Para / juz", ar: "پاره / جزء", meaning: "One of the 30 equal parts of the Qurʾān. \"Para\" is the name used with IndoPak mushafs, \"juz\" with Uthmani ones.", draft: false },
+  para: { term: "Juzʾ / para", ar: "جزء / پاره", meaning: "One of the 30 equal parts of the Qurʾān. Zad calls it a juzʾ; with IndoPak mushafs it is often called a para.", draft: false },
   mushaf: { term: "Mushaf", ar: "مصحف", meaning: "A printed copy of the Qurʾān. Its script and page layout differ by style, such as 15-line IndoPak or Uthmani.", draft: false },
   raghibah: { term: "Raghībah", ar: "رغيبة", meaning: "In the Mālikī school, the 2 rakʿahs before Fajr: a rank above an ordinary voluntary prayer and just below a formal sunnah.", draft: false },
   nafilahMuakkadah: { term: "Nāfilah muʾakkadah", ar: "نافلة مؤكدة", meaning: "In the Mālikī school, an emphasised voluntary prayer, such as the rakʿahs before and after Zuhr.", draft: false },

@@ -1,15 +1,5 @@
-/* Brother / sister: the choice on the onboarding name screen, the remembrance tick on the status sheet (excused
-   prayers) and the Settings "Set Zad up for" sheet. Onboarding keeps its own palette (the name panel is light);
-   Home sheets use the --z-* tokens, Settings the plain ones. */
-
-/* ---- onboarding name screen ---- */
-.onb .gseg-l{font-size:13px;font-weight:600;color:#3d5047;margin:18px 0 8px}
-.onb .gseg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.onb .gseg button{padding:13px 10px;border-radius:14px;font-size:15.5px;font-weight:600;color:#0F3D2E;background:#fff;border:1.5px solid #e2d8bf}
-.onb .gseg button.on{border-color:#C9A227;background:#F6ECCB}
-.onb .gseg-f{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:9px;font-size:12px;line-height:1.45;color:#5b6b63}
-.onb .gseg-f button{color:#0F3D2E;font-weight:600;font-size:12.5px;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;background:none;border:0;padding:6px 0}
-.onb .gseg-f button.on{color:#7a5c00}
+/* Brother / sister: the remembrance tick on the status sheet (excused prayers) and the Settings "Set Zad up for"
+   sheet. Home sheets use the --z-* tokens, Settings the plain ones. */
 
 /* ---- status sheet: remembrance at prayer time (excused prayers only) ---- */
 .z-gdh{display:flex;gap:12px;align-items:flex-start;margin-top:10px;padding:12px 13px;border-radius:14px;border:1.5px solid var(--z-line);background:var(--z-card);text-align:left;width:100%;color:var(--z-ink);font:inherit}

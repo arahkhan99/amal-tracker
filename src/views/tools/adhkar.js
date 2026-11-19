@@ -7,6 +7,7 @@ import { commit } from "../../app.js";
 import { TT } from "./strings-tools.js";
 import { toolTip } from "./tips.js";
 import { quranBlock, quranFont, refLabel } from "./qtext.js";
+import { doneBar } from "./donebar.js";
 
 /* ---------- which set is open ---------- */
 export function autoSet(now = NOW()) {
@@ -133,11 +134,12 @@ export function adhkarView() {
     return cardHtml(it, st, set, it === nowItem, itemDone(st, it));
   }).join("");
   pending = needQ;
+  const bar = doneBar(set, { next: pg.complete ? "" : "A.readNextCard('.tl-ad,.tl-fold')" });
   const doneCard = pg.complete ? `<div class="tl-donec"><div class="tl-dtick">${I.check}</div><div><b>${TT.doneCard(title)}</b><span>${TT.doneMeta(pg.n, pg.total)}</span></div></div>
-    <div class="tl-dnote">${amalIs(amalId(set)) ? `<span>${TT.ticked(title)}</span><button type="button" onclick="A.tlUntick('${set}')">${COMMON.undo}</button>` : `<span>${TT.eveningOpensAt(fmt12(t.Asr))}</span>`}</div>` : "";
+    ${bar ? "" : `<div class="tl-dnote">${amalIs(amalId(set)) ? `<span>${TT.ticked(title)}</span><button type="button" onclick="A.tlUntick('${set}')">${COMMON.undo}</button>` : `<span>${TT.eveningOpensAt(fmt12(t.Asr))}</span>`}</div>`}` : "";
   const evHint = set === "morning" && !pg.complete ? "" : "";
   return `<div class="tl-hero tl-rd">
-      <svg class="pattern" viewBox="0 0 390 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="100%" height="100%" fill="url(#st)"/></svg>
+      
       <div class="tl-hrow"><button type="button" class="tl-hbtn" aria-label="${COMMON.back}" onclick="A.tlBack()">${I.back}</button>
         <div class="tl-ht"><h1>${esc(title)}</h1></div>
         <button type="button" class="tl-hbtn aa" aria-label="${TT.aa}" onclick="A.tlAa('adhkar')">Aa</button></div>
@@ -145,7 +147,7 @@ export function adhkarView() {
       <div class="tl-auto"><span class="tl-autob">${isAuto ? TT.auto : "•"}</span> ${isAuto ? esc(auto) : esc(auto)}</div>
       <div class="tl-prog"><div class="tl-bar"><i style="width:${Math.round(100 * pg.said / pg.total)}%"></i></div><span><b>${pg.complete ? pg.n : first + 1} of ${pg.n}</b> · ${pg.said}/${pg.total} said</span></div>
     </div>
-    <div class="tl-list">${toolTip("adhkar")}${doneCard}${cards}</div><div class="space"></div>`;
+    <div class="tl-list">${toolTip("adhkar")}${doneCard}${cards}</div>${bar ? `<div class="rd-gap"></div>${bar}` : `<div class="space"></div>`}`;
 }
 
 export function adhkarAfter() {

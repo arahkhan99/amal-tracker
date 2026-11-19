@@ -3,11 +3,13 @@ import * as store from "./store.js";
 import { reschedule } from "./notify.js";
 import { dkey } from "./util.js";
 import { setStatusBar } from "./platform.js";
-import { navTabs } from "./features.js";
+import { navTabs, isOn } from "./features.js";
+import { resolveView, routeName, tabFor, landing } from "./routes.js";
 import { NAV } from "./strings.js";
+import { applyScales } from "./appearance.js";
 
 export const S = store.load();
-export const UI = { view: "home", range: "day", selDay: 0, trkDay: 0 };
+export const UI = { view: "home", range: "day", selDay: 0, trkDay: 0, lastView: "home", todayCh: 0, progressCh: "" };
 export const A = (window.A = {}); // actions callable from inline handlers
 
 let now = new Date();
@@ -73,49 +75,82 @@ export function resolvedTheme() {
 export function applyTheme() {
   const t = resolvedTheme();
   document.documentElement.dataset.theme = t;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", t === "dark" ? "#0C1613" : "#0F3D2E");
+  applyScales(S); // Settings → Appearance: text size and Arabic text size (--ui-scale, --ar-scale)
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", t === "dark" ? "#16221C" : "#F8F4EA");
 }
 darkQuery?.addEventListener?.("change", () => { applyTheme(); render(); });
-/** Light status-bar icons on dark backdrops: Home, onboarding, and every view in dark mode. */
+/** Light status-bar icons on dark backdrops: every view in dark mode (the redesign has no forest Home hero, and
+ *  set-up follows the theme too). */
 let sbSig = "";
 /** Pick the status-bar icon colour for the current view and theme. force: set it again even if unchanged
  *  (main.js does this once after start-up, when Capacitor has injected the safe-area insets). */
 export function syncStatusBar({ force = false } = {}) {
-  const dark = UI.view === "home" || UI.view === "onboard" || resolvedTheme() === "dark";
+  const dark = resolvedTheme() === "dark";
   if (!force && String(dark) === sbSig) return;
   sbSig = String(dark);
   setStatusBar(dark);
 }
 
-/* ---------- bottom bar N2 (tabs come from features.navTabs) ---------- */
-// Outline icons (IC-O). The active tab fills in (see theme.css).
+/* ---------- bottom bar: Today · Read · Progress (+ Community with Zad Plus); tabs come from features.navTabs ---------- */
+// Outline icons. The active tab is drawn in the accent colour.
 const NAV_ICON = {
-  home: '<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
-  tracker: '<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/>',
-  tools: '<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><path d="M17.25 13.5v7.5M13.5 17.25H21"/>',
-  qada: '<path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/><path d="M21 3v6h-6"/>',
-  progress: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
+  home: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2.5 12h2M19.5 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  tools: '<path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5z"/><path d="M12 6.5v13"/>',
+  progress: '<path d="M5 20V11M12 20V5M19 20v-6"/>',
+  community: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 5.8"/>',
 };
 let navSig = "";
+/** Views without the bottom bar: set-up, and Settings (a full page with its own back). */
+const NO_NAV = ["onboard", "settings"];
 function renderNav() {
-  const tabs = navTabs(S);
-  const sig = tabs.map(t => t.id).join() + "|" + UI.view;
+  const tabs = navTabs(S), on = tabFor(UI.view);
+  // With one tab only (prayers only) there is no tab bar at all. A reader (Read) hides it too (UI.navHidden).
+  const hide = NO_NAV.includes(UI.view) || tabs.length < 2 || !!UI.navHidden;
+  $("#nav").hidden = hide;
+  $("#phone").dataset.nav = hide ? "off" : "on";
+  const sig = tabs.map(t => t.id).join() + "|" + on;
   if (sig === navSig) return;
   navSig = sig;
-  $("#nav").innerHTML = tabs.map(t => `<button type="button" data-v="${t.id}" class="${t.id === UI.view ? "on" : ""}"${t.id === UI.view ? ' aria-current="page"' : ""} onclick="A.go('${t.id}')"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_ICON[t.id]}</svg>${NAV[t.id] || t.label}</button>`).join("");
+  $("#nav").innerHTML = tabs.map(t => `<button type="button" data-v="${t.id}" class="${t.id === on ? "on" : ""}"${t.id === on ? ' aria-current="page"' : ""} onclick="A.tab('${t.id}')"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_ICON[t.id]}</svg>${NAV[t.id] || t.label}</button>`).join("");
 }
 onRender(() => { applyTheme(); syncStatusBar(); renderNav(); });
+A.syncNav = renderNav;
 
+/** A bottom-bar tab. Progress opens Make-ups when Progress itself is off. */
+A.tab = id => go(id === "progress" && !isOn(S, "progress") ? "qada" : id);
+
+/**
+ * Show a view. Takes a view id or a route name; old names redirect (routes.js): "tracker" opens the calendar,
+ * "tools" / "read" the Read tab, "home" / "today" the Today tab. Unknown names go to Today.
+ * The address bar follows (#today, #read …) without adding history entries.
+ */
 export function go(v) {
+  v = resolveView(v) || "home";
+  // Make-ups is a chapter of Progress while Progress is on: #makeups, #qada and old links land there
+  const land = landing(v, S);
+  if (land.chapter) { v = land.view; UI.progressCh = land.chapter; }
+  if (v !== "settings" && v !== "onboard") UI.lastView = v; // where Settings goes back to
+  if (v !== "tools") UI.navHidden = false; // a reader in Read hides the bar while it is open
   UI.view = v;
   $$(".view").forEach(e => e.classList.toggle("on", e.id === "v-" + v));
-  $("#nav").hidden = v === "onboard";
   $("#phone").dataset.view = v;
   syncStatusBar();
   $("#screen").scrollTop = 0;
+  const name = routeName(v);
+  try { if (name && location.hash !== "#" + name) history.replaceState(null, "", "#" + name); } catch (e) { /* file: or sandboxed */ }
   render();
 }
 A.go = go;
+/** Settings, from the initial at the top right. Back returns to where it was opened. */
+A.openSettings = () => go("settings");
+A.settingsDone = () => go(UI.lastView || "home");
+
+/** The initial at the top right of every tab: it opens Settings. extra: HTML placed before it (the Lv chip). */
+export function avatarBtn(extra = "") {
+  const n = (S.profile?.name || "").trim();
+  const ch = (n ? [...n][0] : "Z").toUpperCase();
+  return `<div class="zt-tr">${extra}<button type="button" class="zt-av" aria-label="${NAV.settings}" onclick="A.openSettings()">${escH(ch)}</button></div>`;
+}
 
 /**
  * Show a short message. Pass { undo: fn } to add an Undo button (shown longer, 5 s);

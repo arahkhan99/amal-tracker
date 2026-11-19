@@ -17,6 +17,8 @@ The iPhone app is the same Zad app wrapped with Capacitor (like Android). It is 
   - `build` job, on every push to `main`: tests, builds the web app, builds the iPhone app without signing to prove it compiles.
   - `testflight` job: archives, signs and uploads to TestFlight. It is **switched off** until the Apple account exists (repo variable `IOS_UPLOAD_ENABLED`).
   - Version numbers are set automatically: version = date (for example `2026.11.3`), build number = minutes since 1 Jan 2026 (same as Android), so every upload is newer than the last.
+  - Both jobs first run `scripts/ios/add-widget-target.rb`, which adds the **ZadWidget** widget extension (home and lock-screen widgets, iOS 18 Control) to the Xcode project and embeds it in the app. The target is not committed in `project.pbxproj`; see `docs/build/widgets.md`.
+- **Widget extension**: bundle ID `com.zad.app.ZadWidget`, iOS 16+, App Group `group.com.zad.app` shared with the app (`ios/App/ZadWidget/ZadWidget.entitlements`, `ios/App/App/App.entitlements`). It needs its own App ID, see "Widget extension" below.
 
 ## Needed now (for the `build` job)
 
@@ -32,7 +34,7 @@ Without it the build job stops with a clear message.
 
 1. **Join the Apple Developer Program** at https://developer.apple.com/programs/ (US$99 a year). Enroll as an individual unless you want a company name shown as the seller (that needs a D-U-N-S number). Approval can take a day or two.
 2. **Find your Team ID**: https://developer.apple.com/account → Membership details → Team ID (10 letters/numbers).
-3. **Create the app in App Store Connect**: https://appstoreconnect.apple.com → Apps → + → New App. Platform iOS, name **Zad Tracker** (the plain name "Zad" is taken on the App Store; see `docs/store-listing.md`), language English, bundle ID **com.zad.app** (if it isn't in the list, first register it at developer.apple.com → Certificates, Identifiers & Profiles → Identifiers → +, App ID, explicit `com.zad.app`), SKU `zad`.
+3. **Create the app in App Store Connect**: https://appstoreconnect.apple.com → Apps → + → New App. Platform iOS, name **Zad Tracker** (the plain name "Zad" is taken on the App Store; see `docs/store-listing.md`), language English, bundle ID **com.zad.app** (if it isn't in the list, first register it at developer.apple.com → Certificates, Identifiers & Profiles → Identifiers → +, App ID, explicit `com.zad.app`), SKU `zad`. Before the first upload, also set up the App Group and the widget's App ID (see "Widget extension" below).
 4. **Create an App Store Connect API key**: App Store Connect → Users and Access → Integrations → App Store Connect API → Team Keys → +. Name it "GitHub builds", access **Admin** (needed so the robot can create the signing certificate and profile itself). Download the `.p8` file (you can only download it once) and note the **Key ID** and the **Issuer ID** shown above the list. Give these three things to Claude, or set them yourself:
 
 | Kind | Name | Value |
@@ -47,6 +49,16 @@ Variables are under Settings → Secrets and variables → Actions → **Variabl
 
 5. **Push to `main`** (or run the "iPhone app" workflow by hand). After 5–30 minutes the build appears in App Store Connect → TestFlight. Install the **TestFlight** app on your iPhone and add yourself as an internal tester to try it.
 6. **Before submitting for review**, fill in App Store Connect: App Privacy (from `docs/privacy-answers.md`), age rating, screenshots (6.9" iPhone), description (`docs/store-listing.md`), privacy policy URL and support URL. Check that deleting the account from inside the app works on iPhone (Apple requires in-app account deletion for apps with sign-in).
+
+## Widget extension (provisioning)
+
+The app ships with a widget extension, `ZadWidget.appex`, inside it. Apple signs it separately, so it needs its own App ID and profile, and both need the same App Group so the widget can read what the app writes (and the app can read the widget's one-tap logs). Set this up once at https://developer.apple.com/account → Certificates, Identifiers & Profiles:
+
+1. **Identifiers → + → App Groups**: description "Zad", identifier `group.com.zad.app`.
+2. **Identifiers → `com.zad.app`**: tick **App Groups** → Configure → tick `group.com.zad.app` → Save. Also tick **Sign in with Apple** (the app's entitlements file asks for it; see `docs/build/apple-sign-in.md`).
+3. **Identifiers → + → App IDs → App**: description "Zad Widget", explicit bundle ID `com.zad.app.ZadWidget`. Tick **App Groups**, Continue, Register. Then open it, App Groups → Configure → tick `group.com.zad.app` → Save.
+
+The TestFlight job signs automatically with the API key (`-allowProvisioningUpdates`), so it creates and refreshes the provisioning profiles for both IDs itself; no profiles need to be made by hand. Automatic signing can usually register a missing App ID or capability on its own, but doing the three steps above first avoids a failed first upload. If the archive step fails with an error naming `com.zad.app.ZadWidget` or `group.com.zad.app`, these steps are what is missing. Nothing has to be added in App Store Connect: the widget is part of the app's build.
 
 ## How the upload works
 

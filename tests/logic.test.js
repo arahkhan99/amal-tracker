@@ -152,10 +152,11 @@ describe("stats", () => {
     expect(st.amalStreak(S, "quran", NOW)).toBe(21);
     expect(st.prayerStreak(S, NOW)).toBe(0); // Asr missed yesterday
     const { good, warn } = st.insights(S, NOW);
-    expect(good.some(g => g.title.startsWith("Fajr in jamāʿah"))).toBe(true);
+    expect(good.some(g => g.title.startsWith("Fajr in congregation"))).toBe(true);
     expect(good.some(g => g.title.startsWith("Qurʾān read on 21"))).toBe(true);
     expect(warn.some(w => w.title.startsWith("ʿAsr missed 3 times"))).toBe(true);
-    expect(warn.some(w => w.title.includes("at 0%") || w.title.includes("Salawāt"))).toBe(true);
+    // Salawāt and sadaqah have no daily target, so they are never the "one thing to work on"
+    expect(warn.some(w => /Salawāt|Sadaqah/.test(w.title))).toBe(false);
   });
 
   it("status counts, month and year", () => {

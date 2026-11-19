@@ -6,6 +6,9 @@ import { timesFor } from "../../times.js";
 import { fmt12 } from "../../util.js";
 import { TT } from "./strings-tools.js";
 import { quranBlock, quranFont } from "./qtext.js";
+import { doneBar } from "./donebar.js";
+import { markRead } from "../../reading.js";
+import { commit } from "../../app.js";
 
 /** "morning" from Fajr until ʿAsr, otherwise "evening" (the same rule as the adhkār). */
 export function manzilSlot(now = NOW()) {
@@ -42,11 +45,12 @@ export function manzilView() {
   const done = manzilDone(slot);
   const t = timesFor(now, S.settings);
   pending = MANZIL.some(p => !cache.has(p.n));
+  const bar = doneBar("manzil", { next: "A.readNextCard('.tl-mz')" });
   const doneOther = manzilDone(slot === "morning" ? "evening" : "morning");
   const status = done ? TT.mzReadAt(slot === "morning" ? TT.morning : TT.evening, fmt12(new Date(done)))
     : slot === "morning" ? TT.autoMorning(fmt12(t.Fajr), fmt12(t.Asr)) : TT.autoEvening(fmt12(t.Asr));
   return `<div class="tl-hero tl-rd">
-      <svg class="pattern" viewBox="0 0 390 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="100%" height="100%" fill="url(#st)"/></svg>
+      
       <div class="tl-hrow"><button type="button" class="tl-hbtn" aria-label="${COMMON.back}" onclick="A.tlBack()">${I.back}</button>
         <div class="tl-ht"><h1>${esc(MANZIL_META.title)}</h1></div>
         <button type="button" class="tl-hbtn aa" aria-label="${TT.aa}" onclick="A.tlAa('manzil')">Aa</button></div>
@@ -55,8 +59,8 @@ export function manzilView() {
       <div class="tl-auto tl-mzsub">${esc(TT.mzSub(MANZIL.length, manzilAyahCount()))}${doneOther ? ` · ${esc(TT.mzOtherDone(slot === "morning" ? TT.evening : TT.morning))}` : ""}</div>
     </div>
     <div class="tl-list">${MANZIL.map(p => blockHtml(p, tr)).join("")}
-      <button type="button" class="tl-cta${done ? " ghost" : ""}" onclick="A.mzDone()">${done ? `${I.check} ${esc(TT.mzMarkUnread)}` : `${I.check} ${esc(TT.mzMarkRead(slot === "morning" ? TT.morning : TT.evening))}`}</button></div>
-    <p class="tl-draftline">${esc(TT.mzCredit)}</p><div class="space"></div>`;
+      ${bar ? "" : `<button type="button" class="tl-cta${done ? " ghost" : ""}" onclick="A.mzDone()">${done ? `${I.check} ${esc(TT.mzMarkUnread)}` : `${I.check} ${esc(TT.mzMarkRead(slot === "morning" ? TT.morning : TT.evening))}`}</button>`}</div>
+    <p class="tl-draftline">${esc(TT.mzCredit)}</p>${bar ? `<div class="rd-gap"></div>${bar}` : `<div class="space"></div>`}`;
 }
 
 export function manzilAfter() {
@@ -75,5 +79,6 @@ A.mzDone = () => {
   if (m[k][slot]) { delete m[k][slot]; toast(TT.undone); }
   else { m[k][slot] = Date.now(); toast(TT.mzReadToast(slot === "morning" ? TT.morning : TT.evening)); }
   prune(m, 40);
-  persist(); redraw();
+  markRead(S, "manzil", NOW()); // the day log too: the Manzil counts as a good deed in Provisions
+  commit(); redraw();
 };

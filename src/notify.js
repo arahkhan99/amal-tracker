@@ -1,13 +1,34 @@
 import { Capacitor } from "@capacitor/core";
 import { isNative } from "./platform.js";
 import { PRAYERS, dkey, addDays, fmt12 } from "./util.js";
-import { getDay, statusOf, amalForDay } from "./store.js";
+import { getDay, statusOf, amalForDay, genderOf } from "./store.js";
 import { timesFor, windowEnd, ishaBestBefore, madeUpDeadline } from "./times.js";
 import { seerahFor } from "./reflections.js";
 import { NOTIFY, prayerName } from "./strings.js";
 import { isOn } from "./features.js";
 
 const DAYS_AHEAD = 7;
+
+/*
+ * One-tap buttons on the prayer-time notification ("It's ʿAsr"): brothers (and "prefer not to say") get
+ * In congregation and On time, sisters On time. A button logs through the pending-log rules (pending.js:
+ * not before the prayer began, day.first stamped, the same id never twice). Android's notification plugin
+ * opens the app for a button; the log is applied straight away and nothing else is shown.
+ */
+export const NOTIFY_ACTION = { congregation: "In congregation", ontime: "On time" };
+export const ACTION_TYPES = {
+  m: "zad-prayer-m", // In congregation, On time
+  f: "zad-prayer-f", // On time
+};
+export function actionTypes() {
+  // foreground: iOS must run the app to apply the log (the WebView holds the data)
+  return [
+    { id: ACTION_TYPES.m, actions: [{ id: "congregation", title: NOTIFY_ACTION.congregation, foreground: true }, { id: "ontime", title: NOTIFY_ACTION.ontime, foreground: true }] },
+    { id: ACTION_TYPES.f, actions: [{ id: "ontime", title: NOTIFY_ACTION.ontime, foreground: true }] },
+  ];
+}
+/** The action type for a prayer-time notification: sisters get On time only. */
+export const actionTypeFor = S => (genderOf(S) === "f" ? ACTION_TYPES.f : ACTION_TYPES.m);
 
 /**
  * Every notification the settings ask for over the next week, given what's already logged.
@@ -25,8 +46,10 @@ export function planNotifications(S, now = new Date()) {
       const logged = !!status;
       const name = prayerName(p, { date, jumuah });
       if (st.prayerAlerts && t[p] > now && !logged) {
-        if (p === "Isha") out.push({ id: 1000 + i * 10 + pi, at: t[p], title: NOTIFY.begunTitle(name), body: NOTIFY.bestBeforeBody(fmt12(ishaBestBefore(date, st))) });
-        else out.push({ id: 1000 + i * 10 + pi, at: t[p], title: NOTIFY.prayerTitle(name), body: NOTIFY.prayerBody(name) });
+        // p / date: what the notification's buttons log (actionTypeFor)
+        const log = { p, date: dkey(date) };
+        if (p === "Isha") out.push({ id: 1000 + i * 10 + pi, at: t[p], title: NOTIFY.begunTitle(name), body: NOTIFY.bestBeforeBody(fmt12(ishaBestBefore(date, st))), log });
+        else out.push({ id: 1000 + i * 10 + pi, at: t[p], title: NOTIFY.prayerTitle(name), body: NOTIFY.prayerBody(name), log });
       }
       if (st.preQada && !logged) {
         const end = windowEnd(date, p, st, t);
@@ -56,10 +79,12 @@ export function planNotifications(S, now = new Date()) {
   return out;
 }
 
-let timer = null;
+let timer = null, lastS = null, actionsReady = null;
 /** Reschedule all local notifications (Android). Debounced; no-op on the web. */
 export function reschedule(S) {
   if (!isNative() || !S.profile.onboarded) return; // don't ask for notification permission mid-onboarding
+  lastS = S;
+  listenForActions();
   clearTimeout(timer);
   timer = setTimeout(() => doSchedule(S).catch(e => console.warn("notify", e)), 800);
 }
@@ -75,13 +100,55 @@ async function doSchedule(S) {
   // iOS keeps at most 64 pending notifications; keep the soonest (the rest are scheduled on a later open)
   if (Capacitor.getPlatform() === "ios") list = list.sort((a, b) => a.at - b.at).slice(0, 60);
   if (!list.length) return;
+  const typeId = actionTypeFor(S);
+  try { await registerActions(LocalNotifications); } catch (e) { console.warn("notify", e); }
   // Exact alarms are off by default on Android 14+. Asking for them on every schedule would open the
   // "Alarms & reminders" screen each time, so use exact timing only when it's already allowed; otherwise
   // the reminders are scheduled as inexact alarms and can arrive a few minutes late.
   const exact = await exactAlarmsAllowed(LocalNotifications);
   await LocalNotifications.schedule({
-    notifications: list.map(n => ({ id: n.id, title: n.title, body: n.body, schedule: { at: n.at, allowWhileIdle: true }, isExactNotification: exact, iconColor: "#0F3D2E" })),
+    notifications: list.map(n => ({
+      id: n.id, title: n.title, body: n.body, schedule: { at: n.at, allowWhileIdle: true }, isExactNotification: exact, iconColor: "#0F3D2E",
+      ...(n.log ? { actionTypeId: typeId, extra: { p: n.log.p, date: n.log.date } } : {}),
+    })),
   });
+}
+
+let registered = false;
+async function registerActions(LocalNotifications) {
+  if (registered) return;
+  await LocalNotifications.registerActionTypes({ types: actionTypes() });
+  registered = true;
+}
+
+/**
+ * Listen for the notification buttons once (on start: the plugin keeps an action that launched the app until a
+ * listener is added). A plain tap ("tap") just opens the app as before.
+ */
+function listenForActions() {
+  if (actionsReady) return;
+  actionsReady = (async () => {
+    const { LocalNotifications } = await import("@capacitor/local-notifications");
+    await registerActions(LocalNotifications).catch(e => console.warn("notify", e));
+    await LocalNotifications.addListener("localNotificationActionPerformed", a => {
+      onAction(a).catch(e => console.warn("notify", e));
+    });
+  })().catch(e => { actionsReady = null; console.warn("notify", e); });
+}
+
+/** The log a button asks for: { date, p, status } or null (a plain tap, or not one of ours). */
+export function actionLog(a) {
+  const status = a?.actionId, x = a?.notification?.extra;
+  if (status !== "congregation" && status !== "ontime") return null;
+  if (!x || !PRAYERS.includes(x.p) || !/^\d{4}-\d{2}-\d{2}$/.test(x.date || "")) return null;
+  return { date: x.date, p: x.p, status };
+}
+
+async function onAction(a) {
+  const log = actionLog(a);
+  if (!log || !lastS?.profile?.onboarded) return;
+  const { applyEntriesNow, makeEntry } = await import("./pending.js");
+  await applyEntriesNow(lastS, [makeEntry(log.date, log.p, log.status, "notif")]); // the plugin has already dismissed the notification
 }
 
 async function exactAlarmsAllowed(LocalNotifications) {

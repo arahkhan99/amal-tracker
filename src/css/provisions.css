@@ -14,22 +14,25 @@
 .pv-ringw.lg .num b{font-size:46px}
 .pv-ringw.lg .num small{font-size:11px}
 
-/* ---- P1: Provisions card at the top of Progress ---- */
-.pv-card{margin:14px 20px 18px;padding:16px 16px 12px;border-radius:22px;background:var(--paper);border:1px solid var(--line);box-shadow:0 1px 2px rgba(23,35,30,.04),0 6px 18px rgba(23,35,30,.05);position:relative;font-family:'Manrope',system-ui,sans-serif}
-.pv-card .pv-top{display:flex;gap:14px;align-items:center}
-.pv-card .pv-main{flex:1;min-width:0;padding-right:22px}
-.pv-k{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-fg)}
-.pv-big{display:block;font-size:22px;font-weight:700;color:var(--ink);margin-top:2px;font-variant-numeric:tabular-nums}
-.pv-big span{font-size:14px;font-weight:600;color:var(--ink2)}
-.pv-bar{height:8px;border-radius:99px;background:var(--inset);margin-top:8px;overflow:hidden}
-.pv-bar i{display:block;height:100%;border-radius:99px;background:var(--gold)}
-.pv-to{font-size:13px;color:var(--ink2);margin-top:6px}
+/* ---- P1: the Provisions chapter of Progress (views/provisions.js provisionsChapter). Gold lives here:
+   the level bar is the one gold fill (OG Calm A: gold is a fill or a mark, never text on a light background) ---- */
+.pv-lv{display:flex;align-items:center;gap:8px}
+.pv-ib{position:relative;width:26px;height:26px;border-radius:50%;background:var(--neutral);color:var(--mute);font:italic 700 13px/1 Georgia,serif;display:grid;place-items:center;flex:none}
+.pv-ib::before{content:"";position:absolute;inset:-9px}
+.pv-bar{height:8px;border-radius:99px;background:var(--track);margin-top:8px;overflow:hidden}
+.pv-bar i{display:block;height:100%;border-radius:99px;background:var(--gold-fill)}
+.pv-ch .pv-bar{height:10px;margin-top:16px}
+.pv-to{font-size:13px;color:var(--mute);margin-top:6px}
 .pv-to b{color:var(--ink);font-weight:700}
-.pv-i{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--ink2);border:1.5px solid var(--line);background:none;font:700 13px/1 Georgia,serif;font-style:italic}
-.pv-foot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);margin-top:14px;padding-top:10px;font-size:13.5px;color:var(--ink2)}
-.pv-foot b{color:var(--ink);font-weight:700}
-.pv-niy{font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.4;display:flex;gap:6px;align-items:flex-start}
-:root[data-theme=dark] .pv-niy{color:var(--ink2)}
+.pv-ch .pv-to{font-size:14.5px;margin-top:8px}
+.pv-wk{display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-top:1px solid var(--line);margin-top:16px;padding-top:14px;font-size:16px;color:var(--ink)}
+.pv-wk b{font-weight:700;font-size:17px}
+.pv-nq{margin:16px 0 0;padding:14px 18px;border-radius:16px;background:var(--soft)}
+.pv-nq .ar{font-family:"Amiri Quran","Amiri",var(--serif),serif;font-size:26px;line-height:1.8;color:var(--arabic);text-align:right}
+.pv-nq figcaption{font-size:15.5px;color:var(--ink);margin-top:2px;line-height:1.45}
+.pv-nq figcaption span{color:var(--mute)}
+.pv-fine{font-size:13.5px;color:var(--mute);line-height:1.5;margin-top:14px}
+.pv-howl{margin-top:12px}
 
 /* ---- P2: how provisions work (sheet) ---- */
 .pv-sh .sheet-head h3,.pv-sh h3.t{font-size:26px}
@@ -104,11 +107,11 @@
 .pv-center{text-align:center;margin-top:14px !important}
 
 /* ---- accessibility and tablet ---- */
-.pv-i:focus-visible,.pv-chip:focus-visible,.pv-ask button:focus-visible,.pv-off:focus-visible,.z-pvday:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-.pv-ask .x,.pv-i{min-width:30px;min-height:30px}
+.pv-chip:focus-visible,.pv-ask button:focus-visible,.pv-off:focus-visible,.z-pvday:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.pv-ask .x{min-width:30px;min-height:30px}
 .pv-chip{cursor:pointer}
 .pv-ringw.lg .num small{display:none}
 @media (min-width:768px) and (min-height:540px){
-  .pv-card,.pv-ask{margin-inline:20px}
+  .pv-ask{margin-inline:20px}
   .pv-calm .lead{max-width:38ch}
 }

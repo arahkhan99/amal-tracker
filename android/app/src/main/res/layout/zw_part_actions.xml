@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget bottom bar (RemoteViews include): the one-tap buttons, "ʿAsr logged ✓ · Undo" and Remembrance. WidgetRenderer shows one of them. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/zw_bottom" android:layout_width="match_parent" android:layout_height="wrap_content">
+    <LinearLayout android:id="@+id/zw_actions" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <LinearLayout android:id="@+id/zw_btn_cong" android:layout_width="0dp" android:layout_weight="1" android:layout_height="@dimen/zw_btn_h" android:layout_marginEnd="8dp"
+            android:background="@drawable/zw_bg_btn1" android:orientation="horizontal" android:gravity="center" android:paddingStart="6dp" android:paddingEnd="6dp">
+            <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/zw_ic_people" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_btn_cong_text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                android:text="Congregation" android:textColor="@color/zw_btn1_label" android:textSize="@dimen/zw_btn_text" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/zw_btn_ontime" android:layout_width="0dp" android:layout_weight="1" android:layout_height="@dimen/zw_btn_h"
+            android:background="@drawable/zw_bg_btn2" android:orientation="horizontal" android:gravity="center" android:paddingStart="6dp" android:paddingEnd="6dp">
+            <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/zw_ic_check2" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_btn_ontime_text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                android:text="On time" android:textColor="@color/zw_btn2_label" android:textSize="@dimen/zw_btn_text" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/zw_btn_solo" android:layout_width="0dp" android:layout_weight="1" android:layout_height="@dimen/zw_btn_h" android:visibility="gone"
+            android:background="@drawable/zw_bg_btn1" android:orientation="horizontal" android:gravity="center" android:paddingStart="6dp" android:paddingEnd="6dp">
+            <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/zw_ic_check1" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_btn_solo_text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                android:text="On time" android:textColor="@color/zw_btn1_label" android:textSize="@dimen/zw_btn_text" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/zw_logged" android:layout_width="match_parent" android:layout_height="@dimen/zw_btn_h" android:visibility="gone"
+        android:background="@drawable/zw_bg_btn2" android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="14dp" android:paddingEnd="4dp">
+        <TextView android:id="@+id/zw_logged_text" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+            android:text="ʿAsr logged ✓" android:textColor="@color/zw_btn2_label" android:textSize="@dimen/zw_btn_text" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+        <LinearLayout android:id="@+id/zw_undo" android:layout_width="wrap_content" android:layout_height="match_parent" android:orientation="horizontal" android:gravity="center"
+            android:paddingStart="10dp" android:paddingEnd="10dp">
+            <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/zw_ic_undo" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_undo_text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp"
+                android:text="Undo" android:textColor="@color/zw_btn2_label" android:textSize="@dimen/zw_btn_text" android:textStyle="bold" android:maxLines="1" />
+        </LinearLayout>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/zw_remember" android:layout_width="match_parent" android:layout_height="@dimen/zw_btn_h" android:visibility="gone"
+        android:background="@drawable/zw_bg_btn1" android:orientation="horizontal" android:gravity="center" android:paddingStart="8dp" android:paddingEnd="8dp">
+        <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/zw_ic_moon" android:importantForAccessibility="no" />
+        <TextView android:id="@+id/zw_remember_text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp"
+            android:text="Remembrance at prayer time" android:textColor="@color/zw_btn1_label" android:textSize="@dimen/zw_btn_text" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+    </LinearLayout>
+</FrameLayout>

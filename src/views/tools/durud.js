@@ -4,6 +4,7 @@ import { DURUD, DURUD_META } from "../../tools/data/durud.js";
 import { timesFor } from "../../times.js";
 import { commit } from "../../app.js";
 import { TT } from "./strings-tools.js";
+import { doneBar } from "./donebar.js";
 
 /** The day a reading counts for: Thursday after Maghrib already belongs to Friday. */
 export function durudKey(now = NOW()) {
@@ -34,7 +35,7 @@ export function durudView() {
   return `${head({ title: TT.durudTitle, ar: TT.durudAr, sub: DURUD_META.compiler.replace(" Kandhlawi", "") })}
     <div class="tl-card tl-dtop"><div class="tl-kick"><span>${TT.durudToday}</span><b>${TT.durudOf(n)}</b></div><div class="tl-bar g"><i style="width:${Math.round(100 * n / DURUD.length)}%"></i></div>${cta}</div>
     <div class="tl-fri${fri ? " on" : ""}"><span class="tl-frib">${I.flower}</span><div><b>${esc(DURUD_META.recommendation.replace(/\.$/, ""))}</b><small>${fri ? "Jumuʿah: send abundant durūd" : TT.durudSub}</small></div>${info("durud")}</div>
-    <div class="tl-card tl-dlist">${rows}</div><div class="space"></div>`;
+    <div class="tl-card tl-dlist">${rows}</div>${doneBar("durud") ? `<div class="rd-gap"></div>${doneBar("durud")}` : `<div class="space"></div>`}`;
 }
 
 /* ---------- reader ---------- */
@@ -51,9 +52,9 @@ export function durudReadView() {
       ${d.isTashahhud ? `<p class="tl-note">${TT.tashahhud}</p>` : ""}
       ${d.note ? `<p class="tl-note">${esc(d.note)}</p>` : ""}
     </div>
-    <div class="tl-dock"><button class="tl-cta ghost small" ${d.n === 1 ? "disabled" : ""} onclick="A.tlDurudOpen(${d.n - 1})">${TT.prev}</button>
+    ${doneBar("durud", { prev: d.n === 1 ? "" : `A.tlDurudOpen(${d.n - 1})`, next: `A.tlDurudRead(${d.n})` }) || `<div class="tl-dock"><button class="tl-cta ghost small" ${d.n === 1 ? "disabled" : ""} onclick="A.tlDurudOpen(${d.n - 1})">${TT.prev}</button>
       <button class="tl-cta" onclick="A.tlDurudRead(${d.n})">${I.check} ${last ? TT.readLast : TT.readNext}</button></div>
-    <div class="space"></div>`;
+    <div class="space"></div>`}`;
 }
 
 A.tlDurudOpen = n => open("durudRead", { durudN: n });

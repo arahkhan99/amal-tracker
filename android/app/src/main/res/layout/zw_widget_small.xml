@@ -1,26 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Home-screen widget layout (RemoteViews). Filled in by WidgetRenderer.java; sample text shows in the widget picker preview. -->
+<!-- Small widget (RemoteViews): the current prayer, its countdown and one On time button. Filled in by WidgetRenderer.java; the sample text shows in the widget picker. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/zw_root" android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="@drawable/zw_bg_forest" android:padding="14dp">
+    android:background="@drawable/zw_bg_card" android:padding="14dp">
     <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-            <TextView android:id="@+id/zw_tag" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:background="@drawable/zw_bg_pill_gold" android:paddingStart="9dp" android:paddingEnd="9dp" android:paddingTop="2dp" android:paddingBottom="2dp"
-            android:text="Next" android:textAllCaps="true" android:letterSpacing="0.12" android:textColor="@color/zw_forest" android:textSize="10sp" android:textStyle="bold" />
-            <TextView android:id="@+id/zw_time" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end"
-                android:text="3:42 PM" android:textColor="@color/zw_on_forest_dim" android:textSize="12sp" android:maxLines="1" />
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+            <ImageView android:id="@+id/zw_tag_dot" android:layout_width="8dp" android:layout_height="8dp" android:src="@drawable/zw_dot_now" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/zw_tag" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                android:text="Now" android:textColor="@color/zw_ink2" android:textSize="13sp" android:maxLines="1" />
         </LinearLayout>
-        <TextView android:id="@+id/zw_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp"
-            android:fontFamily="serif" android:text="ʿAsr" android:textColor="@color/zw_on_forest" android:textSize="30sp" android:maxLines="1" android:ellipsize="end" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:baselineAligned="true">
-            <Chronometer android:id="@+id/zw_countdown" android:countDown="true" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:fontFamily="serif" android:textColor="@color/zw_gold_text" android:textSize="24sp" android:textStyle="bold" android:maxLines="1" />
-            <TextView android:id="@+id/zw_countdown_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="5dp"
-                android:text="left" android:textColor="@color/zw_on_forest_dim" android:textSize="11sp" android:maxLines="1" />
-        </LinearLayout>
-        <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
-        <TextView android:id="@+id/zw_button" android:layout_width="match_parent" android:layout_height="38dp"
-        android:background="@drawable/zw_bg_pill_gold" android:gravity="center" android:text="✓  Prayed"
-        android:textColor="@color/zw_forest" android:textSize="15sp" android:textStyle="bold" android:maxLines="1" />
+        <TextView android:id="@+id/zw_name" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:fontFamily="serif" android:text="ʿAsr" android:textColor="@color/zw_ink" android:textSize="26sp" android:maxLines="1" android:ellipsize="end" />
+        <Chronometer android:id="@+id/zw_countdown" android:countDown="true" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textColor="@color/zw_ink" android:textSize="17sp" android:textStyle="bold" android:maxLines="1" />
+        <TextView android:id="@+id/zw_countdown_label" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="left · until 16:05" android:textColor="@color/zw_ink2" android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+        <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:minHeight="6dp" />
+        <include layout="@layout/zw_part_actions" />
     </LinearLayout>
 </FrameLayout>

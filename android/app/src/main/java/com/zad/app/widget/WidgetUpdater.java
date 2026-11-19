@@ -10,11 +10,13 @@ import android.os.Build;
 import android.widget.RemoteViews;
 
 /**
- * Redraws every placed Zad widget from the stored snapshot and schedules the next redraw.
+ * Redraws everything that shows the current prayer: every placed Zad widget, the optional ongoing "Now"
+ * notification and the Quick Settings tile, from the stored snapshot plus the unmerged one-tap queue, and
+ * schedules the next redraw.
  * The countdown is a count-down Chronometer that ticks by itself, so the only redraw needed is at the next
- * boundary (a prayer starts or its window ends, sunrise, the middle of the night, midnight: model.nextChange).
- * That alarm is exact when the app may schedule exact alarms (SCHEDULE_EXACT_ALARM is declared for the
- * reminders; always true before Android 12), otherwise an inexact window that starts at the boundary.
+ * boundary (a prayer starts or its window ends, sunrise, the middle of the night, the end of Undo, midnight:
+ * model.nextChange). That alarm is exact when the app may schedule exact alarms (SCHEDULE_EXACT_ALARM is declared
+ * for the reminders; always true before Android 12), otherwise an inexact window that starts at the boundary.
  * The alarm is RTC (not a wake-up alarm): while the phone sleeps it waits, and it fires as soon as the
  * screen comes on, so it costs nothing in the background.
  */
@@ -31,7 +33,7 @@ public final class WidgetUpdater {
         AppWidgetManager mgr = AppWidgetManager.getInstance(c);
         String json = WidgetStore.read(c);
         long now = System.currentTimeMillis();
-        WidgetModel model = WidgetModel.build(json, now);
+        WidgetModel model = WidgetModel.build(c, now, false);
         boolean any = false;
         for (int k = 0; k < PROVIDERS.length; k++) {
             int[] ids = mgr.getAppWidgetIds(new ComponentName(c, PROVIDERS[k]));
@@ -40,7 +42,10 @@ public final class WidgetUpdater {
             RemoteViews views = WidgetRenderer.render(c, SIZES[k], model, json);
             mgr.updateAppWidget(ids, views);
         }
-        schedule(c, any, model, now);
+        boolean ongoing = WidgetModel.flag(json, "ongoingNow");
+        try { NowNotification.update(c, now); } catch (Exception e) { /* never let the notification break the widgets */ }
+        ZadTileService.requestUpdate(c);
+        schedule(c, any || ongoing, model, now);
     }
 
     private static PendingIntent tickIntent(Context c) {

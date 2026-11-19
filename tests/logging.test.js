@@ -87,7 +87,13 @@ describe("every Home write path that adds a log goes through logAllowed", () => 
     const fs = await import("node:fs");
     const src = fs.readFileSync(new URL("../src/views/home.js", import.meta.url), "utf8");
     const body = name => { const i = src.indexOf(name); expect(i).toBeGreaterThan(-1); return src.slice(i, src.indexOf("\n}", i) + 2); };
-    expect(body("export function applyStatus(")).toMatch(/logAllowed\(S, key, p, status/);
+    // the log sheet, the one-tap buttons and Other go through today.js logPrayer, which asks logAllowed first
+    expect(body("export function applyStatus(")).toMatch(/logPrayer\(S, key, p, status/);
+    expect(src.slice(src.indexOf("A.logTap ="), src.indexOf("A.logTap =") + 200)).toMatch(/logPrayer\(S, key, p, status/);
+    const today = fs.readFileSync(new URL("../src/today.js", import.meta.url), "utf8");
+    expect(today.slice(today.indexOf("export function logPrayer("), today.indexOf("export function logPrayer(") + 300)).toMatch(/logAllowed\(S, key, p, status, now\)/);
+    const cal = fs.readFileSync(new URL("../src/views/calendar.js", import.meta.url), "utf8");
+    expect(cal.slice(cal.indexOf("A.dayPick ="), cal.indexOf("A.dayPick =") + 300)).toMatch(/logPrayer\(S, key, p, next/);
     expect(body("function toggleChip(")).toMatch(/logAllowed\(S, key, "Isha", next/);
     expect(body("function toggleChip(")).toMatch(/logAllowed\(S, key, owner, !was/);
     expect(src.slice(src.indexOf("A.rememberAt ="), src.indexOf("A.rememberAt =") + 400)).toMatch(/logAllowed\(S, key, p, on/);

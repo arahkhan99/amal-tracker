@@ -9,6 +9,7 @@ Zad has three home-screen widgets on Android and iPhone, plus three lock-screen 
   - inline: "ʿAsr 3:42 PM"
   - rectangular: Next prayer, its time and a progress bar
   - circular: prayers done out of 5, as a five-segment ring
+- **iOS 18 Control** ("Log prayer"): a button for Control Centre, the Lock Screen controls or the Action button. It logs the prayer whose time is in as on time.
 
 ## How it works
 
@@ -19,6 +20,8 @@ web app (store change / redraw)
         iOS:     UserDefaults(suiteName: "group.com.zad.app")["snapshot"] → WidgetCenter.reloadAllTimelines()
 widgets read only the snapshot and work out "now / next" and the countdown themselves
 widget tap → zad:// deep link → @capacitor/app appUrlOpen → src/widget-bridge.js opens the sheet
+one-tap button (iOS 17+ App Intent, iOS 18 Control) → appends to the "pendingLogs" queue in the App Group
+  → the app merges it on open / resume (src/pending.js, ZadWidgets.getPending / clearPending)
 ```
 
 ### The snapshot (`src/widgets.js`, version 1)
@@ -94,31 +97,37 @@ Until the App Group is set up, the plugin falls back to the app's own defaults: 
 
 The widget extension's sources are in `ios/App/ZadWidget/`:
 
-- `ZadWidget.swift`: the bundle, the timeline, and all the home and lock-screen views
-- `WidgetModel.swift`: the snapshot decoder and the logic port
-- `Info.plist` and `ZadWidget.entitlements`
+- `ZadWidget.swift`: the bundle, the timeline, all the home and lock-screen views, the App Intents and the iOS 18 Control
+- `WidgetModel.swift`: the snapshot decoder, the pending-log queue and the logic port
+- `Info.plist` (`NSExtensionPointIdentifier` = `com.apple.widgetkit-extension`) and `ZadWidget.entitlements` (App Group `group.com.zad.app`)
 
-**The extension target is not in `project.pbxproj` yet.** Adding a target by hand-editing the project file is error-prone, and so is signing an App Group without a team. To add it in Xcode on a Mac:
+### The extension target is added by CI (no Mac needed)
 
-1. **Apple Developer account (paid).** App Groups need it, and personal (free) teams can't use them. In the developer portal, create the App Group `group.com.zad.app`.
-2. `npm run build:ios`, then open `ios/App/App.xcodeproj`.
-3. **File ▸ New ▸ Target ▸ Widget Extension.** Name it `ZadWidget`. Bundle id: `com.zad.app.ZadWidget`. Untick "Include Live Activity" and "Include Configuration App Intent". When asked, activate the scheme.
-4. Xcode creates a `ZadWidget` folder with template files. Delete the template Swift files and their asset catalog if unused. Then add the files that are already on disk in `ios/App/ZadWidget/` to the **ZadWidget** target only: `ZadWidget.swift`, `WidgetModel.swift` and `Info.plist`. If Xcode created its own `Info.plist`, keep ours: in the target's build settings, set **Info.plist File** to `ZadWidget/Info.plist`.
-5. ZadWidget target ▸ General:
-   - **Minimum Deployments: iOS 17.0.** The views use `containerBackground` and `contentMarginsDisabled`. The app itself stays on iOS 15; the widget simply isn't offered on older iOS.
-   - Swift Language Version: 5.
-6. **Signing & Capabilities.** On both the **App** and **ZadWidget** targets, pick your team. Then use **+ Capability ▸ App Groups** and tick `group.com.zad.app`. If Xcode asks for an entitlements file, point it at `App/App.entitlements` and `ZadWidget/ZadWidget.entitlements`, which are already written with that group.
-7. Check that the App target's **Build Phases ▸ Embed Foundation Extensions** contains `ZadWidget.appex`. Xcode adds it when it creates the target.
-8. Build and run the App scheme on a device. Open Zad once so it writes the snapshot, then add the widgets: long-press the Home Screen ▸ + ▸ Zad. For the lock-screen widgets: long-press the Lock Screen ▸ Customise.
+`project.pbxproj` in git has no `ZadWidget` target. On every run, `.github/workflows/ios.yml` (both the `build` and the `testflight` job) runs `scripts/ios/add-widget-target.rb` after `npx cap sync ios`. The script uses the `xcodeproj` Ruby gem (the one CocoaPods uses) and:
+
+- adds the app-extension target `ZadWidget`: the two Swift files in its Sources, `WidgetKit`, `SwiftUI` and `AppIntents` linked, bundle id `<app id>.ZadWidget` (`com.zad.app.ZadWidget`), `INFOPLIST_FILE` = `ZadWidget/Info.plist`, `CODE_SIGN_ENTITLEMENTS` = `ZadWidget/ZadWidget.entitlements`, minimum **iOS 16.0**, Swift 5, `SKIP_INSTALL` = YES, automatic signing, the same version numbers as the app
+- embeds `ZadWidget.appex` in `App.app/PlugIns` (an "Embed Foundation Extensions" phase on the App target) and makes App depend on ZadWidget, so building the `App` scheme builds the widget too
+- sets the App target's `CODE_SIGN_ENTITLEMENTS` to `App/App.entitlements` (App Group `group.com.zad.app` and Sign in with Apple), which the project didn't use before
+- checks the result and stops the build if anything is missing
+
+It is idempotent: if the target already exists, its settings are left alone and only the embed phase, the dependency and the App entitlements are checked. The edited project is used for that run only and never committed. The unsigned build then checks that `App.app/PlugIns/ZadWidget.appex` exists and prints its bundle id, extension point and minimum iOS; the TestFlight job checks the appex is in the archive.
+
+To build on a Mac anyway: `npm run build:ios`, `gem install xcodeproj`, `ruby scripts/ios/add-widget-target.rb`, then open `ios/App/App.xcodeproj` (do not commit the changed `project.pbxproj` unless you mean to; the script would then just skip).
+
+Signing needs the Apple Developer account (paid; free teams can't use App Groups): the widget needs its **own App ID** `com.zad.app.ZadWidget` with the **App Groups** capability set to `group.com.zad.app`, and `com.zad.app` needs the same group. See "Widget extension" in `docs/ios-setup.md`.
+
+After installing: open Zad once so it writes the snapshot, then add the widgets: long-press the Home Screen ▸ + ▸ Zad. Lock-screen widgets: long-press the Lock Screen ▸ Customise. The Control (iOS 18): Control Centre ▸ + ▸ Add a Control ▸ Zad, or Settings ▸ Action Button.
 
 ### iOS notes
 
-- **Countdown.** The countdown is `Text(timerInterval:countsDown:)` and the lock-screen bar `ProgressView(timerInterval:)`, which update themselves. Each timeline holds one entry now and one just after each boundary for the next day (policy `.atEnd`). Every entry recomputes the model from the snapshot, so it stays right without the app. The app also calls `reloadAllTimelines()` on every change.
-- **Taps.**
-  - Small: the whole widget is one `widgetURL`. iOS doesn't allow separate links on small widgets.
-  - Medium and Large: each tile, the hero, the make-ups chip and the deeds use `Link`s.
-  - Lock screen: the widget opens the current log target.
-- **One-tap logging inside the widget** (App Intents, iOS 17) is not built. Every tap opens the app's log sheet, as agreed.
+- **Minimum iOS 16.** The app itself supports iOS 15; on iOS 15 the widgets just aren't offered. iOS 17 and 18 APIs are behind `#available`: `containerBackground` and `contentMarginsDisabled` (iOS 17), interactive buttons (iOS 17), the Control (iOS 18).
+- **Countdown.** The countdown is `Text(timerInterval:countsDown:)` and the lock-screen bar `ProgressView(timerInterval:)`, which update themselves. Every timeline entry recomputes the model from the snapshot (with the pending queue laid over it), so it stays right without the app. The app also calls `reloadAllTimelines()` (and on iOS 18 `ControlCenter.reloadAllControls()`) on every change.
+- **One-tap logging is built.**
+  - Home-screen widgets, iOS 17+: the Prayed / Congregation / Remembered / Undo buttons are `Button(intent: LogPrayerIntent)`. The intent runs in the extension without opening the app, appends an entry to the `pendingLogs` queue in the App Group and redraws the widgets. The app merges the queue on open and on resume (`src/pending.js`), with the same rules as a manual log (nothing before the prayer's time, a later in-app log wins).
+  - iOS 18 Control: `LogNowIntent` logs the prayer whose time is in as on time (nothing when none is open).
+  - iOS 16: the same buttons are `Link`s that open the prayer's log sheet.
+  - Other taps open the app: Medium and Large tiles, the make-ups chip and the deeds use `Link`s; the rest of the widget uses `widgetURL`.
+  - Lock-screen widgets (inline, rectangular, circular) can't hold buttons here: a tap opens the current prayer's log sheet.
 - **Fonts.** The views use the system serif (New York) and sans. To use Amiri or Manrope, add the TTFs to the extension target and list them under `UIAppFonts` in `ZadWidget/Info.plist`.
 
 ## Tests

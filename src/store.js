@@ -256,7 +256,8 @@ export function applyGender(S, g, { todayKey: key, excusedPrayers = [], undoHome
  *   witrAuto?: true                    // Witr was marked missed automatically because ʿIshāʾ was missed
  *   excused?: true                     // excused day (hayd / nifas): unlogged prayers count as excused
  *   remember?: { Fajr: true, ... }     // remembrance at prayer time, only on excused prayers (setRemember)
- *   first?: ms                         // when the user first logged anything for this day; set once (markLogged)
+ *   reads?: { hizb: true, mulk: true, kahf: true, manzil: true } // readings done in Read (setRead; points.readsByDay)
+ *   first?: ms                        // when the user first logged anything for this day; set once (markLogged)
  *   u: ms                              // last edit, for cloud merges
  * }
  */
@@ -490,6 +491,29 @@ export function setRemember(S, key, p, on, now = new Date(), { allowed } = {}) {
   }
   return true;
 }
+/**
+ * Mark (or unmark) a reading with no good deed of its own (Hizb, al-Mulk, al-Kahf, the Manzil) as done on day
+ * `key`. Read's ticks and the readers call it next to their own state, so Provisions keep counting it after
+ * the readers prune their history (points.readsByDay). Not a user log of the day: day.first isn't stamped.
+ */
+export function setRead(S, key, id, on) {
+  if (!["hizb", "mulk", "kahf", "manzil"].includes(id)) return false;
+  if (on) {
+    const day = ensureDay(S, key);
+    if (day.reads?.[id]) return true;
+    (day.reads ||= {})[id] = true;
+    day.u = Date.now();
+    return true;
+  }
+  const day = S.days[key];
+  if (day?.reads?.[id]) {
+    delete day.reads[id];
+    if (!Object.keys(day.reads).length) delete day.reads;
+    day.u = Date.now();
+  }
+  return true;
+}
+
 /** Whether remembrance at prayer time counts for a prayer (ticked and the prayer is still excused). */
 export const remembered = (day, p) => !!day?.remember?.[p] && statusOf(day, p) === "excused";
 

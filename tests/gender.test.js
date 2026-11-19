@@ -127,10 +127,10 @@ describe("gender: remembrance at prayer time", () => {
 });
 
 describe("gender: Progress insight", () => {
-  it("sisters do not get the jamāʿah insight", () => {
+  it("sisters do not get the congregation insight", () => {
     const S = fresh();
     for (let i = 1; i <= 6; i++) store.setPrayer(S, dkey(addDays(NOW, -i)), "Fajr", "congregation", NOW);
-    const has = s => insights(s, NOW).good.some(x => /jam/i.test(x.title));
+    const has = s => insights(s, NOW).good.some(x => /congregation/i.test(x.title));
     expect(has(S)).toBe(true);
     store.applyGender(S, "f", {}, NOW);
     expect(has(S)).toBe(false);

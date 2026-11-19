@@ -1,11 +1,15 @@
-/* Home: next-prayer hero, This-week bars, Today's prayers sheet, catch-up, good deeds, tools cards and the
-   "This week" tiles. Also the shared pieces Tracker uses: prayer log sheet, sunnah chips, explainers, deeds rows.
-   All visible text comes from strings.js / glossary.js; Home-only labels are strings.HOME_X (exported as X). */
-import { S, UI, A, $, NOW, todayKey, onRender, commit, render, toast, openSheet, closeSheet, go } from "../app.js";
+/* The Today tab (#v-home): two chapters, Now · Today, side by side (swipe, or tap their names).
+   - Now: the current prayer, time left, one-tap logging (rules in src/today.js), Other, sunnah, next prayer, this week.
+   - Today: the five prayers with their status marks, catch-up, one "Good deeds" line, the provisions offer.
+   With one tab only (prayers only) there is one chapter, "Today", with the Now card on top, and no chapter bar.
+   The calendar (past days) is views/calendar.js. Also the shared pieces other views use: the prayer log sheet,
+   sunnah chips, explainers, good-deed rows and sheets, and the "This week" readings (shown in Read).
+   All visible text comes from strings.js / glossary.js. */
+import { S, UI, A, $, NOW, todayKey, onRender, commit, render, toast, openSheet, closeSheet, go, avatarBtn } from "../app.js";
 import * as store from "../store.js";
-import { PRAYERS, DOW, MON, fmt12, dkey, parseKey, addDays, esc } from "../util.js";
-import { timesFor, currentWindow, nextPrayer, windowEnd, ishaBestBefore, madeUpDeadline, canStillMakeUp, excusedSoFar, weekIndex, METHOD_SHORT, FALLBACK_LOCATION } from "../times.js";
-import { canLog, logAllowed } from "../logging.js";
+import { PRAYERS, DOW, MON, fmt12, dkey, parseKey, addDays, daysBetween, esc } from "../util.js";
+import { timesFor, currentWindow, nextPrayer, windowEnd, ishaBestBefore, madeUpDeadline, canStillMakeUp, excusedSoFar, METHOD_SHORT, FALLBACK_LOCATION } from "../times.js";
+import { canLog, logAllowed, madeUpAllowed } from "../logging.js";
 import { hijriLabel } from "../hijri.js";
 import * as st from "../stats.js";
 import { isOn, toolVisible } from "../features.js";
@@ -13,11 +17,14 @@ import { madhhabOf, tierLabel, TIERS, itemById } from "../rules/madhhab.js";
 import { thisWeek, pastSahabi, setSahabiStart, monthIndex, contentReady, loadContent, whenContent } from "../content.js";
 import { gloss } from "../glossary.js";
 import * as T from "../strings.js";
-import { HOME_X, NOT_YET } from "../strings.js";
+import { HOME_X, NOT_YET, TODAY } from "../strings.js";
 import { reportLink } from "../feedback.js";
 import { homeChip as pvChip, homeOffer as pvOffer } from "./provisions.js";
+import { logButtons, otherOptions, logPrayer, snapshotDays, restoreSnapshot, todayChapters, guideLineDue, makeUpNowFor, makeupsLine, TODAY_ROWS } from "../today.js";
+import { sheetDeeds, sheetCount } from "../reading.js";
+import { READ } from "../strings.js";
 
-const { APP, COMMON, STATUS, STATUS_EXTRA, HOME, TIMES, LOG, DEEDS, DEED_NAME, EXCUSED, SUNNAH_UI, TIER, MEASURE, NOTIFY, WEEK_UI, WEEK_LETTERS_SUN, prayerName } = T;
+const { APP, COMMON, STATUS, HOME, TIMES, LOG, DEEDS, EXCUSED, SUNNAH_UI, TIER, WEEK_UI } = T;
 export { STATUS };
 
 /* Home-only labels (strings.js HOME_X). */
@@ -27,32 +34,37 @@ export const X = HOME_X;
 /** Prefix every class in a fragment so nothing collides with the shared stylesheet. */
 export const zz = html => html.replace(/class="([^"]*)"/g, (_, c) => `class="${c.split(/\s+/).filter(Boolean).map(x => "z-" + x).join(" ")}"`);
 const I = {
-  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', dcheck: '<path d="M2.5 12.8l4.2 4.2L15 8.5"/><path d="M11.2 16.4l.6.6L20 8.5"/>',
-  dash: '<path d="M7 12h10"/>', madeup: '<path d="M4.5 12a7.5 7.5 0 1 0 2.3-5.4"/><path d="M4.2 4.2v4.6h4.6"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', dcheck: '<path d="M2.5 12.5l4 4L15 8"/><path d="M10.5 16.5L19 8"/>',
+  dash: '<path d="M7 12h10"/>', clock: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+  madeup: '<path d="M4.5 12a7.5 7.5 0 1 0 2.3-5.4"/><path d="M4.2 4.2v4.6h4.6"/>',
   moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>',
-  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
-  chev: '<path d="M9 6l6 6-6 6"/>', chevL: '<path d="M15 6l-6 6 6 6"/>', dots: '<circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/>',
+  chev: '<path d="M9 6l6 6-6 6"/>', chevL: '<path d="M15 6l-6 6 6 6"/>',
   people: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 5.5 5.8"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>', history: '<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4.5h4.5"/><path d="M12 8v4.5l3 1.5"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.2"/>', plus: '<path d="M12 5v14M5 12h14"/>',
-  cal: '<rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  bars: '<path d="M5 20V11M12 20V5M19 20v-6"/>',
+  hand: '<path d="M7 11V6.5a1.5 1.5 0 0 1 3 0V11M10 10V5a1.5 1.5 0 0 1 3 0v5M13 10V6a1.5 1.5 0 0 1 3 0v6M16 10.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 6 17.5L4 13.5a1.5 1.5 0 0 1 2.6-1.5L7 13"/>',
+  beads: '<circle cx="12" cy="5" r="2"/><circle cx="6" cy="9" r="2"/><circle cx="18" cy="9" r="2"/><circle cx="7.5" cy="16" r="2"/><circle cx="16.5" cy="16" r="2"/>',
+  sun: '<path d="M12 4v2M5.6 9.6l1.4 1.4M18.4 9.6L17 11M3 17h2M19 17h2M8 17a4 4 0 0 1 8 0M3 20h18"/>',
+  note: '<path d="M5 4h10l4 4v12H5z"/><path d="M15 4v4h4M8.5 12.5h7M8.5 16h5"/>',
 };
 export const ic = (n, cls = "i", extra = "") => `<svg class="${cls}" viewBox="0 0 24 24" ${extra} aria-hidden="true">${I[n]}</svg>`;
-const star8 = (cx, cy, R, r) => { const p = []; for (let k = 0; k < 16; k++) { const a = (-90 + k * 22.5) * Math.PI / 180, rad = k % 2 ? r : R; p.push((cx + rad * Math.cos(a)).toFixed(2) + "," + (cy + rad * Math.sin(a)).toFixed(2)); } return p.join(" "); };
-const starSvg = size => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><polygon points="${star8(12, 12, 11.5, 6.6)}" fill="#0F3D2E"/></svg>`;
 
 const SK = { congregation: "c", ontime: "o", madeup: "r", missed: "m", excused: "x" };
-const SICON = { c: "dcheck", o: "check", r: "madeup", m: "dash", x: "moon" };
+const SICON = { c: "dcheck", o: "check", r: "clock", m: "dash", x: "moon" };
 const sk = s => SK[s] || "";
 const settings = () => S.settings;
 const jumuahOn = () => S.settings.jumuah !== false;
-export const pName = (p, key = todayKey()) => prayerName(p, { date: parseKey(key), jumuah: jumuahOn() });
+export const pName = (p, key = todayKey()) => T.prayerName(p, { date: parseKey(key), jumuah: jumuahOn() });
 const longDate = d => new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long" }).format(d);
-const fmtHM = ms => { const m = Math.max(0, Math.round(ms / 60000)); return TIMES.hm(Math.floor(m / 60), m % 60); };
-const clone = o => (o === undefined ? undefined : JSON.parse(JSON.stringify(o)));
-const marker = s => SICON[sk(s)] ? `<span class="mk ${sk(s)}">${ic(SICON[sk(s)], "")}</span>` : `<span class="mk"></span>`;
-const pill = s => `<span class="pill ${sk(s)}">${STATUS[s]}</span>`;
+/** "1 h 34 min" (the Now chapter and rows). */
+const hm = ms => { const m = Math.max(0, Math.round(ms / 60000)); return TODAY.hm(Math.floor(m / 60), m % 60); };
+/** A status mark: icon + fill, never colour alone. `cls` adds classes (unprefixed: they go through zz or zt-). */
+export const statusMark = (s, cls = "") => SICON[sk(s)] ? `<span class="z-mk z-${sk(s)} ${cls}">${ic(SICON[sk(s)], "")}</span>` : `<span class="z-mk ${cls}"></span>`;
+export const marker = s => SICON[sk(s)] ? `<span class="mk ${sk(s)}">${ic(SICON[sk(s)], "")}</span>` : `<span class="mk"></span>`;
 const tierCls = t => (t === "ghayr" ? "gm" : t === "nafl" ? "nf" : "mu");
+const reduceMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export function dayLabel(key) {
   if (key === todayKey()) return "";
@@ -61,22 +73,12 @@ export function dayLabel(key) {
   return `${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()].slice(0, 3)} · `;
 }
 
-/* ---------- undo: snapshot the parts of S a change can touch ---------- */
-export function snapshot(keys) {
-  const ks = [].concat(keys);
-  return { days: ks.map(k => [k, clone(S.days[k])]), qada: clone(S.qada), created: S.createdKey, excusedMode: clone(S.excusedMode) };
-}
-export function restore(snap) {
-  for (const [k, d] of snap.days) {
-    if (d === undefined) S.days[k] = { prayers: {}, amal: {}, note: "", u: Date.now() };
-    else { S.days[k] = d; d.u = Date.now(); }
-  }
-  S.qada = snap.qada; S.createdKey = snap.created; S.excusedMode = snap.excusedMode;
-  commit();
-}
+/* ---------- undo: snapshot the parts of S a change can touch (src/today.js) ---------- */
+export const snapshot = keys => snapshotDays(S, keys);
+export function restore(snap) { restoreSnapshot(S, snap); commit(); }
 const undoable = snap => ({ undo: () => restore(snap) });
 
-/* ---------- explainer (the small "?" / ⓘ next to an Arabic term) ---------- */
+/* ---------- explainer (the small ⓘ next to an Arabic term) ---------- */
 export const xi = id => `<button type="button" class="xi" data-gl="${id}" aria-label="${esc(COMMON.whatDoesThisMean)}">${ic("info", "i")}</button>`;
 A.explain = id => {
   const g = gloss(id); if (!g) return;
@@ -89,13 +91,13 @@ A.explain = id => {
 let live = null, liveId = 0;
 export function showSheet(builder) {
   live = { id: ++liveId, builder };
-  openSheet(`<div data-live="${live.id}">${zz(builder())}</div>`);
+  openSheet(`<div data-live="${live.id}">${withRead(zz(builder()))}</div>`);
 }
-function refreshLive() {
+export function refreshLive() {
   if (!live) return;
   const el = $("#sheet [data-live]");
   if (!$("#scrim").classList.contains("on") || !el || +el.dataset.live !== live.id) { live = null; return; }
-  openSheet(`<div data-live="${live.id}">${zz(live.builder())}</div>`);
+  openSheet(`<div data-live="${live.id}">${withRead(zz(live.builder()))}</div>`);
 }
 
 /* ---------- sunnah chips ---------- */
@@ -104,18 +106,18 @@ function witrShown(key) {
   const w = store.witrChip(S, key);
   return w.allowed && (w.inQada || sunnahOn()) ? w : null;
 }
-export function chipHTML(c, key, { hero = false } = {}) {
+export function chipHTML(c, key) {
   const done = store.sunnahDone(S, key, c.id);
-  return `<button type="button" class="sc ${tierCls(c.tier)} ${done ? "d" : ""} ${hero ? "h" : ""}" data-chip="${c.id}" data-key="${key}" aria-pressed="${done}">${done ? ic("check", "") : '<i class="o"></i>'}${esc(c.label)}</button>`;
+  return `<button type="button" class="sc ${tierCls(c.tier)} ${done ? "d" : ""}" data-chip="${c.id}" data-key="${key}" aria-pressed="${done}">${done ? ic("check", "") : '<i class="o"></i>'}${esc(c.label)}</button>`;
 }
-export function witrChipHTML(w, key, { hero = false } = {}) {
-  return `<button type="button" class="sc wj ${w.done ? "d" : ""} ${hero ? "h" : ""}" data-witr="1" data-key="${key}" aria-pressed="${w.done}">${w.done ? ic("check", "") : '<i class="o"></i>'}${esc(w.chip)}<em>${esc(w.tag)}</em></button>`;
+export function witrChipHTML(w, key) {
+  return `<button type="button" class="sc wj ${w.done ? "d" : ""}" data-witr="1" data-key="${key}" aria-pressed="${w.done}">${w.done ? ic("check", "") : '<i class="o"></i>'}${esc(w.chip)}<em>${esc(w.tag)}</em></button>`;
 }
 /** All chips of one fard on one day (sunnah by tier, plus Witr on ʿIshāʾ). */
-export function chipsFor(p, key, opts = {}) {
+export function chipsFor(p, key) {
   const out = [];
-  if (sunnahOn()) for (const c of store.sunnahChips(S, key, p)) out.push(chipHTML(c, key, opts));
-  if (p === "Isha") { const w = witrShown(key); if (w) out.push(witrChipHTML(w, key, opts)); }
+  if (sunnahOn()) for (const c of store.sunnahChips(S, key, p)) out.push(chipHTML(c, key));
+  if (p === "Isha") { const w = witrShown(key); if (w) out.push(witrChipHTML(w, key)); }
   return out;
 }
 export const chipLegend = () => `<div class="slg"><span><i class="lmu"></i>${TIER.muakkadah.name}${xi("sunnahMuakkadah")}</span><span><i class="lgm"></i>${TIER.ghayr.short}${xi("ghayrMuakkadah")}</span><span><i class="lwj"></i>${T.WITR_UI.rowLabel[madhhabOf(S)] || "Witr"}${xi("witr")}</span></div>`;
@@ -186,27 +188,56 @@ document.addEventListener("click", e => {
 }, true);
 
 /* ---------- logging a prayer ---------- */
+/** Why a log was refused (src/today.js logPrayer). */
+function refused(r, p, key) {
+  if (r.reason === "notStarted") notYetToast(p, key);
+  else toast(TODAY.madeUpEarly(pName(p, key)));
+  refreshLive();
+}
+/** The full log sheet's tiles and Clear (and A.setPrayer). Same rules as the one-tap buttons. */
 export function applyStatus(p, key, status, { close = true } = {}) {
-  // No logging before the prayer's time begins (clearing is always allowed). Never a silent no-op: say why,
-  // and redraw an open log sheet so it shows "Begins at …" instead of the status tiles.
-  if (!logAllowed(S, key, p, status, NOW())) { notYetToast(p, key); refreshLive(); return; }
-  const snap = snapshot(key);
-  if (key < S.createdKey) S.createdKey = key; // backfilling an earlier day extends the tracked range
-  const was = store.setPrayer(S, key, p, status, NOW());
+  const r = logPrayer(S, key, p, status, NOW());
+  if (!r.ok) { refused(r, p, key); return; }
+  const was = r.was;
   if (close) closeSheet();
   commit();
   const n = pName(p, key);
   let msg;
-  if (status === "missed") msg = LOG.missedToast(n);
+  if (status === "missed") msg = isOn(S, "makeups") ? LOG.missedToast(n) : TODAY.logged(n);
   else if (was === "missed" && status === "madeup") msg = LOG.madeUpToast(n);
   else if (was === "missed") msg = LOG.removedToast(n, status ? STATUS[status] : null);
   else if (status === "excused") msg = LOG.excusedToast(n);
   else if (!status) msg = LOG.setToast(n, COMMON.clear.toLowerCase());
   else msg = LOG.setToast(n, STATUS[status]);
-  toast(msg, undoable(snap));
+  toast(msg, undoable(r.snap));
 }
 A.setPrayer = (p, k, key = todayKey()) => applyStatus(p, key, k || null);
 A.madeItUp = (p, key = todayKey()) => applyStatus(p, key, "madeup", { close: false });
+
+/** One tap on the Now chapter or in the Other sheet: log it, then "ʿAsr logged · Undo". */
+A.logTap = (p, status, key = todayKey()) => {
+  const r = logPrayer(S, key, p, status, NOW());
+  if (!r.ok) { refused(r, p, key); return; }
+  closeSheet();
+  commit();
+  const n = pName(p, key);
+  toast(status === "missed" && isOn(S, "makeups") ? LOG.missedToast(n) : TODAY.logged(n), undoable(r.snap));
+};
+
+/** Other: the statuses that aren't one of the Now buttons (all: true lists every status, for a Today row's Log). */
+A.logSheet = (p, key = todayKey(), all = false) => showSheet(() => {
+  const now = NOW(), d = parseKey(key), t = timesFor(d, settings())[p], end = windowEnd(d, p, settings());
+  const head = `<div class="lhd"><div><h3>${esc(pName(p, key))}</h3><p class="sub">${esc(TODAY.otherTitleSub(key === todayKey() ? COMMON.today : longDate(d), fmt12(t), fmt12(end)))}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>`;
+  if (!canLog(S, key, p, now)) return `<div class="sh">${head}<p class="note">${esc(NOT_YET.body(pName(p, key)))}</p><div class="shfoot"><button class="gbtn" onclick="A.closeSheet()">${COMMON.cancel}</button></div></div>`;
+  const opts = otherOptions(S, key, p, now, { all: !!all });
+  const label = k => k === "congregation" && !all && store.genderOf(S) === "f"
+    ? `${esc(TODAY.otherLabel.congregation)} <span class="art">(${esc(gloss("jamaah")?.term.toLowerCase() || "jamāʿah")})</span>` : esc(all ? TODAY.prayedAs[k] : TODAY.otherLabel[k]);
+  const sub = k => k === "missed" ? (isOn(S, "makeups") ? `${esc(TODAY.otherSub.missed)} <span class="art">(qaḍāʾ)</span>` : esc(TODAY.otherSub.missedNoMakeups)) : esc(TODAY.otherSub[k]);
+  const info = k => k === "congregation" && !all && store.genderOf(S) === "f" ? xi("jamaah") : k === "missed" && isOn(S, "makeups") ? xi("qada") : "";
+  return `<div class="sh">${head}<div class="opts">${opts.map(k => `<div class="opt"><button class="optb" onclick="A.logTap('${p}','${k}','${key}')">${marker(k)}<span class="t"><b>${label(k)}</b><small>${sub(k)}</small></span></button>${info(k)}${ic("chev", "i cv")}</div>`).join("")}</div>
+    <p class="note2">${esc(TODAY.otherNote)}</p>
+    <div class="shfoot"><button class="tbtn" onclick="A.closeSheet()">${COMMON.cancel}</button></div></div>`;
+});
 
 A.excusedToday = (key = todayKey()) => {
   const snap = snapshot(key);
@@ -229,8 +260,7 @@ A.rememberAt = (p, key = todayKey()) => {
   commit();
 };
 
-const madeUpOffered = (p, key, cur) => cur === "madeup" || NOW() < madeUpDeadline(parseKey(key), settings());
-
+/** The full log sheet for one prayer: every status, Clear, its sunnah chips and Witr, Excused today. */
 A.prayerSheet = (p, key = todayKey()) => showSheet(() => {
   const d = parseKey(key), day = store.getDay(S, key), cur = store.prayerStatus(S, key, p);
   const t = timesFor(d, settings())[p], end = windowEnd(d, p, settings());
@@ -246,10 +276,11 @@ A.prayerSheet = (p, key = todayKey()) => showSheet(() => {
   if (cur === "madeup" && day.at?.[p]) sub += ` · ${HOME.madeUpAt(fmt12(new Date(day.at[p])))}`;
   else if (cur === "missed" || NOW() >= end) sub += ` · ${HOME.endedAt(fmt12(end))}`;
   const best = p === "Isha" ? TIMES.bestBefore(fmt12(ishaBestBefore(d, settings()))) : "";
-  const opts = ["congregation", "ontime", "madeup", "missed"];
+  const opts = store.genderOf(S) === "m" ? ["congregation", "ontime", "madeup", "missed"] : ["ontime", "congregation", "madeup", "missed"];
   const excOn = S.settings.excusedDays !== false;
   const tile = k => {
-    const off = k === "madeup" && !madeUpOffered(p, key, cur);
+    // "Made up later" only once the prayer's time has ended (logging.madeUpAllowed); a stored one keeps it
+    const off = k === "madeup" && cur !== "madeup" && !madeUpAllowed(S, key, p, NOW());
     return `<button class="st ${cur === k ? "sel" : ""} ${k === "excused" ? "wide" : ""}" ${off ? "disabled" : ""} aria-pressed="${cur === k}" onclick="A.setPrayer('${p}','${k}','${key}')"><span class="mk ${sk(k)}">${ic(SICON[sk(k)], "")}</span><span><b>${STATUS[k]}</b><small>${T.STATUS_HELP[k]}</small></span></button>`;
   };
   const chips = sunnahOn() ? store.sunnahChips(S, key, p) : [];
@@ -285,7 +316,9 @@ export function amalHint(a, key = todayKey()) {
   return a.hint || (a.builtin ? "" : DEEDS.addedByYou);
 }
 
-A.tapAmal = (id, key = todayKey()) => {
+/** Where a detail sheet returns after Save or Skip (the Good deeds sheet it was opened from, or nowhere). */
+let afterDetail = null;
+A.tapAmal = (id, key = todayKey(), from = "") => {
   const a = amalById(id, key);
   const st0 = store.getDay(S, key).amal[id];
   const snap = snapshot(key);
@@ -298,27 +331,29 @@ A.tapAmal = (id, key = todayKey()) => {
   store.setAmal(S, key, id, true, "");
   commit();
   if (a.detail === "none") toast(DEEDS.doneToast(a.name), undoable(snap));
-  else A.detailSheet(id, key);
+  else A.detailSheet(id, key, from);
 };
 
-A.detailSheet = (id, key = todayKey()) => {
+A.detailSheet = (id, key = todayKey(), from = "") => {
+  afterDetail = from ? () => A.deedsSheet(key, from === "day" ? "day" : "") : null;
   const a = amalById(id, key);
   const d = store.getDay(S, key).amal[id]?.detail || "";
   let body = "";
   if (a.detail === "quran") {
     const [pos, pages] = d.split(" · ");
     const pre = pos || (S.settings.carryQuran ? S.lastQuran : "");
-    body = `<div class="field"><label>${DEEDS.whereStop}</label><input id="dIn" value="${esc(pre)}" placeholder="${esc(DEEDS.wherePlaceholder)}"></div><div class="field"><label>${DEEDS.pagesRead}</label><input id="dIn2" value="${esc(parseInt(pages) || "")}" placeholder="${COMMON.optional}" inputmode="numeric"></div>`;
+    body = `<div class="field"><label for="dIn">${DEEDS.whereStop}</label><input id="dIn" value="${esc(pre)}" placeholder="${esc(DEEDS.wherePlaceholder)}"></div><div class="field"><label for="dIn2">${DEEDS.pagesRead}</label><input id="dIn2" value="${esc(parseInt(pages) || "")}" placeholder="${COMMON.optional}" inputmode="numeric"></div>`;
   } else if (a.detail === "count") {
     const last = store.lastDetail(S, id, key);
     const n = parseInt(d) || parseInt(last?.detail) || 100;
-    body = `<div class="field"><label>${DEEDS.howMany}</label><div class="stp"><button onclick="A.step(-10)" aria-label="${DEEDS.tenFewer}">−</button><input id="cnt" type="number" inputmode="numeric" min="0" value="${n}"><button onclick="A.step(10)" aria-label="${DEEDS.tenMore}">+</button></div></div>`;
+    body = `<div class="field"><label for="cnt">${DEEDS.howMany}</label><div class="stp"><button onclick="A.step(-10)" aria-label="${DEEDS.tenFewer}">−</button><input id="cnt" type="number" inputmode="numeric" min="0" value="${n}"><button onclick="A.step(10)" aria-label="${DEEDS.tenMore}">+</button></div></div>`;
   } else {
-    body = `<div class="field"><label>${DEEDS.anyNote}</label><textarea id="dIn" placeholder="${COMMON.optional}">${esc(d)}</textarea></div>`;
+    body = `<div class="field"><label for="dIn">${DEEDS.anyNote}</label><textarea id="dIn" placeholder="${COMMON.optional}">${esc(d)}</textarea></div>`;
   }
-  openSheet(zz(`<div class="sh"><h3>${esc(a.name)} <span style="color:var(--z-leaf);font-size:18px">✓</span></h3><p class="sub">${DEEDS.detailLead}</p>${body}
-  <div class="shfoot"><button class="gbtn" onclick="A.closeSheet()">${COMMON.skip}</button><button class="pbtn" onclick="A.saveDetail('${id}','${key}')">${DEEDS.saveDetail}</button></div></div>`));
+  openSheet(zz(`<div class="sh"><h3>${esc(a.name)}</h3><p class="sub">${DEEDS.detailLead}</p>${body}
+  <div class="shfoot"><button class="gbtn" onclick="A.skipDetail()">${COMMON.skip}</button><button class="pbtn" onclick="A.saveDetail('${id}','${key}')">${DEEDS.saveDetail}</button></div></div>`));
 };
+A.skipDetail = () => { const back = afterDetail; afterDetail = null; if (back) back(); else closeSheet(); };
 A.step = n => { const c = $("#cnt"); c.value = Math.max(0, (parseInt(c.value) || 0) + n); };
 A.saveDetail = (id, key) => {
   const a = amalById(id, key);
@@ -330,11 +365,13 @@ A.saveDetail = (id, key) => {
   } else v = $("#dIn").value.trim();
   store.setAmal(S, key, id, true, v);
   if (a.detail === "quran") S.lastQuran = store.lastDetail(S, id, null)?.detail.split(" · ")[0] || "";
-  closeSheet(); commit(); toast(DEEDS.saved);
+  const back = afterDetail; afterDetail = null;
+  if (back) { commit(); back(); } else { closeSheet(); commit(); }
+  toast(DEEDS.saved);
 };
 A.addAmal = () => openSheet(zz(`<div class="sh"><h3>${DEEDS.addTitle}</h3><p class="sub">${DEEDS.addLead}</p>
-  <div class="field"><label>${DEEDS.name}</label><input id="nIn" placeholder="${esc(DEEDS.namePlaceholder)}"></div>
-  <div class="field"><label>${DEEDS.whenCheck}</label><select id="nType"><option value="none">${DEEDS.typeNone}</option><option value="note">${DEEDS.typeNote}</option><option value="count">${DEEDS.typeCount}</option></select></div>
+  <div class="field"><label for="nIn">${DEEDS.name}</label><input id="nIn" placeholder="${esc(DEEDS.namePlaceholder)}"></div>
+  <div class="field"><label for="nType">${DEEDS.whenCheck}</label><select id="nType"><option value="none">${DEEDS.typeNone}</option><option value="note">${DEEDS.typeNote}</option><option value="count">${DEEDS.typeCount}</option></select></div>
   <div class="shfoot"><button class="gbtn" onclick="A.closeSheet()">${COMMON.cancel}</button><button class="pbtn" onclick="A.saveAmal()">${DEEDS.addToList}</button></div></div>`));
 A.saveAmal = () => {
   const n = $("#nIn").value.trim(); if (!n) return;
@@ -342,166 +379,48 @@ A.saveAmal = () => {
   closeSheet(); commit(); toast(DEEDS.added);
 };
 
-export function amalRow(a, key, { hint, read = false } = {}) {
-  const s0 = store.getDay(S, key).amal[a.id] || {};
-  const past = key < todayKey();
-  const cls = s0.done ? "done" : "";
-  const sub = s0.done ? esc(s0.detail || DEEDS.doneWord) : hint ?? (past ? DEEDS.notDone : DEEDS.notYet);
-  return `<div class="row ${cls}"><button class="mk a ${s0.done ? "done" : ""}" aria-label="${esc(DEEDS.markAria(!!s0.done, a.name))}" aria-pressed="${!!s0.done}" onclick="A.tapAmal('${a.id}','${key}')">${ic("check", "")}</button><div class="t" role="button" tabindex="0" onclick="A.tapAmal('${a.id}','${key}')"><b>${esc(a.name)}</b><small>${sub}</small></div>${s0.done && a.detail !== "none" ? `<button class="link" onclick="A.detailSheet('${a.id}','${key}')">${s0.detail ? COMMON.edit : DEEDS.addDetail}</button>` : read && !s0.done ? `<!--zread:${a.id}-->` : "<span></span>"}</div>`;
-}
-export function deedsCard(key, { hintFor = true, read = false } = {}) {
-  const list = store.amalForDay(S, key);
-  return list.length ? list.map(a => amalRow(a, key, { ...(hintFor ? { hint: esc(amalHint(a, key)) } : {}), read })).join("") : `<div class="empty">${DEEDS.empty}</div>`;
+/** Good deeds done / on the list for a day. */
+export function deedsCount(key) {
+  const list = store.amalForDay(S, key), day = store.getDay(S, key);
+  return { done: list.filter(a => day.amal[a.id]?.done).length, of: list.length };
 }
 
-/* ---------- Home ---------- */
+/* The Tools "Read" button on a reading deed (views/tools/index.js toolsAmalRead), placed after zz so its tl- classes stay. */
 const toolMods = import.meta.glob("./tools/index.js", { eager: true });
-const toolsHomeCards = () => Object.values(toolMods)[0]?.toolsHomeCards;
 const toolsAmalRead = () => Object.values(toolMods)[0]?.toolsAmalRead;
-/** AH1: swap the row placeholders for the Tools "Read" buttons (after zz, so the tl- classes stay unprefixed). */
-function withRead(html, now) {
+export function withRead(html, now = NOW()) {
   const f = isOn(S, "tools") ? toolsAmalRead() : null;
   const asr = timesFor(now, S.settings).Asr;
   return html.replace(/<!--zread:([A-Za-z0-9_-]+)-->/g, (_, id) => {
-    if (!f || (id === "evening" && now < asr)) return "<span></span>";
-    try { return f(id) || "<span></span>"; } catch (e) { return "<span></span>"; }
+    if (!f || (id === "evening" && now < asr)) return "";
+    try { return f(id) || ""; } catch (e) { return ""; }
   });
 }
 
-const PATTERN = `<svg class="pattern" aria-hidden="true"><defs><pattern id="zst" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M30 2 L36 24 L58 30 L36 36 L30 58 L24 36 L2 30 L24 24 Z" fill="none" stroke="#E5C55C" stroke-width="1"/><path d="M13 13 L47 13 L47 47 L13 47 Z" fill="none" stroke="#E5C55C" stroke-width=".6" transform="rotate(45 30 30)"/></pattern></defs><rect width="100%" height="100%" fill="url(#zst)"/></svg>`;
-const WSK = { congregation: "c", ontime: "o", madeup: "r", missed: "m", excused: "x", unlogged: "u", future: "f" };
-
-function weekBlock(now) {
-  const series = st.weekSeries(S, now, 0, { settings: S.settings });
-  const ti = weekIndex(now);
-  let prayed = 0, due = 0;
-  const cols = series.map((d, i) => {
-    prayed += d.prayed; due += d.due;
-    return `<div class="d ${i === ti ? "t" : ""}"><div class="bars">${PRAYERS.map(p => `<i class="${d.statuses[p] === null ? "n" : WSK[d.statuses[p]] || "f"}"></i>`).join("")}</div><span>${WEEK_LETTERS_SUN[i]}</span></div>`;
+/**
+ * The Good deeds sheet: tick each one off. From "Good deeds · 2 of 5" on Today it lists only the deeds that are not
+ * reading (reading deeds are ticked in Read: src/reading.js deedInRead), so each deed is in one place. From a day in
+ * the calendar (back "day") it lists the whole day, since Read only ticks today.
+ */
+A.deedsSheet = (key = todayKey(), back = "") => showSheet(() => {
+  const from = back === "day" ? "day" : "deeds";
+  const whole = back === "day";
+  const list = whole ? store.amalForDay(S, key) : sheetDeeds(S, key), day = store.getDay(S, key);
+  const sc = sheetCount(S, key), c = whole ? deedsCount(key) : sc;
+  const rows = list.map(a => {
+    const s0 = day.amal[a.id] || {};
+    const sub = s0.done ? (s0.detail || DEEDS.doneWord) : amalHint(a, key);
+    const edit = s0.done && a.detail !== "none" ? `<button class="link" onclick="A.detailSheet('${a.id}','${key}','${from}')">${s0.detail ? COMMON.edit : DEEDS.addDetail}</button>` : "";
+    return `<div class="drow"><button class="t" onclick="A.tapAmal('${a.id}','${key}','${from}')"><b>${esc(a.name)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</button>${edit}${!s0.done && key === todayKey() ? `<!--zread:${a.id}-->` : ""}<button class="tick" role="checkbox" aria-checked="${!!s0.done}" aria-label="${esc(a.name)}" onclick="A.tapAmal('${a.id}','${key}','${from}')"><span class="bx ${s0.done ? "on" : ""}">${s0.done ? ic("check", "") : ""}</span></button></div>`;
   }).join("");
-  const inner = `<div class="week"><span class="lbl">${HOME.thisWeek}</span><div class="stk">${cols}</div><strong>${HOME.prayedOf(prayed, due)}<small>${HOME.prayedWord}</small></strong></div>`;
-  const label = `${HOME.thisWeek}: ${prayed} of ${due} ${HOME.prayedWord}`;
-  return isOn(S, "progress")
-    ? `<button class="weekLink" aria-label="${esc(label)}" onclick="A.openWeek()">${inner}<span class="wchev">${ic("chev")}</span></button>`
-    : `<div class="weekLink" role="img" aria-label="${esc(label)}">${inner}</div>`;
-}
-A.openWeek = () => { UI.range = "week"; go("progress"); };
-
-/** "Adhkar after Salah" link, shown once the current prayer is logged as prayed (needs the Adhkar tool visible). */
-function afterSalahLink(p, k, status) {
-  if (!p || !status || !["congregation", "ontime", "madeup"].includes(status) || !toolVisible(S, "afterSalah")) return "";
-  return `<button class="asl" onclick="A.openAfterSalah?.('${p}')">${esc(WEEK_UI.afterSalah)}${ic("chev", "")}</button>`;
-}
-/** The Now card's two log buttons: Prayed first (gold), except for a brother, who gets In jamāʿah first. */
-function nowButtons(p, key) {
-  const pr = cls => `<button class="${cls} big" onclick="A.setPrayer('${p}','ontime','${key}')">${ic("check", "")}${STATUS_EXTRA.prayed}</button>`;
-  const jm = cls => `<button class="${cls} big" onclick="A.setPrayer('${p}','congregation','${key}')">${ic("people", "")}${STATUS.congregation}</button>`;
-  return store.genderOf(S) === "m" ? jm("hbtn") + pr("obtn") : pr("hbtn") + jm("obtn");
-}
-function heroBlock(now, key, day) {
-  const st0 = S.settings, T0 = timesFor(now, st0);
-  const cur = currentWindow(now, st0);
-  const curKey = cur ? dkey(cur.date) : null;
-  const curStatus = cur ? store.prayerStatus(S, curKey, cur.p) : null;
-  const allFive = PRAYERS.every(p => store.isPrayed(store.prayerStatus(S, key, p)));
-  // The name goes on its own second line under the salām (user, 14 Nov 2026)
-  const greet = S.profile.name ? `${HOME.greetingLine1}<span class="greetName">${esc(S.profile.name)}</span>` : HOME.greeting;
-  let card = "";
-  if (day.excused) {
-    const mode = S.excusedMode;
-    card = `<div class="exchip"><span class="mo">${ic("moon")}</span><div class="tx">${mode ? EXCUSED.modeOn : EXCUSED.today}<small>${mode ? EXCUSED.modeOnSub : EXCUSED.foot}</small></div>${mode ? `<button class="obtn sm" onclick="A.endExcusedMode()">${EXCUSED.end}</button>` : ""}</div>`;
-  } else if (allFive) {
-    const n = st.streaks(S, now).all.cur;
-    card = `<div class="celebA"><span class="st">${starSvg(30)}</span><div><b>${X.celebTitle}</b><small>${n > 1 ? X.celebSub(n) : COMMON.alhamdulillah}</small></div></div>${afterSalahLink(cur?.p, curKey, curStatus)}`;
-  } else if (cur && !curStatus) {
-    const p = cur.p, name = pName(p, curKey);
-    const start = timesFor(cur.date, st0)[p];
-    const best = p === "Isha" ? ishaBestBefore(cur.date, st0) : null;
-    const target = best && now < best ? best : cur.end;
-    const total = target - start, elapsed = now - start;
-    const chips = chipsFor(p, curKey, { hero: true });
-    const sub = best ? (now < best ? TIMES.bestBefore(`<b>${fmt12(best)}</b>`) : X.pastMiddle) : X.endsAt(fmt12(cur.end));
-    const cdSmall = best ? (now < best ? TIMES.toMiddle : X.toFajr) : X.leftInTime;
-    card = `<div class="nowB"><div class="nbTop"><span class="tag">${curKey === key ? COMMON.now : X.lastNight}</span><span class="ends">${fmt12(start)} – ${fmt12(cur.end)}</span></div>
-      <div class="nbMain"><div><div class="pn">${esc(name)}</div><div class="pt">${sub}</div></div><div class="cd"><b>${fmtHM(target - now)}</b><small>${cdSmall}</small></div></div>
-      <div class="bar" aria-hidden="true"><i style="width:${Math.max(3, Math.min(100, Math.round(elapsed / total * 100)))}%"></i></div>
-      ${chips.length ? `<div class="nbsn"><span class="lb">${X.withP(esc(name))}</span><div class="scs">${chips.join("")}</div></div>` : ""}
-      <div class="nbBtns">${nowButtons(p, curKey)}<button class="obtn sq" aria-label="${COMMON.edit}" onclick="A.prayerSheet('${p}','${curKey}')">${ic("dots", "")}</button></div></div>`;
-  } else {
-    const nx = nextPrayer(now, st0), name = pName(nx.p, nx.tomorrow ? dkey(addDays(now, 1)) : key);
-    const chips = cur && curStatus ? chipsFor(cur.p, curKey, { hero: true }) : [];
-    card = `<div class="nowB"><div class="nbTop"><span class="tag ok">${X.next}</span><span></span></div>
-      <div class="nbMain"><div><div class="pn">${esc(name)}</div><div class="pt"><b>${fmt12(nx.time)}</b>${nx.tomorrow ? " " + COMMON.tomorrow : ""}</div></div><div class="cd"><b>${fmtHM(nx.time - now)}</b><small>${X.untilStarts}</small></div></div>
-      ${chips.length ? `<div class="nbsn"><span class="lb">${X.withP(esc(pName(cur.p, curKey)))}</span><div class="scs">${chips.join("")}</div></div>` : ""}${afterSalahLink(cur?.p, curKey, curStatus)}</div>`;
-  }
-  return `<div class="hero">${PATTERN}<div class="topbar"><div class="brand"><img class="logo" src="logo/zad-symbol.png" srcset="logo/zad-symbol.png 1x, logo/zad-symbol@2x.png 2x" width="37" height="46" alt="${APP.name}"><div><div class="date">${DOW[now.getDay()]}, ${now.getDate()} ${MON[now.getMonth()]}</div><div class="hijri">${hijriLabel(now)}</div></div></div>
-    <button class="ibtn" aria-label="${T.NAV.settings}" onclick="A.go('settings')">${ic("gear")}</button></div>
-    <div class="greetB">${greet}</div>${card}${weekBlock(now)}</div>`;
-}
-A.endExcusedMode = () => {
-  const now = NOW(), key = todayKey();
-  const snap = snapshot(key);
-  store.endExcused(S, key, { excusedPrayers: excusedSoFar(now, S.settings) }, now);
-  commit(); toast(EXCUSED.end, undoable(snap));
-};
-
-function attnCards(now, key) {
-  if (!isOn(S, "makeups")) return "";
-  const out = [];
-  for (const k of [dkey(addDays(now, -1)), key]) {
-    const d = parseKey(k);
-    for (const p of PRAYERS) {
-      if (store.prayerStatus(S, k, p) !== "missed" || !canStillMakeUp(d, p, now, S.settings)) continue;
-      out.push(`<div class="attn"><span class="mk m">${ic("dash", "")}</span><div><b>${esc(X.wasMissed(pName(p, k)))}</b><small>${esc(X.comesOff())}</small></div><button class="ubtn" onclick="A.madeItUp('${p}','${k}')">${ic("madeup", "")}${HOME.madeItUp}</button></div>`);
-    }
-  }
-  return out.slice(0, 2).join("");
-}
-
-function metersBlock(key, day) {
-  const sts = PRAYERS.map(p => store.prayerStatus(S, key, p));
-  const prayed = sts.filter(store.isPrayed).length;
-  const excusedAll = day.excused && !sts.some(store.isPrayed);
-  const ms = [];
-  ms.push(`<button class="mt" onclick="A.todaySheet()" aria-label="${esc(HOME.salahToday)}, ${esc(HOME.nOfFivePrayed(prayed))}"><small>${HOME.salahToday}${ic("chev", "i mchev")}</small><div class="mv"><b>${excusedAll ? "–" : prayed}</b>${excusedAll ? "" : "/5"}</div><div class="seg">${sts.map(s => `<i class="${sk(s) || "f"}"></i>`).join("")}</div></button>`);
-  if (sunnahOn()) {
-    const m = st.sunnahMeasureDay(S, key);
-    const label = m.kind === "rakahs" ? TIER.muakkadah.name : MEASURE.raghibahWitr;
-    const pips = 6, on = m.of ? Math.round(m.got / m.of * pips) : 0;
-    ms.push(`<div class="mt"><small>${label}</small><div class="mv"><b>${m.excused ? "–" : m.got}</b>${m.excused ? "" : `/${m.of}`}</div><div class="seg s">${Array.from({ length: pips }, (_, i) => `<i class="${i < on ? "on" : ""}"></i>`).join("")}</div></div>`);
-  }
-  if (isOn(S, "deeds")) {
-    const list = store.amalForDay(S, key), done = list.filter(a => day.amal[a.id]?.done).length, n = Math.min(list.length, 7);
-    ms.push(`<div class="mt"><small>${DEEDS.title}</small><div class="mv"><b>${done}</b>/${list.length}</div><div class="seg a">${Array.from({ length: n }, (_, i) => `<i class="${i < Math.round(done / (list.length || 1) * n) ? "on" : ""}"></i>`).join("")}</div></div>`);
-  }
-  return `<div class="meters">${ms.join("")}</div>`;
-}
-
-/* ----- today's prayers sheet ----- */
-function todayTile(p, key, now) {
-  const d = parseKey(key), s0 = store.prayerStatus(S, key, p), day = store.getDay(S, key);
-  const t = timesFor(d, S.settings)[p], end = windowEnd(d, p, S.settings);
-  const cur = currentWindow(now, S.settings), open = cur && cur.p === p && dkey(cur.date) === key;
-  let sub = fmt12(t), cls = s0 ? sk(s0) : "", right;
-  if (s0 === "madeup" && day.at?.[p]) sub += ` · ${HOME.madeUpAt(fmt12(new Date(day.at[p])))}`;
-  else if (s0 === "missed" || (!s0 && now >= end)) sub += ` · ${HOME.endedAt(fmt12(end))}`;
-  if (open && !s0) { sub += ` · ${COMMON.now}`; cls = "now"; right = `<span class="pill nowp">${STATUS_EXTRA.openNow}</span>`; }
-  else if (s0) right = pill(s0);
-  else right = `<span class="pill">${now < t ? X.later : STATUS_EXTRA.tapToLog}</span>`;
-  const chips = s0 === "missed" || s0 === "excused" ? [] : chipsFor(p, key);
-  let ext = chips.length ? `<div class="scs">${chips.join("")}</div>` : "";
-  if (s0 === "missed" && isOn(S, "makeups") && canStillMakeUp(d, p, now, S.settings))
-    ext = `<div class="mkup"><span>${HOME.stillTime}</span><button class="ubtn" onclick="event.stopPropagation();A.madeItUp('${p}','${key}')">${ic("madeup", "")}${HOME.madeItUp}</button></div>`;
-  return `<div class="tt ${cls}" role="button" tabindex="0" onclick="A.prayerSheet('${p}','${key}')">${marker(open && !s0 ? "" : s0)}<div class="t"><b>${esc(pName(p, key))}</b><small>${esc(sub)}</small></div>${right}${ic("chev", "i tchev")}${ext ? `<div class="ext">${ext}</div>` : ""}</div>`;
-}
-A.todaySheet = () => showSheet(() => {
-  const now = NOW(), key = todayKey();
-  const prayed = PRAYERS.filter(p => store.isPrayed(store.prayerStatus(S, key, p))).length;
-  return `<div class="sh"><div class="lhd"><div><h3>${HOME.todaysPrayers}</h3><p class="sub">${esc(longDate(now))} · <b>${prayed} of 5</b> ${HOME.prayedWord}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
-    <div class="tlist">${PRAYERS.map(p => todayTile(p, key, now)).join("")}</div>${sunnahOn() ? chipLegend() : ""}<p class="foot" style="margin-top:8px">${HOME.tapToChange}</p></div>`;
+  const label = key === todayKey() ? COMMON.today : longDate(parseKey(key));
+  return `<div class="sh"><div class="lhd"><div><h3>${esc(TODAY.goodDeeds)}</h3><p class="sub">${esc(TODAY.deedsSub(label, c.done, c.of))}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
+    <div class="drows">${rows || `<div class="empty">${DEEDS.empty}</div>`}</div>
+    ${!whole && sc.inRead ? `<p class="note2">${esc(READ.deedsInRead)}</p>` : ""}
+    <div class="shfoot"><button class="gbtn" onclick="A.amalListSheet?.()">${esc(TODAY.editList)}</button><button class="pbtn" onclick="${back === "day" ? `A.daySheet('${key}')` : "A.closeSheet()"}">${back === "day" ? COMMON.back : COMMON.done}</button></div></div>`;
 });
 
-/* ----- catch up on yesterday (CU2) ----- */
+/* ---------- catch up on yesterday (CU2) ---------- */
 let cu = { sel: {} };
 function yesterdayUnlogged(now) {
   const yk = dkey(addDays(now, -1)), y = parseKey(yk);
@@ -509,17 +428,10 @@ function yesterdayUnlogged(now) {
   const cur = currentWindow(now, S.settings);
   return PRAYERS.filter(p => !store.prayerStatus(S, yk, p) && !(cur && cur.p === p && dkey(cur.date) === yk));
 }
-function catchBlock(now) {
-  const list = yesterdayUnlogged(now);
-  if (!list.length) return "";
-  const names = list.map(p => pName(p, dkey(addDays(now, -1))));
-  const line = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0];
-  return `<button class="catch" onclick="A.catchSheet()"><span class="ic">${ic("history")}</span><div class="t"><b>${LOG.catchUpTitle}</b><small>${esc(LOG.notLoggedList(line))}</small></div><span class="link">${LOG.review}${ic("chev")}</span></button>`;
-}
 A.catchSheet = () => { cu = { sel: {} }; showSheet(catchHTML); };
 function catchHTML() {
   const now = NOW(), yk = dkey(addDays(now, -1)), y = parseKey(yk), list = yesterdayUnlogged(now);
-  const segs = [["congregation", "dcheck", "kc"], ["ontime", "check", ""], ["madeup", "madeup", "kr"], ["missed", "dash", "km"]];
+  const segs = [["congregation", "dcheck", "kc"], ["ontime", "check", ""], ["madeup", "clock", "kr"], ["missed", "dash", "km"]];
   const canMake = now < madeUpDeadline(y, S.settings);
   const n = Object.keys(cu.sel).length;
   return `<div class="sh"><h3>${LOG.catchUpTitle}</h3><p class="sub">${esc(LOG.catchUpSub(longDate(y), list.length))}</p>
@@ -537,23 +449,17 @@ A.cuSave = () => {
   closeSheet(); commit(); toast(X.loggedN(entries.length), undoable(snap));
 };
 
-/* ----- good deeds block ----- */
-function deedsBlock(key) {
-  const list = store.amalForDay(S, key), day = store.getDay(S, key);
-  const done = list.filter(a => day.amal[a.id]?.done).length;
-  return `<section class="sec" data-tour="deeds"><h2>${DEEDS.title} <span>${DEEDS.nOfMDone(done, list.length)}</span></h2><div class="card">${deedsCard(key, { read: true })}</div></section>`;
-}
-
-/* ----- This week tiles (W3) ----- */
+/* ---------- This week readings (W3): shown in Read (views/tools/index.js) ---------- */
 const OPENED = "zad-wk-opened";
 const readOpened = () => { try { return JSON.parse(localStorage.getItem(OPENED) || "{}"); } catch (e) { return {}; } };
 function markOpened(k) { try { const o = readOpened(); o[k] = 1; localStorage.setItem(OPENED, JSON.stringify(o)); } catch (e) { /* private mode */ } }
-function weekTiles(now) {
+/** The six "This week" tiles (āyah, hadīth, duʿāʾ, sīrah, Sahābī, sunnah of the month), already prefixed (zz). */
+export function weekTiles(now = NOW()) {
   // The first month a user sees is Abū Bakr: remember that month once.
   if (!Number.isInteger(S.settings.sahabiStart)) { S.settings.sahabiStart = monthIndex(now); commit(); }
   setSahabiStart(S.settings.sahabiStart);
   // The approved sets are a separate chunk (content.js starts loading it at once); draw again when it lands.
-  if (!contentReady()) whenContent(render); // one pending load and one redraw, however often Home renders meanwhile
+  if (!contentReady()) whenContent(render); // one pending load and one redraw, however often this renders meanwhile
   const c = thisWeek(now), opened = readOpened(), mk = `${now.getFullYear()}-${now.getMonth()}`;
   const tiles = [
     ["ayah", c.ayah.title || c.ayah.en, 0], ["hadith", c.hadith.title || c.hadith.en, 0], ["dua", c.dua.title || c.dua.en, 0],
@@ -565,7 +471,7 @@ function weekTiles(now) {
     const fact = id === "sahabi" ? `<div class="fx">${esc(c.sahabi.recap ? WEEK_UI.recapTile : c.sahabi.fact)}</div>` : "";
     return `<button class="wt ${monthly ? "mo" : ""} ${fact ? "hasfx" : ""}" onclick="A.weekItem('${id}')"><div class="k"><b>${names[id]}</b><span>${X.arLabel[id]}</span></div><div class="ti">${esc(title)}</div>${fact}<span class="dt ${ok ? "" : "new"}">${ok ? ic("check", "") : ""}</span></button>`;
   }).join("");
-  return `<section class="sec"><h2>${HOME.thisWeek}</h2><p class="wsub">${esc(c.rangeLabel)} · ${X.newEachSunday}</p><div class="wgrid">${html}</div><div class="wleg"><span><i></i>${X.notOpened}</span><span>${X.goldChange}</span></div></section>`;
+  return zz(`<section class="sec"><h2>${HOME.thisWeek}</h2><p class="wsub">${esc(c.rangeLabel)} · ${X.newEachSunday}</p><div class="wgrid">${html}</div><div class="wleg"><span><i></i>${X.notOpened}</span><span>${X.goldChange}</span></div></section>`);
 }
 const sahabiKick = () => WEEK_UI.sahabi("").replace(/ · $/, "");
 /** Sahabi of the month: today's fact, then the earlier facts of this month (newest first), then Past months. */
@@ -615,38 +521,296 @@ A.weekItem = id => {
   render();
 };
 
-/* ----- "Want more from Zad?" (only when every optional module is off) ----- */
-function wantMore() {
-  if (["sunnah", "deeds", "makeups", "week", "progress", "tools"].some(f => isOn(S, f))) return "";
-  return `<button class="more" onclick="A.go('settings');A.settingsPage('features')"><span class="pl">${ic("plus")}</span><span><b>${HOME.wantMoreTitle}</b><small>${HOME.wantMoreSub}</small></span></button>`;
+/* =================================================================================================
+   The Today tab
+   ================================================================================================= */
+A.openWeek = () => { UI.range = "week"; go("progress"); };
+A.endExcusedMode = () => {
+  const now = NOW(), key = todayKey();
+  const snap = snapshot(key);
+  store.endExcused(S, key, { excusedPrayers: excusedSoFar(now, S.settings) }, now);
+  commit(); toast(EXCUSED.end, undoable(snap));
+};
+/** zad://today (widgets) and the old "Today's prayers" sheet: show the Today chapter. */
+A.todaySheet = () => { if (UI.view !== "home") go("home"); A.todayChapter(todayChapters(S).indexOf("today")); };
+
+const dot = '<i class="zt-dot" aria-hidden="true"></i>';
+const head = (title, sub = "", kick = "", cls = "") => `<header class="zt-chh">${kick ? `<p class="zt-kick">${kick}</p>` : ""}<h1 class="zt-title ${cls}">${title}</h1>${sub ? `<p class="zt-sub">${sub}</p>` : ""}</header>`;
+/** A quiet one-line row ("This week · 12 of 13 prayed", "Good deeds · 2 of 5"). */
+const line = (icon, label, value, onclick, f) => onclick
+  ? `<button type="button" class="zt-line" data-f="${f}" onclick="${onclick}">${ic(icon, "i zt-lc")}<span class="l">${label}</span><span class="v">${value}</span>${ic("chev", "i zt-cv")}</button>`
+  : `<div class="zt-line">${ic(icon, "i zt-lc")}<span class="l">${label}</span><span class="v">${value}</span></div>`;
+
+/** Time left in an open prayer: [big, small]. ʿIshāʾ counts to the middle of the night first. */
+function leftParts(cur, now) {
+  if (cur.p === "Isha") {
+    const best = ishaBestBefore(cur.date, S.settings);
+    if (now < best) return [hm(best - now), TODAY.bestBefore(fmt12(best))];
+    return [hm(cur.end - now), TODAY.untilFajr(fmt12(cur.end))];
+  }
+  if (cur.p === "Fajr") return [hm(cur.end - now), TODAY.leftUntilSunrise(fmt12(cur.end))];
+  return [hm(cur.end - now), TODAY.leftUntil(fmt12(cur.end))];
+}
+/** "40 min left · until 7:20 AM" (Fajr: "until sunrise 7:20 AM"). */
+const leftLineOf = (cur, big) => (cur.p === "Fajr" ? TODAY.leftLineSunrise : TODAY.leftLine)(big, fmt12(cur.end));
+function nextRow(now, begins = false) {
+  const nx = nextPrayer(now, S.settings), k = nx.tomorrow ? dkey(addDays(now, 1)) : todayKey();
+  const t = `${begins ? TODAY.begins(fmt12(nx.time)) : fmt12(nx.time)}${nx.tomorrow ? " " + COMMON.tomorrow : ""}`;
+  return `<div class="zt-next"><span>${TODAY.next}</span><b>${esc(pName(nx.p, k))}</b><em>${esc(t)}</em></div>`;
+}
+function weekLine(now) {
+  const series = st.weekSeries(S, now, 0, { settings: S.settings });
+  let prayed = 0, due = 0;
+  for (const d of series) { prayed += d.prayed; due += d.due; }
+  const v = `<b>${TODAY.prayedOfDue(prayed, due)}</b> ${TODAY.prayedWord}`;
+  return line("bars", TODAY.thisWeek, v, isOn(S, "progress") ? "A.openWeek()" : "", "week");
+}
+/** The one-tap buttons (src/today.js logButtons): brothers congregation then on time; sisters on time only. */
+function logBtns(p, key) {
+  return logButtons(S).map((k, i) => `<button type="button" class="zt-btn ${i ? "sec" : "pri"}" data-f="log-${k}" onclick="A.logTap('${p}','${k}','${key}')">${ic(k === "congregation" ? "people" : "check")}${esc(TODAY.button[k])}</button>`).join("");
+}
+function sunnahRow(p, key) {
+  const chips = chipsFor(p, key);
+  if (!chips.length) return "";
+  return `<div class="zt-sun"><span class="l">${esc(TODAY.sunnahBefore(pName(p, key)))}<small>${esc(TODAY.optional)}</small></span><div class="z-scs">${zz(chips.join(""))}</div></div>`;
 }
 
-/* ----- render ----- */
+/** The Now chapter's card while a prayer is open and not logged yet. */
+function openCard(cur, now, { compact = false } = {}) {
+  const p = cur.p, key = dkey(cur.date), [big, small] = leftParts(cur, now);
+  const guide = guideLineDue(S) ? `<p class="zt-guide">${ic("hand", "i")}${esc(TODAY.guide)}</p>` : "";
+  const leftLine = compact
+    ? `<div class="zt-left cmp"><b class="nm">${esc(pName(p, key))}</b><span>${esc(leftLineOf(cur, big))}</span></div>`
+    : `<div class="zt-left"><b>${esc(big)}</b><span>${esc(small)}</span></div>`;
+  return `<div class="zt-card pad">${leftLine}<div class="zt-btns">${logBtns(p, key)}</div>
+    <div class="zt-other"><button type="button" class="zt-link" data-f="other" onclick="A.logSheet('${p}','${key}')">${esc(TODAY.other)}</button></div>${guide}
+    ${compact ? "" : sunnahRow(p, key) + nextRow(now)}</div>`;
+}
+/** The card after the current prayer is logged: its status, Change, adhkār after ṣalāh, and the next prayer. */
+function loggedCard(cur, now, status) {
+  const p = cur.p, key = dkey(cur.date), day = store.getDay(S, key);
+  const at = day.at?.[p] ? TODAY.loggedAt(fmt12(new Date(day.at[p]))) : "";
+  const prayed = store.isPrayed(status);
+  const after = prayed && toolVisible(S, "afterSalah")
+    ? `<button type="button" class="zt-row tap" data-f="after" onclick="A.openAfterSalah?.('${p}','${key}')"><span class="zt-ico">${ic("beads", "i")}</span><span class="t"><b>${esc(TODAY.afterSalah)}</b><small>${esc(TODAY.afterSalahSub)}</small></span>${ic("chev", "i zt-cv")}</button>` : "";
+  return `<div class="zt-card pad"><div class="zt-done">${statusMark(status)}<div class="t"><b>${esc(TODAY.prayedAs[status] || STATUS[status])}</b>${at ? `<small>${esc(at)}</small>` : ""}</div><button type="button" class="zt-link" data-f="change" onclick="A.prayerSheet('${p}','${key}')">${esc(TODAY.change)}</button></div>
+    ${after}${prayed ? sunnahRow(p, key) : ""}${nextRow(now, true)}</div>`;
+}
+/** Excused days (hayḍ, nifās): remembrance at prayer time instead of the log buttons. */
+function excusedCard(cur, now, key) {
+  const mode = S.excusedMode?.since;
+  const n = mode ? daysBetween(parseKey(mode), parseKey(key)) + 1 : 0;
+  const band = `<div class="zt-band">${ic("moon", "i")}<span>${mode ? `<b>${esc(TODAY.excusedDays)}</b> · ${esc(TODAY.dayN(n))}` : `<b>${esc(TODAY.excusedToday)}</b>`}</span></div>`;
+  let body = "";
+  if (cur) {
+    const ck = dkey(cur.date), status = store.prayerStatus(S, ck, cur.p);
+    if (status === "excused") {
+      const on = store.remembered(store.getDay(S, ck), cur.p);
+      body = `<button type="button" class="zt-btn ${on ? "sec" : "pri"}" role="checkbox" aria-checked="${on}" data-f="remember" onclick="A.rememberAt('${cur.p}','${ck}')">${on ? ic("check") : ""}${esc(T.GENDER.remember)}</button>
+        <p class="zt-note c">${esc(TODAY.rememberNote(pName(cur.p, ck)))}</p>`;
+    } else if (status) body = `<div class="zt-done">${statusMark(status)}<div class="t"><b>${esc(TODAY.prayedAs[status] || STATUS[status])}</b></div><button type="button" class="zt-link" onclick="A.prayerSheet('${cur.p}','${ck}')">${esc(TODAY.change)}</button></div>`;
+  }
+  return `<div class="zt-card pad">${band}${body}${nextRow(now)}</div>`;
+}
+function excusedFoot(key) {
+  return `<p class="zt-foot">${esc(TODAY.onlyYou)} ${S.excusedMode ? `<button type="button" class="zt-link in" data-f="endex" onclick="A.endExcusedMode()">${esc(TODAY.endExcused)}</button>` : `<button type="button" class="zt-link in" data-f="notex" onclick="A.excusedToday('${key}')">${esc(TODAY.notExcused)}</button>`}</p>`;
+}
+
+/* ---------- "Make up Zuhr now?" (src/today.js makeUpNowFor): one quiet card under the Now card ----------
+   "I made it up" logs it as made up (the same path as Other's "Made up later", with Undo); "Not now" hides it for
+   that prayer today, kept on this phone only. */
+const MKNOW = "zad-mknow";
+function mkNowDismissed(key) {
+  try { const o = JSON.parse(localStorage.getItem(MKNOW) || "{}"); return Array.isArray(o[key]) ? o[key] : []; } catch (e) { return []; }
+}
+A.mkNow = p => applyStatus(p, todayKey(), "madeup", { close: false });
+A.mkNowLater = p => {
+  const k = todayKey();
+  try { localStorage.setItem(MKNOW, JSON.stringify({ [k]: [...new Set([...mkNowDismissed(k), p])] })); } catch (e) { /* private mode */ }
+  render();
+};
+function makeUpNowCard(now, key) {
+  const p = makeUpNowFor(S, now, { dismissed: mkNowDismissed(key) });
+  if (!p) return "";
+  return `<div class="zt-card zt-mknow" role="region" aria-label="${esc(TODAY.mkNowTitle(pName(p, key)))}"><span class="zt-ico">${ic("madeup", "i")}</span><div class="t"><b>${esc(TODAY.mkNowTitle(pName(p, key)))}</b><small>${esc(TODAY.mkNowSub)}</small></div>
+    <div class="zt-mkb"><button type="button" class="zt-btn soft sm" data-f="mknow" onclick="A.mkNow('${p}')">${ic("check")}${esc(HOME.madeItUp)}</button><button type="button" class="zt-link" data-f="mknow-later" onclick="A.mkNowLater('${p}')">${esc(COMMON.notNow)}</button></div></div>`;
+}
+
+function nowChapter(now, key) {
+  const cur = currentWindow(now, S.settings);
+  const ck = cur ? dkey(cur.date) : null;
+  const kick = cur ? `${dot}${esc(ck === key ? TODAY.now : TODAY.lastNight)}` : esc(TODAY.next);
+  if (store.isExcusedDay(S, ck || key)) {
+    const title = cur ? pName(cur.p, ck) : pName(nextPrayer(now, S.settings).p, key);
+    const sub = cur ? esc(leftLineOf(cur, leftParts(cur, now)[0])) : "";
+    return head(esc(title), sub, kick, "xl") + excusedCard(cur, now, ck || key) + `<div class="zt-fill"></div>` + excusedFoot(ck || key);
+  }
+  if (cur) {
+    const status = store.prayerStatus(S, ck, cur.p);
+    const card = status ? loggedCard(cur, now, status) : openCard(cur, now);
+    return head(esc(pName(cur.p, ck)), "", kick, "xl") + card + makeUpNowCard(now, key) + `<div class="zt-fill"></div>` + weekLine(now);
+  }
+  // nothing open (between sunrise and Zuhr): the next prayer, and no buttons until it begins
+  const nx = nextPrayer(now, S.settings), nk = nx.tomorrow ? dkey(addDays(now, 1)) : key;
+  return head(esc(pName(nx.p, nk)), "", kick, "xl") +
+    `<div class="zt-card pad"><div class="zt-left"><b>${esc(TODAY.begins(fmt12(nx.time)))}</b></div><p class="zt-note">${esc(TODAY.in(hm(nx.time - now)))}</p></div>` + makeUpNowCard(now, key) + `<div class="zt-fill"></div>` + weekLine(now);
+}
+
+/** One prayer on the Today chapter: status mark, name, what it is now, and its time or a Log button. */
+function prayerRow(p, key, now, cur) {
+  const d = parseKey(key), s0 = store.prayerStatus(S, key, p), day = store.getDay(S, key);
+  const t = timesFor(d, S.settings)[p];
+  const open = cur && cur.p === p && dkey(cur.date) === key;
+  const name = esc(pName(p, key));
+  const tap = `A.prayerSheet('${p}','${key}')`;
+  const rowBtn = (mark, sub, cls = "") => `${mark}<button type="button" class="t ${cls}" data-f="row-${p}" onclick="${tap}"><b>${name}</b><small>${sub}</small></button>`;
+  if (!canLog(S, key, p, now)) {
+    const witr = p === "Isha" && witrShown(key) ? ` · ${esc(TODAY.withWitr)}` : "";
+    return `<div class="zt-row up">${rowBtn(statusMark(null), esc(NOT_YET.begins(fmt12(t))) + witr)}</div>`;
+  }
+  if (s0) {
+    const sunN = s0 === "missed" || s0 === "excused" ? 0 : store.sunnahChips(S, key, p).filter(c => store.sunnahDone(S, key, c.id)).length;
+    let sub = esc(STATUS[s0]) + (sunN ? ` · ${esc(TODAY.sunnahN(sunN))}` : "") + (s0 === "excused" && store.remembered(day, p) ? ` · ${esc(T.PROVISIONS.st.excusedRem)}` : "");
+    let right = `<span class="tm">${fmt12(t)}</span>`;
+    if (s0 === "missed" && isOn(S, "makeups") && canStillMakeUp(d, p, now, S.settings)) {
+      sub = esc(TODAY.stillTime);
+      right = `<button type="button" class="zt-btn soft sm" data-f="mk-${p}" onclick="A.madeItUp('${p}','${key}')">${ic("clock")}${esc(HOME.madeItUp)}</button>`;
+    }
+    return `<div class="zt-row">${rowBtn(statusMark(s0), sub)}${right}</div>`;
+  }
+  if (open) {
+    const sub = p === "Fajr" ? TODAY.endsAtSunrise(fmt12(cur.end)) : TODAY.nowLeft(hm(cur.end - now));
+    return `<div class="zt-row cur">${rowBtn(statusMark(null, "z-now"), `${dot}${esc(sub)}`)}<button type="button" class="zt-btn pri sm" data-f="log-${p}" onclick="A.logSheet('${p}','${key}',true)">${esc(TODAY.log)}</button></div>`;
+  }
+  return `<div class="zt-row">${rowBtn(statusMark(null), esc(TODAY.notLogged))}<button type="button" class="zt-btn sec sm" data-f="log-${p}" onclick="A.logSheet('${p}','${key}',true)">${esc(TODAY.log)}</button></div>`;
+}
+/** Sunrise between Fajr and Zuhr: when Fajr's time ends. Muted, never logged or counted (today.TODAY_ROWS). */
+function sunriseRow(key) {
+  const t = timesFor(parseKey(key), S.settings).Sunrise;
+  return `<div class="zt-row sun"><span class="zt-sunic">${ic("sun", "i")}</span><span class="t"><b>${esc(TODAY.sunrise)}</b><small>${esc(TODAY.sunriseSub)}</small></span><span class="tm">${fmt12(t)}</span></div>`;
+}
+/** Yesterday's missed prayers that can still be made up (before this morning's Fajr). */
+function yesterdayMakeups(now) {
+  if (!isOn(S, "makeups")) return "";
+  const yk = dkey(addDays(now, -1)), y = parseKey(yk);
+  return PRAYERS.filter(p => store.prayerStatus(S, yk, p) === "missed" && canStillMakeUp(y, p, now, S.settings)).map(p =>
+    `<div class="zt-card zt-attn">${statusMark("missed")}<div class="t"><b>${esc(X.wasMissed(pName(p, yk)))}</b><small>${esc(X.comesOff())}</small></div><button type="button" class="zt-btn soft sm" onclick="A.madeItUp('${p}','${yk}')">${ic("clock")}${esc(HOME.madeItUp)}</button></div>`).join("");
+}
+function naflRow(key) {
+  if (!sunnahOn() || !S.settings.sunnahNafl) return "";
+  const nafl = store.sunnahChips(S, key, "day");
+  if (!nafl.length) return "";
+  return `<div class="zt-card zt-nafl"><b>${esc(X.moreSunnah)}</b><div class="z-scs">${zz(nafl.map(c => chipHTML(c, key)).join(""))}</div></div>`;
+}
+/** "Want more from Zad?" (only when every optional module is off). */
+function wantMore() {
+  if (["sunnah", "deeds", "makeups", "week", "progress", "tools"].some(f => isOn(S, f))) return "";
+  return `<button type="button" class="zt-more" onclick="A.go('settings');A.settingsPage('features')"><span class="pl">${ic("plus")}</span><span><b>${HOME.wantMoreTitle}</b><small>${HOME.wantMoreSub}</small></span></button>`;
+}
+
+function todayChapter(now, key, { lean = false } = {}) {
+  const day = store.getDay(S, key), cur = currentWindow(now, S.settings);
+  const prayed = PRAYERS.filter(p => store.isPrayed(store.prayerStatus(S, key, p))).length;
+  const sub = day.excused && !prayed ? esc(TODAY.excusedToday) : `<b>${esc(TODAY.nOf5(prayed))}</b> ${esc(TODAY.prayedWord)}${prayed === 5 ? ` · ${esc(COMMON.alhamdulillah.replace(/\.$/, ""))}` : ""}`;
+  const parts = [head(esc(TODAY.todayTitle), sub)];
+  // prayers only: the Now card sits on top of the list (no Now chapter)
+  if (lean && cur) {
+    const ck = dkey(cur.date);
+    if (store.isExcusedDay(S, ck)) parts.push(excusedCard(cur, now, ck));
+    else if (!store.prayerStatus(S, ck, cur.p)) parts.push(openCard(cur, now, { compact: true }));
+  }
+  parts.push(yesterdayMakeups(now));
+  parts.push(`<div class="zt-card list">${TODAY_ROWS.map(p => (p === "Sunrise" ? sunriseRow(key) : prayerRow(p, key, now, cur))).join("")}</div>`);
+  parts.push(naflRow(key));
+  const yu = yesterdayUnlogged(now);
+  if (yu.length) parts.push(line("history", esc(TODAY.yesterday(yu.length)), esc(LOG.review), "A.catchSheet()", "catch"));
+  // Good deeds that are not reading (the reading ones are ticked in Read); hidden when Read holds the whole list
+  if (isOn(S, "deeds")) { const c = sheetCount(S, key); if (c.of || !c.inRead) parts.push(line("hand", esc(TODAY.goodDeeds), `<b>${esc(COMMON.nOfM(c.done, c.of))}</b>`, `A.deedsSheet('${key}')`, "deeds")); }
+  // "Make-ups · 8 left" (today.makeupsLine): opens the "I made one up" sheet; "all caught up" opens the chapter
+  const mk = makeupsLine(S, key);
+  if (mk) parts.push(mk.clear
+    ? line("madeup", esc(TODAY.makeups), esc(TODAY.makeupsClear), "A.mkSeeAll()", "mkline")
+    : line("madeup", esc(TODAY.makeups), `<b>${esc(TODAY.makeupsLeft(mk.prayers, mk.fasts))}</b>`, "A.mkPick('today')", "mkline"));
+  const pvo = pvOffer(); // the one-time provisions offer
+  if (pvo) parts.push(`<div class="zt-pv">${pvo}</div>`);
+  if (lean) parts.push(wantMore());
+  const loc = S.settings.location || FALLBACK_LOCATION;
+  parts.push(`<div class="zt-fill"></div><p class="zt-foot sm">${esc(HOME.chipLegendFoot(loc.label, METHOD_SHORT[S.settings.method] || S.settings.method, S.settings.asr === "hanafi" ? T.ASR_UI.hanafi : T.ASR_UI.standard, false))}</p>`);
+  return parts.join("");
+}
+
+function topBar(now) {
+  const cal = `<button type="button" class="zt-ib" aria-label="${esc(TODAY.calendar)}" onclick="A.calOpen()">${ic("cal", "i")}</button>`;
+  return `<div class="zt-dt"><b>${DOW[now.getDay()]}, ${now.getDate()} ${MON[now.getMonth()]}</b><small>${esc(hijriLabel(now))}</small></div>${avatarBtn(cal + pvChip())}`;
+}
+
+/* ---------- chapters: swipe (scroll-snap) or tap their names; keyboard: arrows, Home, End ---------- */
+let chapters = [];
+const track = () => $("#v-home .zt-track");
+/** Show chapter i (0 = Now). focus: move focus to its tab (keyboard). */
+A.todayChapter = (i, { focus = false, instant = false } = {}) => {
+  const tr = track(); if (!tr || i < 0 || i >= chapters.length) return;
+  UI.todayCh = i;
+  markChapter(i);
+  tr.scrollTo({ left: i * tr.clientWidth, behavior: instant || reduceMotion() ? "auto" : "smooth" });
+  if (focus) $(`#zt-tab-${chapters[i]}`)?.focus();
+};
+function markChapter(i) {
+  chapters.forEach((c, j) => {
+    const tab = $(`#zt-tab-${c}`), panel = $(`#zt-ch-${c}`);
+    if (tab) { tab.setAttribute("aria-selected", String(i === j)); tab.tabIndex = i === j ? 0 : -1; tab.classList.toggle("on", i === j); }
+    if (panel) panel.inert = chapters.length > 1 && i !== j; // the chapter off screen is out of the tab order
+  });
+}
+function onTrackScroll() {
+  const tr = track(); if (!tr || !tr.clientWidth) return;
+  const i = Math.max(0, Math.min(chapters.length - 1, Math.round(tr.scrollLeft / tr.clientWidth)));
+  if (i !== UI.todayCh) { UI.todayCh = i; }
+  markChapter(i);
+}
+let scrollT = null;
+function buildShell(el, chs) {
+  chapters = chs;
+  const bar = chs.length > 1 ? `<div class="zt-cb" role="tablist" aria-label="${esc(TODAY.chaptersLabel)}">${chs.map((c, i) => `<button type="button" role="tab" id="zt-tab-${c}" aria-controls="zt-ch-${c}" aria-selected="${i === UI.todayCh}" tabindex="${i === UI.todayCh ? 0 : -1}" onclick="A.todayChapter(${i})">${esc(TODAY.chapters[c])}</button>`).join("")}</div>` : "";
+  el.innerHTML = `<div class="zt-top"></div>${bar}<div class="zt-track ${chs.length > 1 ? "" : "one"}">${chs.map(c => `<section class="zt-ch" id="zt-ch-${c}" ${chs.length > 1 ? `role="tabpanel" aria-labelledby="zt-tab-${c}"` : ""}></section>`).join("")}</div>`;
+  el.dataset.sig = chs.join();
+  const tr = track();
+  tr.addEventListener("scroll", () => { clearTimeout(scrollT); scrollT = setTimeout(onTrackScroll, 90); }, { passive: true });
+  el.querySelector(".zt-cb")?.addEventListener("keydown", e => {
+    const k = e.key, n = chapters.length, i = UI.todayCh;
+    const to = k === "ArrowRight" ? (i + 1) % n : k === "ArrowLeft" ? (i - 1 + n) % n : k === "Home" ? 0 : k === "End" ? n - 1 : -1;
+    if (to < 0) return;
+    e.preventDefault(); A.todayChapter(to, { focus: true });
+  });
+}
+/** Replace a node's content only when it changed; keep keyboard focus on the same control (data-f). */
+function setHTML(node, html) {
+  if (!node || node._h === html) return;
+  const f = node.contains(document.activeElement) ? document.activeElement.dataset?.f : null;
+  node._h = html; node.innerHTML = html;
+  if (f) node.querySelector(`[data-f="${f}"]`)?.focus({ preventScroll: true });
+}
+
 function renderHome() {
   if (UI.view !== "home") { refreshLive(); return; }
   const el = $("#v-home"); if (!el) return;
-  const now = NOW(), key = todayKey(), day = store.getDay(S, key), z = zz;
-  // P5: the "Lv N" chip next to the gear, only when Settings → Provisions → Level on Home is on (not through zz)
-  const pvc = pvChip();
-  const hero = z(heroBlock(now, key, day));
-  const parts = [pvc ? hero.replace(/<button class="z-ibtn"[^>]*onclick="A\.go\('settings'\)">[\s\S]*?<\/button>/, m => `<div class="pv-tr-r">${pvc}${m}</div>`) : hero];
-  const attn = attnCards(now, key);
-  if (attn) parts.push(z(`<div class="sec" style="padding-top:16px">${attn}</div>`));
-  parts.push(z(`<div class="sec" style="padding-top:${attn ? 12 : 16}px">${metersBlock(key, day)}</div>`));
-  const cb = catchBlock(now);
-  if (cb) parts.push(z(`<div class="sec" style="padding-top:12px">${cb}</div>`));
-  if (isOn(S, "tools")) {
-    const f = toolsHomeCards();
-    if (f) { try { const h = f(key); if (h) parts.push(`<div style="padding-top:12px">${h}</div>`); } catch (e) { console.warn("tools cards", e); } }
+  const now = NOW(), key = todayKey(), chs = todayChapters(S);
+  if (el.dataset.sig !== chs.join() || !track()) {
+    if (UI.todayCh >= chs.length) UI.todayCh = 0;
+    buildShell(el, chs);
   }
-  const pvo = pvOffer(); // P3: the one-time provisions offer, above Good Deeds
-  if (pvo) parts.push(pvo);
-  if (isOn(S, "deeds")) parts.push(withRead(z(deedsBlock(key)), now));
-  if (isOn(S, "week")) parts.push(z(weekTiles(now)));
-  const loc = S.settings.location || FALLBACK_LOCATION;
-  parts.push(z(`<p class="foot" style="margin:14px 24px 0">${esc(HOME.chipLegendFoot(loc.label, METHOD_SHORT[S.settings.method] || S.settings.method, S.settings.asr === "hanafi" ? T.ASR_UI.hanafi : T.ASR_UI.standard, sunnahOn()))}</p>${wantMore()}<div class="spacer"></div>`));
-  el.innerHTML = parts.join("");
+  setHTML(el.querySelector(".zt-top"), topBar(now));
+  for (const c of chs) {
+    const html = c === "now" ? nowChapter(now, key) : todayChapter(now, key, { lean: chs.length === 1 });
+    setHTML($(`#zt-ch-${c}`), withRead(html, now));
+  }
+  // land on the remembered chapter without animating (on open, and after a rotation)
+  const tr = track();
+  if (tr && tr.clientWidth && Math.round(tr.scrollLeft / tr.clientWidth) !== UI.todayCh) tr.scrollLeft = UI.todayCh * tr.clientWidth;
+  markChapter(UI.todayCh);
   refreshLive();
 }
+addEventListener("resize", () => { const tr = track(); if (tr && UI.view === "home") tr.scrollLeft = UI.todayCh * tr.clientWidth; });
 
 onRender(renderHome);
+A.weekTiles = weekTiles;

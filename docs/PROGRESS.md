@@ -845,3 +845,190 @@ To check them: `git status`; look for the files and screenshots named above; run
 - 17 Nov: session resumed; the logo refine agent was resumed via SendMessage.
 - 17 Nov: ✅ Logo refine done; review page https://claude.ai/artifact/LZYL5Pt5GhRjWWtH2LHEyZ. Awaiting: approval + 3 choices (bg #1A3126 current vs #0F3D2E; notif disc vs plain letter; colourways). Export: node design-review/mockups2/logo-refine/export.mjs --write-repo [--bg forest] [--splash] (see NOTES.md); retire scripts/make-icons.mjs (builds from the old raster).
 - 17 Nov: ✅ User approved the refine, KEEPING EVERYTHING CURRENT (bg #1A3126, notification disc, colourways, splash untouched). Exported into android mipmaps + adaptive fg, ic_stat_zad, iOS AppIcon, public/icons. Export script now tracked at scripts/icons/export.mjs + geometry.mjs (output identical); make-icons.mjs carries a warning; docs/ios-setup.md updated. Tests 367/23, build + cap sync OK. Uncommitted; awaiting push OK.
+- 17 Nov: ✅ PUSHED 6f6c5e7 (sharper logo). User approved UI redesign mockups A/B/C (+ optional 4-tab nav); agent running → design-review/mockups2/ui-directions/.
+- 17 Nov: CI for 6f6c5e7 (sharper logo) finished; see gh run list.
+- 17 Nov: iPhone CI for 6f6c5e7 failed due to GitHub macOS runner capacity (not code); re-run started. Android + Pages green; the build was sent to the user.
+- 17 Nov: ✅ iPhone CI re-run passed for 6f6c5e7. All green.
+- 17 Nov: ✅ UI directions page https://claude.ai/artifact/L6aGPCRxFgJDGcDefmo5rh (design-review/mockups2/ui-directions/; A calm refinement, B today list + 4-tab nav, C one focus; recommendation: build A + calm base before December, B rows in Today's prayers sheet, test B later, hold the 4-tab nav). 10 open questions on the page. Awaiting the user's choice.
+- 17 Nov: USER FEEDBACK (via an experienced app maker): it looks AI-made and there's too much going on. They want it clean, easy for newcomers, calm, "actually coded" (hand-crafted); modular (unchosen features invisible); premium features planned in (anonymous local/worldwide leaderboards, private group leaderboards, family accounts, admin/mentor); Progress reflections FIRST, then numbers/charts; chapter-like swipes instead of scrolling; reliability under traffic. Supersedes A/B/C (ui-directions). Shared brief: design-review/mockups2/redesign/BRIEF.md. 3 agents running: d1-native (port 5191), d2-chapters (5190), d3-guided (5189). Next: combine the three into one comparison page and publish it. Also write a reliability/scaling plan (docs/plan/reliability.md).
+- 17 Nov: user decision: KEEP the salah names (Fajr, Zuhr, ʿAsr, Maghrib, ʿIshāʾ), no English translations; plain language only for other concepts. Sent to all 3 redesign agents + BRIEF.md.
+- 17 Nov: ✅ d2-chapters done (24 images, d2-review.html, effort L). Waiting for d1 and d3, then a combined page.
+- 17 Nov: ✅ d3-guided done (19 images, d3-review.html). Waiting for d1.
+- 17 Nov: ✅ Redesign comparison page https://claude.ai/artifact/Jc7XPNtBLoRDEi5ppxMLU8 (d1 native, d2 chapters, d3 guided; folders design-review/mockups2/redesign/d*). My recommendation: d1 look + d3 'Did you pray?' card on Home + d2 swipe chapters in Progress; tabs Today · Qurʾān · Progress · Community (only if chosen); soft launch on the current design, redesign for January. Awaiting the user's choice.
+- 17 Nov: User chose **Calm Chapters (d2)** as the base. Home = Now · Today only. The old "Provision" chapter (good deeds, adhkār, Hizb, verse of the week) moves into the Qurʾān tab, renamed **Read**. Community tab shows only for subscribers. My proposals (awaiting OK): reading deeds checked off inside Read, non-reading deeds as one line on Today; points/levels stay in Progress; invited Circle/Family members get the tab free; one quiet "Zad Plus" row in Settings for discovery. Next: revised d2 mockups.
+- 17 Nov: User answers: every member pays; one-tap logging "Prayed on time" / "Prayed in congregation" (the word congregation everywhere); wait for the redesign before the public launch; interactive widgets that log without opening the app. Saved in launch-and-premium §15 and docs/plan/widgets.md. Asked: Tracker vs Progress; no features removed (confirmed).
+- 17 Nov: More answers saved (launch-and-premium §15): sisters get one button with congregation under Other; mentees pay, mentor probably free; Family plan; calendar replaces Tracker; build the redesign by early Dec; lock-screen options on both phones (widgets.md). Launched mockup agents: redesign/final (app) and redesign/widgets.
+- 17 Nov: ✅ Revised Calm Chapters app mockups (36 shots, design-review/mockups2/redesign/final) published at https://claude.ai/artifact/SJyRUwJNShTpkgsXXBFmuL. Widget mockups still being made (redesign/widgets).
+- 17 Nov: ✅ Widget/lock-screen/notification mockups (44 shots, design-review/mockups2/redesign/widgets) published at https://claude.ai/artifact/1JjxnA7F2tEvsjGtY14JaP. Awaiting the user's answers on both pages, then build.
+- 17 Nov: Both review pages now have light AND dark for every screen (app 32×2, widgets 23×2); build scripts default to both themes.
+- 18 Nov: ✅ Welcome & set-up mockups (12 screens, light+dark, fin-ob-*) added to top of https://claude.ai/artifact/SJyRUwJNShTpkgsXXBFmuL. Open: Arabic/English pairing of 2:197 on Welcome, ʿAsr sheet lists four madhhabs, Brother listed first, home tour replaced by one guide line, login consent still says 'Google or Apple'.
+- 18 Nov: User answers on set-up (full 2:197 translation, drop tagline, no dots on ى). Requested colour-theme options (softer dark mode). Agent making themes in redesign/final/themes.
+- 18 Nov: ✅ Welcome fixed (full 2:197 translation, tagline removed, ى without dots; cause was the IndoPak copy using U+064A rendered in Amiri — the real app shows IndoPak text in DigitalKhatt IndoPak). Login says Google only. ✅ Colour themes page (Forest/Olive/Sand & Gold/Stone, light + softened dark, all pass WCAG AA) published; agent recommends Forest default. Awaiting the user's pick.
+- 18 Nov: User: one theme only (Forest); show green accent options through the whole flow starting at Welcome. Agent rendering redesign/final/accents.
+- 18 Nov: ✅ Forest accent options page (Forest/Emerald/Pine/Moss/Sage, full flow from Welcome, light+dark) https://claude.ai/artifact/J5HAbzogLDGPa2o5mXm3i2. Recommend Forest (best contrast), Pine as alternative. Awaiting pick.
+- 18 Nov: User: back to the OG forest + gold, calm. Agent rendering redesign/final/og (variants A and B).
+- 18 Nov: ✅ OG Calm page (A plain, B green Now card, vs current app; full flow from Welcome, light+dark) https://claude.ai/artifact/ERdoTpRa6mYGnP2QwSVWUf. Recommend B. Awaiting pick + the open questions list, then start building.
+- 18 Nov: All design questions answered → build spec docs/plan/redesign-build.md, branch 'redesign' created. Phase 1 build started (UI core, Android native, iOS native).
+
+## ▶ RESUME HERE (saved 18 Nov 2026)
+**Where we are:** all redesign design decisions are made and the build has started on local branch `redesign` (nothing committed or pushed).
+- **Build spec:** docs/plan/redesign-build.md. Decisions are also in docs/plan/launch-and-premium.md §15.
+- **Approved looks:**
+  - Layout: Calm Chapters (design-review/mockups2/redesign/final). Review page: https://claude.ai/artifact/SJyRUwJNShTpkgsXXBFmuL
+  - **Colours: OG Calm, variant A** (final/og/, https://claude.ai/artifact/ERdoTpRa6mYGnP2QwSVWUf). One theme only, no theme picker.
+  - Widgets: https://claude.ai/artifact/1JjxnA7F2tEvsjGtY14JaP
+  - Superseded pages: themes (https://claude.ai/artifact/DocPknrzCGukBeYU373ofJ) and accents (https://claude.ai/artifact/J5HAbzogLDGPa2o5mXm3i2).
+
+**Phase 1, started 18 Nov with three parallel agents.** They may have stopped mid-way because of the usage limit. Check the working tree with `git status` / `git diff --stat` to see what landed.
+1. **UI core:**
+   - OG Calm tokens
+   - tabs Today · Read · Progress (+ Community behind `settings.plus`)
+   - the Now and Today chapters
+   - one-tap logging (brothers: congregation first; sisters: on time first)
+   - the Other sheet ("Made up later" only after the prayer ends)
+   - undo toast
+   - the calendar replacing the Tracker tab
+   - the good-deeds line and sheet
+   - the first-run guide line
+   - Owns src/views/**, src/css/**, src/app.js, src/strings.js, src/features.js. Screenshots go to design-review/mockups2/redesign/build1/.
+2. **Android native:**
+   - src/pending.js (`mergePendingLogs(S)`) plus tests
+   - src/widget-bridge.js and src/widgets.js (snapshot fields)
+   - src/notify.js (notification actions)
+   - the android/** widgets: one-tap buttons, queue, Undo, next-prayer rule, excused remembrance, showTimesOnly
+   - the ongoing "Now" notification (off by default) and the Quick Settings tile
+3. **iOS native (ios/** only):**
+   - iOS 17 interactive widgets, lock-screen accessory widgets (times only unless lockDots), and the iOS 18 Control
+   - The queue lives in App Group UserDefaults "pendingLogs" as a UTF-8 JSON array string.
+   - getPending() returns {logs}; clearPending({ids}) removes entries.
+   - It can't be compiled on Windows, so CI on a push (after asking the user) confirms the build.
+
+**Shared queue entry:** {id, date "YYYY-MM-DD", prayer Fajr|Dhuhr|Asr|Maghrib|Isha, status congregation|ontime|remember|undo, at ms, src}.
+
+**Snapshot additions** (top-level, v stays 1): gender, excused, showTimesOnly, lockDots, ongoingNow. Optional `labels` keys: onTime, congregation, logged, undo, begins, beginsShort, remembrance, notLogged, madeup, missed, excused, logOnTime, nothingOpen.
+
+**To finish phase 1:**
+- Wire `mergePendingLogs(S)` on app start and resume in app.js.
+- Add the Settings toggles: Show times only, Ongoing Now notification (Android), Lock-screen dots (iOS).
+- Run `npx vitest run` and `npx vite build`, then `npx cap sync android` and `gradlew assembleDebug`.
+- Review the build1 screenshots.
+
+**Phase 2 (next):**
+- Read tab chapters (For today · Qurʾān · Adhkār) with reading deeds ticked inside them
+- Progress chapters (Reflections · Week · Charts · Provisions · Make-ups) with a scrolling chapter bar
+- The new set-up flow (Welcome with the 2:197 Arabic from reflections.js plus the full translation, no tagline; screens per the spec)
+- Appearance: Mode, Text size, Arabic size
+- The Zad Plus page ("stays free"; price to be set)
+- Login says Google only
+- A "What's new" screen for testers
+
+**Then:**
+- a full review
+- builds sent to the user's phone, after asking
+- a push, after asking
+
+**Still waiting on the user:**
+- Google Play developer account (urgent, for the 14-day test)
+- testers
+- Apple developer account
+- accepting the Firebase DPA
+- Ramadan content review (https://claude.ai/artifact/NFmfUG4J767t6fXZgWX4Mw)
+- a lawyer's review
+- 18 Nov (afternoon): all 3 phase-1 agents stopped at the usage limit mid-task (UI: writing calendar.js; Android: plugin + manifest; iOS: plugin) and were resumed after the reset.
+- 18 Nov: ✅ **iOS phase 1 done but not compiled.** Files changed: ZadWidgetsPlugin.swift, ZadWidget/WidgetModel.swift, ZadWidget.swift.
+  - Built: home widgets S/M/L, lock-screen inline/circular/rectangular (times only unless lockDots), and the iOS 18 Control.
+  - Queue: App Group `group.com.zad.app`, key `pendingLogs`, a JSON string with a lock file and a 300-entry cap.
+  - **Blocker:** the widget extension target is NOT in project.pbxproj, so CI only builds the app. It must be added either on a Mac (docs/build/widgets.md steps 3–7) or by a CI script (the Ruby `xcodeproj` gem or XcodeGen in ios.yml). Plan: add it through a CI script so no Mac is needed.
+  - To do: update docs/build/widgets.md (one-tap is built; minimum iOS 16 is OK); the widget shows "logged ✓" after a Remembrance tap (consider a "remembered" label).
+- 18 Nov: ✅ **Android phase 1 done.**
+  - Added: pending.js plus 30 tests, the snapshot fields, the widgets rebuilt in OG Calm, notification buttons, the Now notification (off by default) and the QS tile.
+  - Builds: `vite build`, `cap sync android` and `assembleDebug` all succeed.
+  - `lintDebug` fails on 2 errors that were already there: `windowLightNavigationBar` in styles.xml, and the local.properties path escaping.
+  - Follow-ups sent to the Android agent: the tile must respect showTimesOnly, add `requestAddTile`, and tidy the JS `widgetModel` copy.
+  - Sent to the UI agent: the main.js wiring and the Settings → Widgets toggles (showTimesOnly, ongoingNow for Android, lockDots for iOS).
+- 18 Nov: ✅ Android follow-ups done: the tile respects showTimesOnly, `requestAddTile`/`addTile()` added, and `widgetModel()` now matches the Java (new signature). Tests: 426 passed, 23 skipped, 0 failed. Builds succeed. The UI agent was told to add the tile 'Add' row. Note for the iOS port: check it against the new `widgetModel()`.
+- 18 Nov: ✅ **Phase 1 UI done.**
+  - New files: today.js, routes.js, views/calendar.js, views/community.js, css/today.css, tests/today.test.js. tracker.js was deleted.
+  - Widget settings and main.js wiring added. I fixed widget-bridge deep links so they go through routes.js redirects.
+  - **Tests:** 426 passed, 23 skipped. The build succeeds.
+  - **Real-app screenshots:** https://claude.ai/artifact/WZb6ypfzyJiCYEUuQQrfDz (build1/).
+  - Notes from the agent:
+    - App font switched to the system font (one line in theme.css).
+    - Set-up no longer auto-starts the tour.
+    - Settings inside is unchanged.
+    - Make-ups is still the old page.
+    - The Good deeds sheet still lists the reading deeds until Read can tick them.
+  - **NEXT:** phase 2, plus the iOS widget target in pbxproj through a CI script.
+- 18 Nov: Phase 2 started with 4 agents: Read tab (build2/read, port 5191), Progress chapters (build2/progress, 5192), set-up + settings + Appearance + Zad Plus + What's new (build2/setup, 5193), and the iOS widget target through a CI script (scripts/ios/add-widget-target.rb + ios.yml). Asked the user: test build to the phone now, or after phase 2 (recommended after).
+
+## ▶ RESUME HERE (saved 18 Nov 2026, evening)
+**Phase 1 is DONE** in the working tree on branch `redesign`; nothing is committed or pushed.
+- Tests: 426 passed. The vite build and Android assembleDebug both succeed.
+- Real-app screenshots: https://claude.ai/artifact/WZb6ypfzyJiCYEUuQQrfDz
+- iOS widget Swift is written but not compiled.
+
+**Phase 2: 4 agents were running at save time** and may have stopped at the usage limit. Check `git status`, the build2/* folders and each part's files. If an agent's id is still live in this session, resume it with SendMessage; otherwise relaunch it with the same brief.
+1. **Read tab:**
+   - Chapters: For today · Qurʾān · Adhkār.
+   - Reading deeds are ticked off inside Read. The Good deeds sheet on Today shows non-reading deeds only.
+   - Owns src/views/tools/**, css/tools.css and the deeds sheet in views/home.js.
+   - Screenshots: build2/read/ (vite port 5191).
+2. **Progress:**
+   - Chapters: Reflections · Week · Charts · Provisions · Make-ups, with a scrolling chapter bar. #makeups opens the Make-ups chapter.
+   - Owns views/progress.js, qada.js, provisions.js, css/progress.css, css/provisions.css.
+   - Screenshots: build2/progress/ (port 5192).
+3. **Set-up and settings:**
+   - Welcome: the 2:197 Arabic from reflections.js plus the full translation, no tagline, no dotted yāʾ.
+   - Set-up steps: Name+gender → Times (with the ʿAsr sheet listing four madhhabs) → Read style → Features → Make-ups → Reminders → Crash → Ready.
+   - Log in: Google-only text.
+   - Settings: full-screen with Done, plus Appearance (mode, text size, Arabic size).
+   - Zad Plus page: Coming soon, "stays free".
+   - "What's new": shown once, to existing users only.
+   - Owns views/onboarding.js, consent.js, settings.js, css/onboarding.css, css/consent.css, plus new plus.js/whatsnew.js.
+   - Screenshots: build2/setup/ (port 5193).
+4. **iOS widget target through CI:**
+   - scripts/ios/add-widget-target.rb (Ruby `xcodeproj`, idempotent) run by .github/workflows/ios.yml.
+   - Also updates docs/build/widgets.md and docs/ios-setup.md.
+
+**After phase 2:**
+- Run all tests and the build, then gradlew.
+- Run a code review of the whole redesign.
+- Publish one review page of real-app screenshots.
+- **Ask the user** before pushing or sending a test build to the phone. They were asked "test build now or after phase 2?" (I recommended after) and haven't answered yet.
+- The first CI iOS run confirms the widget target and the Swift.
+- 18 Nov (night): all 4 phase-2 agents stopped at the usage limit mid-task and were resumed after the 9:10pm reset.
+- 18 Nov: ✅ **iOS widget target via CI done, untested** (there's no Ruby or Xcode here).
+  - Files: scripts/ios/add-widget-target.rb (xcodeproj ~>1.27, idempotent), ios.yml (both jobs run it and check that ZadWidget.appex is embedded), docs/build/widgets.md, docs/ios-setup.md (new portal steps: App Group group.com.zad.app, App ID com.zad.app.ZadWidget).
+  - **Bug fixed:** the App target never had CODE_SIGN_ENTITLEMENTS, so App Groups and Sign in with Apple were never applied. The script now sets it.
+  - To test: push the branch, then run `gh workflow run ios.yml --ref redesign`. This needs the user's OK.
+- 18 Nov: ✅ **Read tab done.**
+  - New files: reading.js, views/read.js, views/tools/donebar.js, tests/read.test.js (20 tests). Shared chapters.js is used.
+  - Tests: 470 passed. Screenshots in build2/read/.
+  - Fixed: an invisible undo toast was blocking taps.
+  - **Questions for the user:**
+    1. Excused days: For today shows "Listen to Qurʾān" and hides Mulk, Kahf and Manzil. Is that rule right?
+    2. Hizb, Mulk, Kahf and Manzil earn no provisions. Keep it that way?
+    3. "Para" vs "Juzʾ" label for IndoPak.
+    4. The "Coming later" tiles were removed.
+- 18 Nov: ✅ **Progress chapters done.** New: views/chapters.js, tests/progress-chapters.test.js. Screenshots in build2/progress/. I fixed stats.insights so salawāt and sadaqah (no daily target) are never the 'thing to work on'. Open points to raise with the user: the ring calendar and heat table were dropped; the Reflections duʿāʾ box shows the daily reflection.
+- 18 Nov (night): ✅ **PHASE 2 DONE.**
+  - Set-up/settings agent added: appearance.js, views/whatsnew.js, views/plus.js, tests/setup-redesign.test.js. Onboarding was rewritten.
+  - Tests: 470 passed, 23 skipped. vite build passes; cap sync and assembleDebug succeed.
+  - Combined real-app page (both rounds): https://claude.ai/artifact/Cgk87Tff4yVqZD8xNP2FWi
+  - **Open questions for the user:**
+    - Read: the excused-day reading rule; Hizb/Mulk/Kahf/Manzil earning provisions; Para vs Juzʾ; "Coming later" tiles hidden.
+    - Progress: bring back the ring calendar or heat table?; Reflections box: duʿāʾ or reflection?
+    - Set-up: should Features include the Provisions row?
+  - **NEXT:**
+    - a thorough code review of the redesign diff
+    - fixes
+    - ask the user about pushing the branch and sending a test build (Android through App Distribution; iOS CI run to test the widget target)
+- 18 Nov (night): Follow-up agent running: provisions for Hizb/Mulk/Kahf/Manzil, Juzʾ label, Provisions in set-up Features, Make-ups line on Today, dead CSS removed. Screenshots go to build3/. Then a code review.
+- 18 Nov: The follow-up agent's scope was extended with the 'Make up now' card and fasts in the make-ups line.
+- 18 Nov: Appearance mode label changed from 'Follow phone' to 'System' (strings.js:575).
+- 18 Nov: Asked the follow-up agent to add Sunrise: a row between Fajr and Zuhr on Today, 'Ends at sunrise' on the Fajr sub-line, 'until sunrise' on Now, and in the set-up and settings time lists.
+- 18 Nov (late): ✅ **Follow-ups done.**
+  - Provisions for Hizb, Mulk, Kahf and Manzil (new `day.reads`), the Juzʾ label, the Provisions choice in set-up, the Make-ups line on Today (with fasts), the "Make up now" card (forbidden times blocked), Sunrise rows, the System label, and dead CSS removed.
+  - Tests: 505 passed. Build passes.
+  - Screenshots: https://claude.ai/artifact/7oiNZBfwRTh9jjwUkApyz4 (build3/).
+  - **NEXT:** the code review, after the user's OK.

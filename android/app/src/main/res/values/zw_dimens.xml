@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- One-tap buttons on the widgets (zw_part_actions) -->
+    <dimen name="zw_btn_h">40dp</dimen>
+    <dimen name="zw_btn_text">14sp</dimen>
+</resources>

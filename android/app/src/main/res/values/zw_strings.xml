@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="zw_small_desc">Next prayer and countdown</string>
-    <string name="zw_medium_desc">Next prayer and today\'s five prayers</string>
-    <string name="zw_large_desc">Next prayer, today\'s prayers and Good Deeds</string>
+    <string name="zw_small_desc">The current prayer, its countdown and an On time button</string>
+    <string name="zw_medium_desc">The current prayer, one-tap logging and the day\'s five prayers</string>
+    <string name="zw_large_desc">The day\'s five prayers with one-tap logging</string>
     <string name="zw_stale">Open Zad to update</string>
+    <!-- Quick Settings tile (before it has drawn itself) -->
+    <string name="zw_tile_label">Log prayer</string>
+    <!-- The optional ongoing "Now" notification's channel (Settings → Notifications) -->
+    <string name="zw_now_channel">Current prayer</string>
+    <string name="zw_now_channel_desc">The ongoing Now notification with one-tap logging (turn it on in Zad: More → Widgets)</string>
 </resources>

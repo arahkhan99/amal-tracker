@@ -1,0 +1,249 @@
+/* The Today tab (zt-), the calendar (zc-) and their sheets. Layout from design-review/mockups2/redesign/final
+   (fin.css), colours from css/theme.css (OG Calm). Flat: hairline cards, no shadows, no gradients. */
+
+/* ---------- top row: date and Hijri, calendar, the initial (Settings) ---------- */
+.zt-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 14px) 16px 4px;min-height:60px}
+.zt-top.page{padding-bottom:0}
+.zt-dt{min-width:0}
+.zt-dt b{display:block;font-size:15px;font-weight:600;color:var(--ink)}
+.zt-dt small{display:block;font-size:13px;color:var(--mute);margin-top:1px}
+.zt-pg{font-size:17px;font-weight:600;color:var(--ink)}
+.zt-tr{display:flex;align-items:center;gap:6px;flex:none}
+.zt-av{width:40px;height:40px;border-radius:50%;background:var(--soft);color:var(--on-soft);display:grid;place-items:center;font:600 15px/1 var(--sans);flex:none}
+.zt-ib{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--ink);flex:none}
+.zt-ib:disabled{color:var(--faint);opacity:.55;cursor:default}
+.zt-ib svg,.zc svg.i{width:22px;height:22px}
+svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+:where(#v-home,#v-calendar,#v-community,.zt-tr) button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:inherit;padding:0}
+.zt-av{background:var(--soft)!important;color:var(--on-soft)!important}
+
+/* ---------- the view: a fixed frame, chapters side by side, each scrolls on its own ---------- */
+#v-home{background:var(--bg);color:var(--ink);font-family:var(--sans);font-variant-numeric:tabular-nums}
+#v-home.on{display:flex;flex-direction:column;height:100%;min-height:0}
+.zt-cb{display:flex;gap:24px;padding:0 16px;border-bottom:1px solid var(--line);flex:none}
+.zt-cb button{position:relative;font-size:15px;color:var(--mute);padding:10px 0 12px;min-height:44px}
+.zt-cb button.on{color:var(--ink);font-weight:600}
+.zt-cb button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:var(--underline)}
+.zt-cb button:focus-visible{outline-offset:-2px;border-radius:6px}
+.zt-track{flex:1;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;scroll-behavior:smooth}
+.zt-track::-webkit-scrollbar{display:none}
+.zt-track.one{overflow-x:hidden}
+.zt-ch{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;padding:20px 16px 16px;scrollbar-width:none;outline:none}
+.zt-ch::-webkit-scrollbar{display:none}
+@media (prefers-reduced-motion:reduce){.zt-track{scroll-behavior:auto}}
+
+/* ---------- chapter heads ---------- */
+.zt-chh{margin:0 0 16px}
+.zt-kick{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--mute);margin:0 0 4px}
+.zt-title{font:400 36px/1.1 var(--serif);margin:0;color:var(--ink);overflow-wrap:anywhere}
+.zt-title.xl{font-size:56px;line-height:1.05}
+.zt-sub{font-size:15px;color:var(--mute);margin:6px 0 0}
+.zt-sub b{color:var(--ink);font-weight:600}
+.zt-dot{width:8px;height:8px;border-radius:50%;background:var(--gold-dot);display:inline-block;flex:none}
+.zt-fill{flex:1;min-height:12px}
+.zt-foot{font-size:13px;color:var(--faint);text-align:center;margin:12px 0 0;line-height:1.45}
+.zt-foot.sm{font-size:12px;text-align:left;margin:14px 4px 0}
+
+/* ---------- cards, rows, buttons ---------- */
+.zt-card{background:var(--card);border:1px solid var(--card-line);border-radius:20px;padding:8px 16px;width:100%}
+.zt-card.pad{padding:20px}
+.zt-card + .zt-card,.zt-card + .zt-line,.zt-line + .zt-line{margin-top:12px}
+.zt-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;border-radius:16px;font-size:17px;font-weight:600;text-align:center;padding:0 14px}
+.zt-btn svg{width:22px;height:22px}
+.zt-btn.pri{background:var(--acc);color:var(--on-acc)}
+.zt-btn.sec{background:var(--soft);color:var(--on-soft)}
+.zt-btn.soft{background:var(--neutral);color:var(--ink)}
+.zt-btn.sm{width:auto;min-height:40px;padding:0 16px;border-radius:12px;font-size:15px;flex:none}
+.zt-btn.sm svg{width:17px;height:17px}
+.zt-btns{display:flex;flex-direction:column;gap:10px}
+.zt-link{color:var(--acc);font-weight:600;min-height:44px;display:inline-flex;align-items:center;gap:4px}
+.zt-link.in{min-height:0;display:inline;font-size:inherit}
+.zt-link.back{font-size:16px;font-weight:500;margin-left:-6px}
+.zt-link.back svg{width:20px;height:20px}
+:root[data-theme=dark] .zt-link{color:var(--acc)}
+.zt-other{display:flex;justify-content:center;margin-top:4px}
+.zt-other .zt-link{font-size:15px;padding:0 16px}
+.zt-note{font-size:13px;color:var(--mute);margin:12px 0 0;line-height:1.45}
+.zt-note.c{text-align:center}
+.zt-guide{display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;color:var(--mute);margin:4px 0 0;padding:9px 12px;background:var(--neutral);border-radius:12px}
+.zt-guide svg{width:18px;height:18px;color:var(--acc2)}
+
+/* Now chapter */
+.zt-left{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;margin-bottom:18px}
+.zt-left b{font-size:28px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+.zt-left span{font-size:15px;color:var(--mute)}
+.zt-left.cmp{margin-bottom:14px}
+.zt-left.cmp .nm{font:400 26px/1.1 var(--serif);letter-spacing:0}
+.zt-next{display:flex;align-items:center;gap:12px;padding:14px 0 2px;border-top:1px solid var(--line);margin-top:14px;font-size:15px}
+.zt-next span{color:var(--mute)}
+.zt-next b{flex:1;font-weight:600;color:var(--ink)}
+.zt-next em{font-style:normal;color:var(--mute)}
+.zt-sun{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.zt-sun .l{display:flex;align-items:baseline;gap:8px;font-size:15px;color:var(--ink)}
+.zt-sun .l small{font-size:13px;color:var(--mute)}
+.zt-sun .z-scs{margin-top:8px}
+.zt-done{display:flex;align-items:center;gap:14px;padding:2px 0 14px}
+.zt-done .z-mk{width:36px;height:36px}
+.zt-done .z-mk svg{width:18px;height:18px}
+.zt-done .t{flex:1;min-width:0}
+.zt-done .t b{display:block;font-size:17px;font-weight:600}
+.zt-done .t small{font-size:13px;color:var(--mute)}
+.zt-band{display:flex;align-items:center;gap:10px;background:var(--neutral);border-radius:12px;padding:9px 12px;font-size:14px;margin:0 0 16px;color:var(--ink)}
+.zt-band b{font-weight:600}
+.zt-band svg{width:18px;height:18px}
+.zt-ico{width:36px;height:36px;border-radius:12px;background:var(--neutral);color:var(--acc2);display:grid;place-items:center;flex:none}
+.zt-ico svg{width:18px;height:18px}
+
+/* the quiet one-line rows */
+.zt-line{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:0 16px;border-radius:16px;background:var(--card);border:1px solid var(--card-line);text-align:left;color:var(--ink)}
+.zt-fill + .zt-line{margin-top:0}
+.zt-line .zt-lc{width:18px;height:18px;color:var(--acc2)}
+.zt-line .l{flex:1;min-width:0;font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zt-line .v{font-size:15px;color:var(--mute);white-space:nowrap}
+.zt-line .v b{color:var(--ink);font-weight:600}
+.zt-cv{width:18px!important;height:18px!important;color:var(--faint)}
+
+/* Today chapter: the five prayers */
+.zt-card.list{padding:4px 16px}
+.zt-row{display:flex;align-items:center;gap:14px;min-height:64px;padding:8px 0;border-top:1px solid var(--line);width:100%;text-align:left;color:var(--ink)}
+.zt-row:first-child{border-top:0}
+.zt-row > .z-mk{width:32px;height:32px}
+.zt-row > .z-mk svg{width:16px;height:16px}
+.zt-row .t{flex:1;min-width:0;align-self:stretch;display:flex;flex-direction:column;justify-content:center;text-align:left}
+.zt-row .t b{display:block;font-size:16px;font-weight:600;color:var(--ink)}
+.zt-row .t small{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute);margin-top:2px;flex-wrap:wrap}
+.zt-row .tm{font-size:14px;color:var(--mute);white-space:nowrap}
+.zt-row.up .t b{color:var(--mute);font-weight:500}
+.zt-row.cur .t b{font-size:17px}
+.zt-row.tap{border-top:1px solid var(--line)}
+/* sunrise: a quiet marker between Fajr and Zuhr (not a prayer) */
+.zt-row.sun{min-height:48px}
+.zt-row.sun .zt-sunic{width:32px;height:32px;display:grid;place-items:center;color:var(--faint);flex:none}
+.zt-row.sun .zt-sunic svg{width:18px;height:18px}
+.zt-row.sun .t b{font-size:14.5px;font-weight:500;color:var(--mute)}
+.zt-row.sun .t small{font-size:12.5px}
+.zt-attn{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:12px}
+.zt-attn .t{flex:1;min-width:0}
+.zt-attn .t b{display:block;font-size:15px}
+.zt-attn .t small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px;line-height:1.35}
+/* "Make up Zuhr now?" under the Now card */
+.zt-mknow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:14px 16px;margin-top:12px}
+.zt-mknow .t{flex:1;min-width:0}
+.zt-mknow .t b{display:block;font-size:15px;font-weight:600}
+.zt-mknow .t small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px;line-height:1.35}
+.zt-mknow .zt-mkb{display:flex;align-items:center;gap:16px;width:100%;padding-left:46px;flex-wrap:wrap}
+.zt-nafl{margin-top:12px;padding:12px 16px}
+.zt-nafl b{font-size:14px;font-weight:600}
+.zt-pv{margin:12px -20px 0}
+.zt-more{display:flex;align-items:flex-start;gap:12px;margin-top:12px;padding:14px 16px;border:1.5px dashed var(--line);border-radius:18px;width:100%;text-align:left;color:var(--ink)}
+.zt-more .pl{width:34px;height:34px;border-radius:10px;background:var(--neutral);display:grid;place-items:center;flex:none;color:var(--mute)}
+.zt-more .pl svg{width:18px;height:18px}
+.zt-more b{display:block;font-size:14.5px;font-weight:600}
+.zt-more small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px;line-height:1.4}
+
+/* status marks in sheets: the mock's ghost marks for unpicked statuses */
+.z-mk.z-ghost{box-shadow:inset 0 0 0 1.5px var(--line);color:var(--line);background:transparent}
+:root[data-theme=dark] .z-mk.z-ghost{color:#3E5447}
+
+/* ---------- sheets: Other, Good deeds, a day ---------- */
+.sheet{padding-left:16px;padding-right:16px}
+.z-sh h3{font-family:var(--sans);font-weight:600;font-size:22px;line-height:1.2}
+.z-sh .z-lhd{margin-bottom:8px}
+.z-cls{width:44px;height:44px;margin:-6px -8px 0 0;background:none!important;position:relative}
+.z-cls::before{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--neutral)}
+.z-cls svg{position:relative}
+.z-opts{margin-top:4px}
+.z-opt{display:flex;align-items:center;gap:6px;min-height:60px;border-top:1px solid var(--line)}
+.z-opt:first-child{border-top:0}
+.z-optb{flex:1;display:flex;align-items:center;gap:14px;min-height:60px;text-align:left}
+.z-optb .z-mk{width:32px;height:32px}
+.z-optb .z-t{flex:1;min-width:0}
+.z-optb .z-t b{display:block;font-size:16px;font-weight:500;color:var(--ink)}
+.z-optb .z-t small{display:block;font-size:13px;color:var(--mute);margin-top:1px}
+.z-art{color:var(--mute);font-weight:400}
+.z-opt .z-xi{width:28px;height:28px;margin:0}
+.z-opt .z-cv{width:18px;height:18px;color:var(--faint);stroke:currentColor;fill:none;stroke-width:1.8}
+.z-note2{font-size:13px;color:var(--mute);margin:12px 0 0;line-height:1.45}
+.z-tbtn{flex:1;min-height:44px;color:var(--acc);font-weight:600;font-size:15px;text-align:center!important}
+.z-pbtn{min-height:48px;border-radius:14px;font-weight:600!important;font-size:16px!important}
+.z-sh p.z-sub b{font-weight:600}
+.z-gbtn{min-height:48px;border-radius:14px;font-weight:600!important;font-size:16px!important;background:var(--soft)!important;color:var(--on-soft)!important}
+.z-drows{margin-top:4px}
+.z-drow{display:flex;align-items:center;gap:10px;min-height:60px;border-top:1px solid var(--line);padding:6px 0}
+.z-drow:first-child{border-top:0}
+.z-drow .z-t{flex:1;min-width:0;text-align:left;min-height:44px;display:flex;flex-direction:column;justify-content:center}
+.z-drow .z-t b{display:block;font-size:16px;font-weight:500;color:var(--ink)}
+.z-drow .z-t small{display:block;font-size:13px;color:var(--mute);margin-top:1px}
+.z-drow .z-link{font-size:13px;font-weight:600;color:var(--acc2)}
+.z-drow .tl-amal-read{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:12px;background:var(--soft);color:var(--on-soft);font-weight:600;font-size:13px;white-space:nowrap}
+.z-drow .tl-amal-read svg{width:12px;height:12px}
+.z-tick{min-width:44px;min-height:44px;display:grid;place-items:center;flex:none}
+.z-bx{width:28px;height:28px;border-radius:9px;box-shadow:inset 0 0 0 1.5px var(--faint);display:grid;place-items:center}
+.z-bx.z-on{background:var(--acc);color:var(--on-acc);box-shadow:none}
+.z-bx svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+/* a day's picker: one row per prayer, a column per status */
+.z-pd{display:grid;grid-template-columns:minmax(72px,1fr) repeat(4,minmax(48px,64px));align-items:center;min-height:56px;border-top:1px solid var(--line)}
+.z-pd.z-hd{min-height:0;border-top:0;padding:4px 0 6px}
+.z-pd .z-ch{font-size:11px;color:var(--mute);text-align:center;font-weight:600;line-height:1.2}
+.z-pd .z-nm{text-align:left;min-height:48px;display:flex;flex-direction:column;justify-content:center}
+.z-pd .z-nm b{display:block;font-size:16px;font-weight:600;color:var(--ink)}
+.z-pd .z-nm small{font-size:13px;color:var(--mute)}
+.z-pd .z-pick{display:grid;place-items:center;min-height:48px}
+.z-pd .z-pick .z-mk{width:32px;height:32px}
+.z-pd .z-pick[disabled] .z-mk{opacity:.4}
+.z-pd .z-pdn{grid-column:2 / 6;font-size:13px;color:var(--mute);text-align:center}
+.z-dlines{margin-top:6px}
+.z-dline{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;border-top:1px solid var(--line);padding:0 2px;color:var(--ink)}
+.z-dline .z-lc{width:18px;height:18px;color:var(--acc2)}
+.z-dline .z-l{flex:1;font-size:15px;font-weight:500;text-align:left}
+.z-dline .z-v{font-size:15px;color:var(--mute)}
+.z-dline .z-v b{color:var(--ink);font-weight:600}
+.z-dline .z-cv{width:18px;height:18px;color:var(--faint)}
+.z-dline svg{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.z-dpv{margin-top:10px}
+.z-pdex{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:14px 8px;border-radius:16px;background:var(--neutral);margin-top:6px}
+.z-pdex svg{width:24px;height:24px;color:var(--mute)}
+.z-pdex p{font-size:13.5px;color:var(--mute);line-height:1.45}
+.z-pdex .z-acts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.z-pdex .z-gbtn{flex:none;padding:0 16px}
+.z-sh .z-scs + .z-lsec{margin-top:16px}
+
+/* ---------- the calendar ---------- */
+#v-calendar,#v-community{background:var(--bg);color:var(--ink);font-family:var(--sans);font-variant-numeric:tabular-nums}
+.zc{padding:0 16px 24px}
+.zc-top{display:flex;align-items:center;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 14px) 0 4px;min-height:60px}
+#v-community .zc .zt-top{padding-left:0;padding-right:0}
+.zc-mhead{display:flex;align-items:flex-start;justify-content:space-between;margin-top:12px}
+.zc-mnav{display:flex;gap:2px;margin:-4px -8px 0 0}
+.zc-cal{padding:10px 8px 8px}
+.zc-wd,.zc-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.zc-wd span{text-align:center;font-size:12px;color:var(--mute);font-weight:600;padding:2px 0 8px}
+.zc-dc{display:flex;flex-direction:column;align-items:center;gap:5px;min-height:56px;padding:6px 0 4px;border-radius:12px;text-align:center;color:var(--ink)}
+.zc-dc b{font-size:15px;font-weight:500;width:30px;height:24px;line-height:24px;border-radius:12px}
+.zc-dc.fut b{color:var(--faint);font-weight:400}
+.zc-dc.fut,.zc-dc:disabled{cursor:default}
+.zc-dc:disabled:not(.fut){opacity:.5}
+.zc-dc.today b{background:var(--ink);color:var(--bg);font-weight:600}
+.zc-dc .pp{display:flex;gap:2px}
+.zc-dc .pp i,.zc-legend .lp{width:4px;height:12px;border-radius:2px;background:var(--track);display:block}
+.zc-dc .pp i.on,.zc-legend .lp.on{background:var(--acc2)}
+.zc-dc .pp i.ms,.zc-legend .lp.ms{background:var(--c3)}
+.zc-dc .ex{color:var(--mute);height:12px;display:grid;place-items:center}
+.zc-dc .ex svg{width:13px;height:13px}
+.zc-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--mute);margin:14px 4px 0}
+.zc-legend span{display:inline-flex;align-items:center;gap:6px}
+.zc-legend .lp{width:5px}
+.zc-legend svg.xs{width:13px;height:13px}
+.zc-foot{font-size:13px;color:var(--faint);margin:10px 4px 0}
+
+/* ---------- Read, Progress and Make-ups: the initial at the top right ---------- */
+.tl-ph.hub{align-items:center;padding-top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 30px)}
+.tl-wird{margin-top:4px}
+.tl-sech .tl-choose{font-size:13px;font-weight:600;color:var(--link);min-height:36px}
+.pg-top{position:relative;padding-right:72px!important}
+.pg-top .zt-tr{position:absolute;right:16px;top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 24px)}
+.qa .zt-top{padding-left:16px;padding-right:16px}
+.qa .zt-top + .pagehead{padding-top:4px}
+
+/* Settings → Widgets: the Quick Settings button row (Android) */
+.settings .tileadd{flex:none;min-height:40px;padding:0 16px;border-radius:12px;background:var(--soft);color:var(--on-soft);font-weight:600;font-size:14px}

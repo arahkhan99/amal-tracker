@@ -80,9 +80,9 @@ let memo = null;
 /** provisions(S, { today, started }), reused while ctx.rev, today, started, the scoring settings and S's log objects stay the same. */
 function counted(S, today, { started, rev } = {}) {
   const key = rev == null ? null : `${rev}|${today}|${started ? started.join(",") : "*"}|${scoringSig(S)}`;
-  if (key && memo && memo.key === key && memo.S === S && memo.days === S.days && memo.qada === S.qada) return memo.r;
+  if (key && memo && memo.key === key && memo.S === S && memo.days === S.days && memo.qada === S.qada && memo.tools === S.tools) return memo.r;
   const r = provisions(S, { today, started });
-  memo = key ? { key, S, days: S.days, qada: S.qada, r } : null;
+  memo = key ? { key, S, days: S.days, qada: S.qada, tools: S.tools, r } : null;
   return r;
 }
 

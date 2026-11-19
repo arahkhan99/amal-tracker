@@ -1,13 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Widget colours, dark (OG Calm variant A). -->
 <resources>
+    <color name="zw_card">#1F2D26</color>
+    <color name="zw_ink">#EEE8D8</color>
+    <color name="zw_ink2">#B3BDB2</color>
+    <color name="zw_ink3">#98A398</color>
+    <color name="zw_line">#2F4036</color>
+    <color name="zw_btn1">#D6B868</color>
+    <color name="zw_btn1_label">#13281F</color>
+    <color name="zw_btn2">#2B3A2C</color>
+    <color name="zw_btn2_label">#D6B868</color>
+    <color name="zw_now">#E0BE62</color>
+    <color name="zw_congregation">#D6B868</color>
+    <color name="zw_congregation_mark">#13281F</color>
+    <color name="zw_ontime">#2B3A2C</color>
+    <color name="zw_ontime_mark">#D6B868</color>
+    <color name="zw_ontime_dot">#8FB39C</color>
+    <color name="zw_madeup">#9DB6CE</color>
     <color name="zw_missed">#D0624B</color>
-    <color name="zw_card">#16231E</color>
-    <color name="zw_card_ink">#ECE5D3</color>
-    <color name="zw_card_ink2">#9FADA5</color>
-    <color name="zw_card_inset">#1F302A</color>
-    <color name="zw_card_dash">#56665E</color>
-    <color name="zw_card_focus_bg">#3A3218</color>
-    <color name="zw_card_focus_ink">#E8C766</color>
-    <color name="zw_card_chip_bg">#24313A</color>
-    <color name="zw_card_chip_ink">#9DB6CE</color>
+    <color name="zw_excused">#7D8B83</color>
+    <color name="zw_mark_ink">#13281F</color>
+    <color name="zw_ring">#56665E</color>
 </resources>

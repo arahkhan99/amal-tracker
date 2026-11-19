@@ -1,18 +1,18 @@
 /*
  * Provisions & levels UI (design-review/mockups2/provisions, scholar-approved). Off by default; when off,
  * every builder here returns "" and nothing of it appears anywhere.
- * P1 Progress card · P2 "How provisions work" sheet · P3 one-time Home offer · P3b history result ·
+ * P1 the Progress tab's Provisions chapter · P2 "How provisions work" sheet · P3 one-time Home offer · P3b history result ·
  * P4/P4b Settings rows · P5 Home "Lv N" chip · P6 calm level-up sheet · P7/P7b Tracker "+N provisions".
  * Pure logic lives in ../provisions.js; the numbers come from ../points.js.
  */
-import { S, A, $, NOW, todayKey, commit, onCommit, openSheet, closeSheet, toast, go, revision } from "../app.js";
+import { S, A, UI, $, NOW, todayKey, commit, onCommit, openSheet, closeSheet, toast, go, revision } from "../app.js";
 import * as store from "../store.js";
 import { startedPrayers } from "../times.js";
 import { DOW, MON, parseKey, esc } from "../util.js";
 import { WEIGHTS, CURRENT } from "../points.js";
 import { pvOn, homeChipOn, offerDue, pvSummary, turnOn, turnOff, dismissOffer, checkLevelUp, trackerDay } from "../provisions.js";
-import { isOn } from "../features.js";
-import { PROVISIONS as P, PRAYER_NAME, COMMON } from "../strings.js";
+import { progressChapters } from "../features.js";
+import { PROVISIONS as P, PRAYER_NAME, COMMON, READ } from "../strings.js";
 
 const W = WEIGHTS[CURRENT];
 // What ../provisions.js needs from the clock and the app: today's prayers already begun (an excused prayer
@@ -41,16 +41,21 @@ const miniRing = (frac, size = 22) => {
 };
 const dua = () => `<div class="pv-dua"><div class="ar" lang="ar" dir="rtl">${P.duaAr}</div><p class="en">${esc(P.duaEn)}</p><p class="src">${esc(P.duaSrc)}</p></div>`;
 
-/* ---------- P1: Progress card ---------- */
-export function progressCard() {
+/* ---------- P1: the Provisions chapter of Progress (views/progress.js); gold belongs here ---------- */
+/** Level, total, progress to the next level, this week, and the niyyah reminder. Shown only while provisions are on. */
+export function provisionsChapter() {
   if (!pvOn(S)) return "";
   const s = pvSummary(S, todayKey(), ctx()), pct = Math.round(s.frac * 100);
-  return `<section class="pv-card" id="pv-card" aria-label="${esc(P.title)}"><button type="button" class="pv-i" aria-label="${esc(P.how)}" onclick="A.pvInfo()">i</button>
-  <div class="pv-top">${ring(s.level, s.frac)}<div class="pv-main"><div class="pv-k">${esc(P.title)}</div><b class="pv-big">${fmt(s.total)} <span>${esc(P.gathered)}</span></b>
-  <div class="pv-bar" role="progressbar" aria-label="${esc(P.toLevelPlain(fmt(s.toNext), s.next))}" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${(s.frac * 100).toFixed(1)}%"></i></div>
-  <div class="pv-to">${P.toLevel(fmt(s.toNext), s.next)}</div></div></div>
-  <div class="pv-foot"><span>${esc(P.thisWeek)}</span><span>${P.plusN(fmt(s.week))}</span></div>
-  <p class="pv-niy">${esc(P.niyyahLine)}</p></section>`;
+  return `<header class="zt-chh"><h1 class="zt-title">${esc(P.title)}</h1><p class="zt-sub pv-lv">${esc(P.level(s.level))}<button type="button" class="pv-ib" data-f="pvinfo" aria-label="${esc(P.how)}" onclick="A.pvInfo()">i</button></p></header>
+  <section class="zt-card pad pv-ch" id="pv-card" aria-label="${esc(P.title)}">
+    <div class="pr-big"><b>${fmt(s.total)}</b><span>${esc(P.gathered)}</span></div>
+    <div class="pv-bar" role="progressbar" aria-label="${esc(P.toLevelPlain(fmt(s.toNext), s.next))}" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${(s.frac * 100).toFixed(1)}%"></i></div>
+    <p class="pv-to">${P.toLevel(fmt(s.toNext), s.next)}</p>
+    <div class="pv-wk"><span>${esc(P.thisWeek)}</span><b>+${fmt(s.week)}</b></div>
+    <figure class="pv-nq"><div class="ar" lang="ar" dir="rtl">${P.niyyahAr}</div><figcaption>${esc(P.niyyahEn)} <span>${esc(P.niyyahSrc)}</span></figcaption></figure>
+    <p class="pv-fine">${esc(P.neverDown)} ${esc(P.neverDownSub)} ${esc(P.niyyahLine)}</p>
+  </section>
+  <button type="button" class="zt-line pv-howl" data-f="pvhow" onclick="A.pvInfo()"><span class="l">${esc(P.how)}</span><svg class="i zt-cv" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button><div class="zt-fill"></div>`;
 }
 
 /* ---------- P2: How provisions work ---------- */
@@ -69,7 +74,7 @@ A.pvInfo = () => {
   <div class="pv-grp"><h4>${esc(P.moreHead)}</h4><div class="pv-tbl">
     ${tr(P.witr, String(W.witr.done), P.witrMadeUp(W.witr.madeup))}
     ${tr(P.sunnah, P.each(W.sunnah.each), P.upTo(W.sunnah.cap))}
-    ${tr(P.deeds, P.each(W.deeds.each), P.upTo(W.deeds.cap))}
+    ${tr(P.deeds, P.each(W.deeds.each), P.deedsSub(W.deeds.cap))}
     ${tr(P.makeups, P.each(W.makeups.each), P.upTo(W.makeups.cap))}</div></div>
   ${exc}
   <ul class="pv-pts">
@@ -112,9 +117,9 @@ export function homeChip() {
   return `<button type="button" class="pv-chip" aria-label="${esc(P.chipLabel(s.level, fmt(s.toNext), s.next))}" onclick="A.pvOpen()">${miniRing(s.frac)}${esc(P.lv(s.level))}</button>`;
 }
 A.pvOpen = () => {
-  if (!isOn(S, "progress")) { A.pvInfo(); return; }
+  if (!progressChapters(S).includes("provisions")) { A.pvInfo(); return; }
+  UI.progressCh = "provisions"; // Progress opens on its Provisions chapter
   go("progress");
-  $("#pv-card")?.scrollIntoView?.({ block: "start" });
 };
 
 /* ---------- P4 / P4b: Settings ---------- */
@@ -159,7 +164,8 @@ A.pvDay = key => {
     if (x.kind === "fard") return tr2(PRAYER_NAME[x.id] || x.id, x.remember ? P.st.excusedRem : P.st[x.status] || "", x.n);
     if (x.kind === "witr") return tr2(P.witr, P.witrSt[x.status] || "", x.n);
     const name = x.kind === "deeds" ? P.deeds : x.kind === "sunnah" ? P.sunnah : P.makeups;
-    return tr2(name, P.nDone(x.count), x.n);
+    // the readings that count as good deeds are named ("2 done · Sūrat al-Mulk")
+    return tr2(name, P.nDone(x.count) + (x.reads?.length ? ` · ${x.reads.map(id => READ.item[id] || id).join(", ")}` : ""), x.n);
   };
   const rows = d.parts.length ? d.parts.map(line).join("") : `<div class="pv-tr"><span class="l">${esc(P.none)}</span></div>`;
   openSheet(`<div class="pv-sh pv-brk"><div class="sheet-head"><h3>${esc(title)}</h3><button type="button" class="link-btn" onclick="A.closeSheet()">${esc(COMMON.done)}</button></div>

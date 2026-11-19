@@ -3,6 +3,7 @@ import { getDay, lastDetail, statusOf, isPrayed, amalForDay, sunnahOpts, genderO
 import { madhhabOf, sunnahFor, sunnahAllowed, measureTarget, measuredItems, chipLabel, tierLabel, getMadhhab, isFriday } from "./rules/madhhab.js";
 import { startedPrayers, weekDates } from "./times.js";
 import { INSIGHT, PRAYER_NAME } from "./strings.js";
+import { readsByDay, countedReads } from "./points.js";
 
 /*
  * Statuses: congregation | ontime | madeup | missed | excused (store.STATUSES).
@@ -303,6 +304,23 @@ export function amalDayState(S, key, id, now = new Date()) {
 }
 
 /**
+ * State of a reading that counts as a good deed (points.READ_IDS: hizb, mulk, kahf, manzil) on a day, for the
+ * Progress week: "done" | "missed" | "pending" (today) | "excused" (al-Mulk, al-Kahf, the Manzil on an excused
+ * day: not recited then) | "na" (al-Kahf on any day but Friday) | "future" | "untracked".
+ * reads: points.readsByDay(S); pass it in when drawing many days.
+ */
+export function readDayState(S, key, id, now = new Date(), reads = readsByDay(S)) {
+  const date = parseKey(key);
+  if (key > dkey(now)) return "future";
+  if (!tracked(S, date, now)) return "untracked";
+  if (id === "kahf" && date.getDay() !== 5) return "na";
+  const day = getDay(S, key);
+  if (countedReads(day, reads[key]).includes(id)) return "done";
+  if (day.excused && id !== "hizb") return "excused";
+  return key === dkey(now) ? "pending" : "missed";
+}
+
+/**
  * Share of tracked days (last n, excluding today while it's in progress) each good deed was done.
  * Excused days are left out for Qurʾān recitation; the excused-only deeds ("listen", "dua") are rated
  * over excused days only and appear only if there were any.
@@ -415,8 +433,10 @@ export function insights(S, now = new Date()) {
     warn.push({ title: INSIGHT.missedTitle(name(worst[0]), worst[1]), sub: tip });
   }
 
-  // Weakest good deed
-  const weakest = sorted[sorted.length - 1];
+  // Weakest good deed: salawāt and sadaqah have no daily target, so a low daily rate isn't "something to work on"
+  const NO_TARGET = new Set(["salawat", "sadaqah"]);
+  const targeted = sorted.filter(r => !NO_TARGET.has(r.a.id));
+  const weakest = targeted[targeted.length - 1];
   if (weakest && sorted.length > 1 && weakest.rate < 60) {
     const best = sorted[0];
     warn.push({ title: INSIGHT.rateTitle(weakest.a.name, weakest.rate), sub: best.rate > weakest.rate ? INSIGHT.weakSub(best.a.name, best.rate, weakest.a.name.toLowerCase()) : INSIGHT.weakSubAlt });

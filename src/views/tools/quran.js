@@ -5,6 +5,7 @@ import { quranFont } from "./qtext.js";
 import { TOOLS_UI, FEEDBACK } from "../../strings.js";
 import { FLAG_SVG } from "../../feedback.js";
 import { TT } from "./strings-tools.js";
+import { doneBar } from "./donebar.js";
 import { listMushafs, getMushaf, getSurahs, getPage, getPageTranslation, getQuranCredits, loadMushafFont, pageForJuz, pageForSurah, juzForPage, manzilForPage, DEFAULT_MUSHAF } from "../../tools/quran-data.js";
 import { readerPages, stepSpread, spreadFirst, TABLET_QUERY, SPREAD_QUERY } from "../../tools/quran-spread.js";
 
@@ -129,6 +130,7 @@ export function quranView() {
         <button type="button" class="${st.trans ? "on" : ""}" aria-pressed="${st.trans}" onclick="A.tlQTrans()"><i>${I.translate}</i>${TT.translationBtn}</button>
         <button type="button" class="${st.night ? "on" : ""}" aria-pressed="${st.night}" onclick="A.tlQNight()"><i>${I.moon}</i>${TT.night}</button>
         <button type="button" aria-label="${FEEDBACK.reportMistake}" onclick="A.fbReportQuran()"><i>${FLAG_SVG}</i>${FEEDBACK.report}</button></div></div>
+    ${T.readItem ? doneBar(T.readItem, { next: "A.tlQPage(1)" }) : ""}
   </div>`;
 }
 

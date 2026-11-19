@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Home-screen widget layout (RemoteViews). Filled in by WidgetRenderer.java; sample text shows in the widget picker preview. -->
+<!-- Shown when there's no snapshot for today ("Open Zad to update"). -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/zw_root" android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="@drawable/zw_bg_forest" android:padding="16dp">
+    android:background="@drawable/zw_bg_card" android:padding="16dp">
     <TextView android:id="@+id/zw_message" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center"
-        android:fontFamily="serif" android:text="@string/zw_stale" android:textColor="@color/zw_on_forest" android:textSize="17sp" />
+        android:fontFamily="serif" android:text="@string/zw_stale" android:textColor="@color/zw_ink" android:textSize="17sp" />
 </FrameLayout>

@@ -2,7 +2,7 @@
  * Provisions & levels (zād = provision for the journey). A pure function over the stored history:
  * same input, same output. No writes, no clock, no DOM. Pass `today` ("YYYY-MM-DD") in from the caller.
  *
- * Nothing here is stored or synced. Totals are always recalculated from S.days and S.qada, so a new
+ * Nothing here is stored or synced. Totals are always recalculated from S.days and S.qada (and the readers' dated state in S.tools, readsByDay), so a new
  * WEIGHTS version simply re-counts the whole history. The only stored values are in
  * S.settings.provisions: the weights version in use and the best level shown (levels never go down).
  *
@@ -13,6 +13,9 @@
  *   Visibility settings (ghayr / nafl / Jumuʿah) don't remove what was logged.
  * - Witr: only where the Witr chip is allowed (store.witrChip: not on an excused day, not when ʿIshāʾ is excused).
  * - Remembrance at prayer time: only on a prayer whose status is excused.
+ * - Readings done in Read (Hizb, al-Mulk, al-Kahf, the Manzil; readsByDay) count as good deeds, one each a
+ *   day, inside the same daily cap. Al-Mulk, al-Kahf and the Manzil are recitation, so they count nothing on
+ *   an excused day (Read leaves them off that day's list too); the Hizb is duʿāʾ and still counts.
  * - Days before S.createdKey and days after `today` count as nothing.
  * - Today: an excused prayer (and its remembrance) counts only once its time has begun. The caller passes
  *   `started`, today's prayers already begun (times.startedPrayers), since this file never reads the clock.
@@ -37,6 +40,41 @@ export const WEIGHTS = {
 export const CURRENT = "v1";
 export const weightsFor = version => WEIGHTS[version] || WEIGHTS[CURRENT];
 
+/**
+ * Readings that count as one good deed each when done that day (scholar, 18 Nov 2026), without being on the
+ * editable deeds list. QURAN_READS are left out on an excused day.
+ */
+export const READ_IDS = ["hizb", "mulk", "kahf", "manzil"];
+const QURAN_READS = new Set(["mulk", "kahf", "manzil"]);
+const isKey = k => /^\d{4}-\d{2}-\d{2}$/.test(k);
+
+/**
+ * Readings done per day: { "YYYY-MM-DD": ["hizb", "mulk", ...] } (each id at most once a day). Joined from
+ * - day.reads (store.setRead: written by Read's ticks and the readers, kept in the day log so the count stays
+ *   after the readers' own history below is pruned), and
+ * - the readers' own dated state, so days done before day.reads existed count too:
+ *   S.tools.read[day].mulk / .kahf (al-Kahf under its Friday), S.tools.manzil[day] (morning or evening), and
+ *   the Hizb weeks (S.tools.hizb.weeks[saturday].read[m]: manzil m is the one due on the week's m-th day).
+ */
+export function readsByDay(S) {
+  const out = {};
+  const add = (k, id) => { if (!isKey(k)) return; const l = (out[k] ||= []); if (!l.includes(id)) l.push(id); };
+  for (const [k, d] of Object.entries(S.days || {})) for (const id of READ_IDS) if (d?.reads?.[id]) add(k, id);
+  const t = S.tools || {};
+  for (const [k, r] of Object.entries(t.read || {})) { if (r?.mulk) add(k, "mulk"); if (r?.kahf) add(k, "kahf"); }
+  for (const [k, m] of Object.entries(t.manzil || {})) if (m?.morning || m?.evening) add(k, "manzil");
+  for (const [wk, w] of Object.entries(t.hizb?.weeks || {})) {
+    if (!isKey(wk)) continue;
+    for (const [m, at] of Object.entries(w?.read || {})) {
+      const n = Number(m);
+      if (at && n >= 1 && n <= 7) add(dkey(addDays(parseKey(wk), n - 1)), "hizb");
+    }
+  }
+  return out;
+}
+/** The readings that count on a day record: QURAN_READS not on an excused day. */
+export const countedReads = (day, reads) => (reads || []).filter(id => READ_IDS.includes(id) && !(day?.excused && QURAN_READS.has(id)));
+
 /** Provisions needed to reach level n: 100·n·(n−1). L1 0, L2 200, L3 600, L4 1,200, L5 2,000, L10 9,000. */
 export const needFor = n => 100 * n * (n - 1);
 
@@ -52,10 +90,11 @@ export function levelFor(total) {
 /**
  * Provisions for one day record: { total, parts: [{ id, kind, n, ... }] } (drives the day breakdown).
  * opts: { w (weights object, default CURRENT), homeFull (sisters' rule), makeups (completed that day),
+ *         reads (readings done that day, from readsByDay: they join the good deeds and their cap),
  *         madhhab (for sunnah item lookup, default Hanafi), started (for today: the prayers whose time has
  *         begun; an excused prayer not in it counts nothing yet. Omit for a past day: all have begun) }
  */
-export function dayProvisions(day, { w = WEIGHTS[CURRENT], homeFull = false, makeups = 0, madhhab, started } = {}) {
+export function dayProvisions(day, { w = WEIGHTS[CURRENT], homeFull = false, makeups = 0, reads, madhhab, started } = {}) {
   const parts = [];
   if (day) {
     const excusedDay = !!day.excused;
@@ -78,9 +117,11 @@ export function dayProvisions(day, { w = WEIGHTS[CURRENT], homeFull = false, mak
       return !!item && sunnahAllowed(item, item.prayer ? statusOf(day, item.prayer) : null, { excusedDay });
     }).length;
     if (sun) parts.push({ id: "sunnah", kind: "sunnah", count: sun, n: Math.min(sun * w.sunnah.each, w.sunnah.cap) });
-    const deeds = Object.values(day.amal || {}).filter(a => a?.done).length;
-    if (deeds) parts.push({ id: "deeds", kind: "deeds", count: deeds, n: Math.min(deeds * w.deeds.each, w.deeds.cap) });
   }
+  // good deeds, and the readings (a day with only a reading may have no day record)
+  const rd = countedReads(day, reads);
+  const deeds = Object.values(day?.amal || {}).filter(a => a?.done).length + rd.length;
+  if (deeds) parts.push({ id: "deeds", kind: "deeds", count: deeds, n: Math.min(deeds * w.deeds.each, w.deeds.cap), ...(rd.length ? { reads: rd } : {}) });
   if (makeups > 0) parts.push({ id: "makeups", kind: "makeups", count: makeups, n: Math.min(makeups * w.makeups.each, w.makeups.cap) });
   return { total: parts.reduce((a, b) => a + b.n, 0), parts };
 }
@@ -138,12 +179,13 @@ export function provisions(S, { version, from, to, today, started, homeFull } = 
   const hf = homeFull ?? !!set.homeFull;
   const madhhab = madhhabOf(S);
   const made = makeupsByDay(S, { today, cap: w.makeups.cap }).byDay;
+  const reads = readsByDay(S);
   const created = S.createdKey || "";
   const byDay = {};
   let total = 0, daysLogged = 0, since = null;
-  for (const key of [...new Set([...Object.keys(S.days || {}), ...Object.keys(made)])].sort()) {
+  for (const key of [...new Set([...Object.keys(S.days || {}), ...Object.keys(made), ...Object.keys(reads)])].sort()) {
     if (key < created || (today && key > today) || (from && key < from) || (to && key > to)) continue;
-    const t = dayProvisions(S.days?.[key], { w, homeFull: hf, makeups: made[key] || 0, madhhab, started: key === today ? started : undefined }).total;
+    const t = dayProvisions(S.days?.[key], { w, homeFull: hf, makeups: made[key] || 0, reads: reads[key], madhhab, started: key === today ? started : undefined }).total;
     byDay[key] = t;
     total += t;
     if (t > 0) { daysLogged++; since ||= key; }
@@ -158,7 +200,7 @@ export function dayBreakdown(S, key, { today, version, started } = {}) {
   const w = weightsFor(version || set.weights);
   if (key < (S.createdKey || "") || (today && key > today)) return { total: 0, parts: [] };
   const made = makeupsByDay(S, { today, cap: w.makeups.cap }).byDay[key] || 0;
-  return dayProvisions(S.days?.[key], { w, homeFull: !!set.homeFull, makeups: made, madhhab: madhhabOf(S), started: key === today ? started : undefined });
+  return dayProvisions(S.days?.[key], { w, homeFull: !!set.homeFull, makeups: made, reads: readsByDay(S)[key], madhhab: madhhabOf(S), started: key === today ? started : undefined });
 }
 
 /**

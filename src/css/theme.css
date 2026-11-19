@@ -1,60 +1,121 @@
 /*
- * Theme tokens: light (default) and dark D1 "Forest night".
- * app.js sets <html data-theme="light|dark"> from Settings -> Appearance (System / Light / Dark).
- * Other CSS should use these tokens, never hard-coded colours:
- *   --ivory page bg · --paper card/sheet · --surface2 inputs and raised bits · --inset segmented/track bg
- *   --ink text · --ink2 muted · --ink3 faint · --line borders · --mint soft green fill · --leaf green
- *   --link accent text · --on-link text on a --link-bg fill · --ok-bg/--ok-fg · --miss/--miss-bg · --gold-bg/--gold-fg
- *   --btn-bg / --btn-fg primary button · --switch-off · --nav-bg / --nav-ink / --nav-on
+ * Theme: OG Calm (variant A), light and dark. The one theme of the redesign (docs/plan/redesign-build.md);
+ * values and the contrast table: design-review/mockups2/redesign/final/og/NOTES.md.
+ * app.js sets <html data-theme="light|dark"> from Settings → Appearance → Mode (System / Light / Dark).
+ *
+ * Rules: flat colours, no gradients, no background pattern on the main screens; cards have a hairline only.
+ * Gold is never text on a light background: in light mode it is only a fill (provisions bar), a mark
+ * (the "now" dot, in the deeper #A9821A) or the honey label / tick on forest.
+ *
+ * Redesign tokens (Today, the calendar, the tab bar and every new screen):
+ *   --bg page · --card card · --sheet sheet · --ink text · --mute secondary · --faint footers · --line / --card-line
+ *   --acc primary button and filled ticks · --on-acc its label · --soft secondary button · --on-soft its label
+ *   --acc2 icons and bars · --gold-dot the "now" dot · --gold-fill the provisions bar · --arabic Arabic text
+ *   --neutral icon tiles and chips · --track tracks and empty bars · --thumb · --underline chapter underline
+ *   --c1..--c4 chart series (congregation, on time, made up, missed) · --mk-r made-up mark · --toast-* · --scrim
+ * The older names (--ivory, --paper, --forest, --link, --btn-bg …) used by Settings, Read, Progress and Make-ups
+ * are kept and point at the same palette, so every screen follows the one theme.
  */
 :root{
-  --surface2:#fff; --inset:#EFE9DA; --ink3:#B9B1A0; --ring:#CFC6AF; --switch-off:#D9D2C2;
-  --mint2:#BFD9C9; --miss-bg:#F8E1DB; --ok-bg:#DDEBE1; --ok-fg:#1B5A43; --gold-bg:#F4E9C8; --gold-fg:#7a5c05;
-  --link:#1B5A43; --btn-bg:#0F3D2E; --btn-fg:#E5C55C; --nav-bg:#FFFDF8; --nav-ink:#6F7772; --nav-on:#0F3D2E;
-  --accent-text:#0F3D2E; --field:#fff; --icon-bg:#F4E9C8; --icon-fg:#7a5c05; --icon-green-bg:#DDEBE1; --icon-green-fg:#1B5A43;
+  --bg:#F8F4EA; --card:#FFFDF8; --sheet:#FFFDF8;
+  --ink:#17231E; --mute:#56625B; --faint:#5F6A63; --line:#EAE1CC; --card-line:#E7DDC6;
+  --acc:#0F3D2E; --on-acc:#E5C55C; --soft:#E3EBE0; --on-soft:#0F3D2E;
+  --acc2:#1B5A43; --gold-dot:#A9821A; --gold-fill:#C9A227; --arabic:#0F3D2E;
+  --neutral:#F2EAD3; --track:#E9E0CA; --thumb:#FFFDF8; --underline:#0F3D2E;
+  --c1:#0F3D2E; --c2:#5F9C80; --c3:#C9A227; --c4:#D2CAB8; --mk-r:#7A6426;
+  --toast-bg:#17231E; --toast-ink:#F8F4EA; --toast-acc:#E5C55C; --scrim:rgba(23,35,30,.36);
+  --focus:#1B5A43;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; --serif:'Amiri',Georgia,serif;
+
+  /* older names, same palette */
+  --forest:#0F3D2E; --moss:#1B5A43; --leaf:#1B5A43; --mint:#E3EBE0; --mint2:#C9D9CB;
+  --gold:#C9A227; --honey:#E5C55C; --parchment:#F4E9C8;
+  --ivory:var(--bg); --paper:var(--card); --ink2:var(--mute); --ink3:var(--faint);
+  --surface2:#FFFDF8; --inset:#EFE8D6; --ring:#BFB49A; --switch-off:#D6CCB6;
+  --miss:#9E3F2C; --miss-bg:#F6E2DA; --ok-bg:#E3EBE0; --ok-fg:#1B5A43; --gold-bg:#F2EAD3; --gold-fg:#1B5A43;
+  --link:#1B5A43; --btn-bg:#0F3D2E; --btn-fg:#E5C55C; --nav-bg:var(--bg); --nav-ink:#56625B; --nav-on:#0F3D2E;
+  --accent-text:#0F3D2E; --field:#FFFDF8; --icon-bg:#F2EAD3; --icon-fg:#0F3D2E; --icon-green-bg:#E3EBE0; --icon-green-fg:#1B5A43;
   color-scheme:light;
 }
 :root[data-theme=dark]{
-  --forest:#0F3326; --moss:#17483A; --leaf:#5DBB8A; --mint:#1C3A2D; --gold:#D9B23A; --miss:#E58C76;
-  --ivory:#0C1613; --paper:#14211C; --ink:#ECE5D3; --ink2:#9FADA5; --line:#253830;
-  --surface2:#1B2B25; --inset:#1B2B25; --ink3:#56665E; --ring:#3A4E45; --switch-off:#33463D;
-  --mint2:#24503E; --miss-bg:#3B231D; --ok-bg:#1C3A2D; --ok-fg:#8FD3AE; --gold-bg:#3A3218; --gold-fg:#E8C766;
-  --link:#E5C55C; --btn-bg:#E5C55C; --btn-fg:#0F3D2E; --nav-bg:#111D18; --nav-ink:#8E9C94; --nav-on:#E5C55C;
-  --accent-text:#E5C55C; --field:#0F1A16; --icon-bg:#3A3218; --icon-fg:#E8C766; --icon-green-bg:#1C3A2D; --icon-green-fg:#8FD3AE;
+  --bg:#16221C; --card:#1F2D26; --sheet:#23332B;
+  --ink:#EEE8D8; --mute:#B3BDB2; --faint:#98A398; --line:#2F4036; --card-line:#2C3D34;
+  --acc:#D6B868; --on-acc:#13281F; --soft:#2B3A2C; --on-soft:#D6B868;
+  --acc2:#8FB39C; --gold-dot:#E0BE62; --gold-fill:#D6B868; --arabic:#DCC27E;
+  --neutral:#28382F; --track:#2C3D33; --thumb:#3B5045; --underline:#D6B868;
+  --c1:#D6B868; --c2:#6F9A80; --c3:#8F7D52; --c4:#46574D; --mk-r:#D9C38A;
+  --toast-bg:#EEE8D8; --toast-ink:#16221C; --toast-acc:#0F3D2E; --scrim:rgba(0,0,0,.45);
+  --focus:#D6B868;
+
+  --forest:#1F4535; --moss:#2A5242; --leaf:#8FB39C; --mint:#2B3A2C; --mint2:#35503F;
+  --gold:#D6B868; --honey:#D6B868; --parchment:#F3EEE0;
+  --surface2:#23332B; --inset:#2C3D33; --ring:#4D6156; --switch-off:#3B4D43;
+  --miss:#E8A08C; --miss-bg:#3B2A24; --ok-bg:#2B3A2C; --ok-fg:#A9CBB4; --gold-bg:#2F3A2C; --gold-fg:#E0BE62;
+  --link:#D6B868; --btn-bg:#D6B868; --btn-fg:#13281F; --nav-ink:#B3BDB2; --nav-on:#D6B868;
+  --accent-text:#D6B868; --field:#1A2721; --icon-bg:#28382F; --icon-fg:#DCC27E; --icon-green-bg:#2B3A2C; --icon-green-fg:#8FB39C;
   color-scheme:dark;
 }
-:root[data-theme=dark] body{background-color:#0a1310;background-image:radial-gradient(circle at 50% 0%,#17483A 0%,#0C1613 60%)}
-/* (the desktop phone frame and its dark bezel are gone) */
-:root[data-theme=dark] body{background:var(--ivory)}
-.phone,.screen{background:var(--ivory)}
+/* the same dark values when the phone is dark and nothing chose light (app.js always sets data-theme; this is the fallback) */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]):not([data-theme=dark]){
+    --bg:#16221C; --card:#1F2D26; --sheet:#23332B; --ink:#EEE8D8; --mute:#B3BDB2; --faint:#98A398; --line:#2F4036; --card-line:#2C3D34;
+    --acc:#D6B868; --on-acc:#13281F; --soft:#2B3A2C; --on-soft:#D6B868; --acc2:#8FB39C; --gold-dot:#E0BE62; --gold-fill:#D6B868; --arabic:#DCC27E;
+    --neutral:#28382F; --track:#2C3D33; --thumb:#3B5045; --underline:#D6B868; --mk-r:#D9C38A;
+    --toast-bg:#EEE8D8; --toast-ink:#16221C; --toast-acc:#0F3D2E; --scrim:rgba(0,0,0,.45); --focus:#D6B868;
+    --forest:#1F4535; --leaf:#8FB39C; --mint:#2B3A2C; --gold:#D6B868; --honey:#D6B868; --parchment:#F3EEE0;
+    --surface2:#23332B; --inset:#2C3D33; --miss:#E8A08C; --miss-bg:#3B2A24; --ok-bg:#2B3A2C; --ok-fg:#A9CBB4; --gold-bg:#2F3A2C; --gold-fg:#E0BE62;
+    --link:#D6B868; --btn-bg:#D6B868; --btn-fg:#13281F; --nav-ink:#B3BDB2; --nav-on:#D6B868; --accent-text:#D6B868; --field:#1A2721;
+    --icon-bg:#28382F; --icon-fg:#DCC27E; --icon-green-bg:#2B3A2C; --icon-green-fg:#8FB39C;
+    color-scheme:dark;
+  }
+}
+
+html,body{background:var(--bg)}
+.phone,.screen{background:var(--bg)}
 .phone{color:var(--ink)}
-:root[data-theme=dark] .btn.primary{background:var(--btn-bg);color:var(--btn-fg)}
-:root[data-theme=dark] .scrim{background:rgba(0,0,0,.6)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,a:focus-visible,[role=button]:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.btn.primary{background:var(--btn-bg);color:var(--btn-fg)}
+.scrim{background:var(--scrim);backdrop-filter:none}
+.sheet{background:var(--sheet)}
 :root[data-theme=dark] .topbar.light .icon-btn{box-shadow:0 0 0 1px var(--line)}
 :root[data-theme=dark] .goal .top span,:root[data-theme=dark] .stat b,:root[data-theme=dark] .months b,:root[data-theme=dark] .qrow .n,
 :root[data-theme=dark] .reflect .ar,:root[data-theme=dark] .totals b{color:var(--link)}
-:root[data-theme=dark] .qrow .act{background:var(--btn-bg);color:var(--btn-fg)}
-:root[data-theme=dark] .qrow .act:disabled{background:var(--inset);color:var(--ink3)}
-:root[data-theme=dark] .strip button.on{background:var(--btn-bg);color:var(--btn-fg)}
-:root[data-theme=dark] .strip button.on b{color:var(--btn-fg)}
-:root[data-theme=dark] .row.done .check{background:var(--leaf);border-color:var(--leaf)}
-:root[data-theme=dark] .check svg{stroke:#0C1613}
+.qrow .act{background:var(--btn-bg);color:var(--btn-fg)}
+.qrow .act:disabled{background:var(--inset);color:var(--ink3)}
+.strip button.on{background:var(--btn-bg);color:var(--btn-fg)}
+.strip button.on b{color:var(--btn-fg)}
+.row.done .check{background:var(--acc);border-color:var(--acc)}
+.check svg{stroke:var(--on-acc)}
 :root[data-theme=dark] .seg button.on{background:var(--paper);color:var(--link)}
 :root[data-theme=dark] .opt.sel{border-color:var(--link)}
-:root[data-theme=dark] .pill.ontime,:root[data-theme=dark] .pill.congregation{color:var(--ok-fg)}
-:root[data-theme=dark] .pill.congregation{background:var(--gold-bg);color:var(--gold-fg)}
-:root[data-theme=dark] .toast{background:var(--surface2);color:var(--ink)}
+.pill.ontime,.pill.congregation{color:var(--ok-fg);background:var(--ok-bg)}
+.toast{background:var(--toast-bg);color:var(--toast-ink)}
+.toast-undo{color:var(--toast-acc)}
 :root[data-theme=dark] .sheet .legal a{color:var(--link)}
-:root[data-theme=dark] .goal .bar{background:var(--inset)}
+.goal .bar{background:var(--track)}
+.goal .bar i{background:var(--acc2)}
 .chev{color:var(--ink3)}
+.reflect .ar{color:var(--arabic)}
 
-/* ---------- bottom bar N2: outline icons, filled when active, gold tick above the active tab ---------- */
-.nav{display:flex;justify-content:space-around;padding:8px 6px 26px;background:var(--nav-bg);border-top:1px solid var(--line);position:relative;z-index:5}
-.nav button{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--nav-ink);flex:1;max-width:96px;padding-top:6px}
+/* ---------- bottom bar: Today · Read · Progress; text labels, the active tab in the accent colour ---------- */
+.nav{display:flex;justify-content:space-around;padding:6px 4px 26px;background:var(--bg);border-top:1px solid var(--line);position:relative;z-index:5}
+.nav button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11.5px;font-weight:500;color:var(--mute);flex:1;max-width:140px;min-height:52px}
 .nav button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.nav button.on{color:var(--nav-on)}
-.nav button.on svg{fill:currentColor;fill-opacity:.16}
-.nav button.on svg .solid{fill:currentColor;fill-opacity:1}
-.nav button.on::before{content:"";position:absolute;top:-9px;left:50%;width:26px;height:4px;margin-left:-13px;border-radius:0 0 4px 4px;background:var(--gold)}
-:root[data-theme=dark] .nav button.on::before{background:var(--honey)}
+.nav button.on{color:var(--acc);font-weight:600}
+:root[data-theme=dark] .nav button.on{color:var(--acc)}
 .nav button:focus-visible{outline-offset:-2px;border-radius:12px}
+
+/* ---------- Settings → Appearance: text size and Arabic text size (src/appearance.js sets both on <html>) ----------
+   --ui-scale zooms each view, the tab bar and sheets (like tablet.css; #screen stays at zoom 1 so scrolling and
+   measuring keep working). The Qurʾān page is fitted in JS, so it is laid out at zoom 1. tablet.css multiplies its
+   own zoom by --ui-scale. --ar-scale sizes Arabic text: the readers' --tl-ar (each reader's Aa still steps it) and
+   every .ar[lang=ar] block elsewhere. */
+:root{--ui-scale:1;--ar-scale:1}
+.screen > .view,.nav{zoom:var(--ui-scale)}
+.sheet{zoom:var(--ui-scale);max-height:calc(88vh / var(--ui-scale))}
+.tl-qpagewrap{zoom:calc(1 / var(--ui-scale))}
+.ar[lang=ar],.rp-ar,.gl-ar,.z-ar{zoom:var(--ar-scale)}
+:root #v-tools{--tl-ar:calc(28px * var(--ar-scale))}
+:root #v-tools[data-sz="0"]{--tl-ar:calc(24px * var(--ar-scale))}
+:root #v-tools[data-sz="2"]{--tl-ar:calc(32px * var(--ar-scale))}
+:root #v-tools[data-sz="3"]{--tl-ar:calc(36px * var(--ar-scale))}

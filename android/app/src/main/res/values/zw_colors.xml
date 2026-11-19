@@ -1,32 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Home-screen widget colours (Zad palette, src/css/theme.css). Theme-following ones have a values-night twin. -->
+<!-- Widget colours: OG Calm (design-review/mockups2/redesign/final/og/NOTES.md, variant A). Light here, dark in
+     values-night (the launcher redraws the widget in the phone's light or dark mode). Every text pair passes WCAG AA. -->
 <resources>
-    <!-- Forest hero: the same in light and dark -->
-    <color name="zw_forest">#0F3D2E</color>
-    <color name="zw_forest_top">#1B5A43</color>
-    <color name="zw_forest_bottom">#0B2A20</color>
-    <color name="zw_gold">#E5C55C</color>
-    <color name="zw_gold_text">#E8C766</color>
-    <color name="zw_on_forest">#F8F4EA</color>
-    <color name="zw_on_forest_dim">#B8F8F4EA</color>
-    <color name="zw_on_forest_faint">#73F8F4EA</color>
-    <color name="zw_tile">#17FFFFFF</color>
-    <color name="zw_tile_focus">#29E5C55C</color>
-    <!-- Status marks -->
-    <color name="zw_ontime">#5DBB8A</color>
-    <color name="zw_congregation">#E5C55C</color>
+    <color name="zw_card">#FFFDF8</color>
+    <color name="zw_ink">#17231E</color>
+    <color name="zw_ink2">#56625B</color>
+    <color name="zw_ink3">#5F6A63</color>
+    <color name="zw_line">#EAE1CC</color>
+    <!-- Primary button (forest, honey label) and secondary (soft green tint, forest label) -->
+    <color name="zw_btn1">#0F3D2E</color>
+    <color name="zw_btn1_label">#E5C55C</color>
+    <color name="zw_btn2">#E3EBE0</color>
+    <color name="zw_btn2_label">#0F3D2E</color>
+    <!-- Gold "now" mark (deeper in light mode so it reaches 3:1) -->
+    <color name="zw_now">#A9821A</color>
+    <!-- Status marks and dots -->
+    <color name="zw_congregation">#0F3D2E</color>
+    <color name="zw_congregation_mark">#E5C55C</color>
+    <color name="zw_ontime">#E3EBE0</color>
+    <color name="zw_ontime_mark">#0F3D2E</color>
+    <color name="zw_ontime_dot">#5E9A7E</color>
     <color name="zw_madeup">#4F6D8A</color>
     <color name="zw_missed">#9E3F2C</color>
     <color name="zw_excused">#8E9C94</color>
     <color name="zw_mark_ink">#FFFFFF</color>
-    <!-- Theme-following card (large widget) -->
-    <color name="zw_card">#FBF7EE</color>
-    <color name="zw_card_ink">#17231E</color>
-    <color name="zw_card_ink2">#5A6862</color>
-    <color name="zw_card_inset">#EFE9DA</color>
-    <color name="zw_card_dash">#B9B1A0</color>
-    <color name="zw_card_focus_bg">#F4E9C8</color>
-    <color name="zw_card_focus_ink">#7A5C05</color>
-    <color name="zw_card_chip_bg">#E3E7EA</color>
-    <color name="zw_card_chip_ink">#4F6D8A</color>
+    <color name="zw_ring">#A39D8C</color>
 </resources>

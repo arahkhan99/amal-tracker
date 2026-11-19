@@ -71,15 +71,35 @@ export function setToolHidden(S, t, hidden) {
 /** The tools that show, in order. Empty when the Tools module is off. */
 export function visibleTools(S) { return TOOLS.filter(t => toolVisible(S, t)); }
 
+/** Whether the Read tab shows: a visible tool, or the weekly readings ("This week"). */
+export function readOn(S) { return (isOn(S, "tools") && visibleTools(S).length > 0) || isOn(S, "week"); }
+/** Whether the Progress tab shows: Progress itself, or Make-ups (then the tab opens Make-ups). */
+export function progressOn(S) { return isOn(S, "progress") || isOn(S, "makeups"); }
 /**
- * Bottom-bar tabs, in order (view ids): home, tracker, tools?, qada?, progress?.
- * "Prayers only" gives two tabs: Home and Tracker. Labels: strings.NAV[id] (qada → "Make-ups").
+ * The Progress tab's chapters, in order: Reflections · Week · Charts (Progress itself), Provisions (only when
+ * settings.provisions.on) and Make-ups (the makeups feature). Empty when Progress is off: then Make-ups is its
+ * own page (the tab opens it) and provisions show only through their sheet.
+ */
+export function progressChapters(S) {
+  if (!isOn(S, "progress")) return [];
+  const out = ["reflect", "week", "charts"];
+  if (S?.settings?.provisions?.on) out.push("provisions");
+  if (isOn(S, "makeups")) out.push("makeups");
+  return out;
+}
+/** Zad Plus (premium, not built yet): only a flag for now. Community shows only with it. */
+export function plusOn(S) { return S?.settings?.plus === true; }
+
+/**
+ * Bottom-bar tabs, in order (view ids): home (Today), tools (Read)?, progress?, community?.
+ * Labels: strings.NAV[id]. With prayers only there is one tab, and the app shows no tab bar at all.
+ * Make-ups lives inside Progress; the calendar (the old Tracker tab) opens from Today.
  */
 export function navTabs(S) {
-  const tabs = ["home", "tracker"];
-  if (isOn(S, "tools") && visibleTools(S).length) tabs.push("tools");
-  if (isOn(S, "makeups")) tabs.push("qada");
-  if (isOn(S, "progress")) tabs.push("progress");
+  const tabs = ["home"];
+  if (readOn(S)) tabs.push("tools");
+  if (progressOn(S)) tabs.push("progress");
+  if (plusOn(S)) tabs.push("community");
   return tabs.map(id => ({ id, label: NAV[id] }));
 }
 

@@ -1,15 +1,21 @@
 import WidgetKit
 import SwiftUI
+import AppIntents
 
-// Zad widgets (iOS 17+): Small A "Hero card", Medium A "Tiles", Large A "Hero + deeds", and the
-// lock-screen inline / rectangular / circular widgets. Designs: design-review/mockups2/widgets.
-// Data: the snapshot the app writes to the App Group (WidgetModel.swift). Setup: docs/build/widgets.md.
+// Zad widgets: home screen small / medium / large with one-tap logging (App Intents, iOS 17+; on iOS 16 a
+// tap opens the log sheet), lock-screen inline / circular / rectangular, and the iOS 18 Control.
+// Designs: design-review/mockups2/redesign/widgets (colours: final/og, variant A "OG Calm").
+// Data: the snapshot the app writes to the App Group, with the pending-log queue laid over it (WidgetModel.swift).
+// Setup: docs/build/widgets.md. The code compiles for an iOS 16 deployment target; iOS 17/18 APIs are guarded.
 
 @main
 struct ZadWidgetBundle: WidgetBundle {
     var body: some Widget {
         ZadHomeWidget()
         ZadLockWidget()
+        if #available(iOS 18.0, *) {
+            ZadLogControl()
+        }
     }
 }
 
@@ -22,41 +28,58 @@ struct ZadEntry: TimelineEntry {
 }
 
 struct ZadProvider: TimelineProvider {
+    /// Per-minute entries cover this far ahead; then the timeline ends and WidgetKit asks for a new one.
+    static let minuteHorizon: TimeInterval = 3 * 3600
+    static let maxEntries = 400
+
     func placeholder(in context: Context) -> ZadEntry {
         ZadEntry(date: Date(), model: .placeholder, staleLabel: WidgetModel.label("stale", [:]))
     }
 
     func getSnapshot(in context: Context, completion: @escaping (ZadEntry) -> Void) {
         let now = Date()
-        let model = context.isPreview ? (WidgetModel.build(SnapshotStore.load(), now: now) ?? .placeholder) : WidgetModel.build(SnapshotStore.load(), now: now)
-        completion(ZadEntry(date: now, model: model, staleLabel: WidgetModel.label("stale", SnapshotStore.labels())))
+        let snap = SnapshotStore.load()
+        let model = WidgetModel.build(snap, pending: PendingStore.load(), now: now)
+        completion(ZadEntry(date: now, model: context.isPreview ? (model ?? .placeholder) : model,
+                            staleLabel: WidgetModel.label("stale", snap?.labels ?? [:])))
     }
 
-    /// One entry now and one just after each boundary (a prayer starts or its window ends, sunrise, the middle
-    /// of the night, midnight), up to a day ahead. The countdown is a self-updating timer (Text(timerInterval:)
-    /// and ProgressView(timerInterval:)), so no per-minute entries are needed. Each entry recomputes the model
-    /// from the same snapshot, so the next prayer changes on its own. The app also reloads the timelines
-    /// whenever its data changes.
+    /// One entry now, then one each time the minutes on the countdown change (for the next three hours) and
+    /// one just after each boundary (a prayer starts or its window ends, sunrise, the middle of the night,
+    /// midnight). Every entry recomputes the model from the same snapshot and queue, so the focus prayer
+    /// moves on by itself. The app and the log intents reload the timelines whenever the data changes.
     func getTimeline(in context: Context, completion: @escaping (Timeline<ZadEntry>) -> Void) {
         let snap = SnapshotStore.load()
+        let pending = PendingStore.load()
         let stale = WidgetModel.label("stale", snap?.labels ?? [:])
         let now = Date()
-        let firstModel = WidgetModel.build(snap, now: now)
-        var entries: [ZadEntry] = [ZadEntry(date: now, model: firstModel, staleLabel: stale)]
-        let horizon = now.addingTimeInterval(24 * 3600)
-        var next: Date? = firstModel?.nextChange
-        while let at = next, at <= horizon, entries.count < 24 {
-            let d = at.addingTimeInterval(1) // just after the boundary, so the new window is in
-            guard d > (entries.last?.date ?? now) else { break }
-            let model = WidgetModel.build(snap, now: d)
-            entries.append(ZadEntry(date: d, model: model, staleLabel: stale))
-            next = model?.nextChange
+        guard var model = WidgetModel.build(snap, pending: pending, now: now) else {
+            let entry = ZadEntry(date: now, model: nil, staleLabel: stale)
+            completion(Timeline(entries: [entry], policy: .after(now.addingTimeInterval(3600))))
+            return
         }
-        completion(Timeline(entries: entries, policy: .atEnd))
+        var entries = [ZadEntry(date: now, model: model, staleLabel: stale)]
+        let horizon = now.addingTimeInterval(ZadProvider.minuteHorizon)
+        var t = now
+        while entries.count < ZadProvider.maxEntries {
+            var candidates: [Date] = []
+            if let b = model.nextChange { candidates.append(b.addingTimeInterval(1)) } // just after the boundary
+            if let tick = model.nextMinuteTick(after: t) { candidates.append(tick) }
+            guard let d = candidates.min(), d > t, d <= horizon else { break }
+            guard let m = WidgetModel.build(snap, pending: pending, now: d) else {
+                entries.append(ZadEntry(date: d, model: nil, staleLabel: stale))
+                break
+            }
+            entries.append(ZadEntry(date: d, model: m, staleLabel: stale))
+            t = d
+            model = m
+        }
+        // Ask again at the horizon (not .atEnd: a short timeline would otherwise reload straight away)
+        completion(Timeline(entries: entries, policy: .after(horizon)))
     }
 }
 
-// MARK: - Palette (src/css/theme.css)
+// MARK: - Palette (OG Calm, variant A: design-review/mockups2/redesign/final/og/NOTES.md)
 
 extension Color {
     init(hex: UInt32, alpha: Double = 1) {
@@ -64,58 +87,277 @@ extension Color {
     }
 }
 
-enum Z {
-    static let forestTop = Color(hex: 0x1B5A43)
-    static let forest = Color(hex: 0x0F3D2E)
-    static let forestBottom = Color(hex: 0x0B2A20)
-    static let gold = Color(hex: 0xE5C55C)
-    static let goldText = Color(hex: 0xE8C766)
-    static let ivory = Color(hex: 0xF8F4EA)
-    static let ontime = Color(hex: 0x5DBB8A)
-    static let madeup = Color(hex: 0x4F6D8A)
-    static let excused = Color(hex: 0x8E9C94)
-    static func missed(_ dark: Bool) -> Color { dark ? Color(hex: 0xD0624B) : Color(hex: 0x9E3F2C) }
-    static func card(_ dark: Bool) -> Color { dark ? Color(hex: 0x16231E) : Color(hex: 0xFBF7EE) }
-    static func ink(_ dark: Bool) -> Color { dark ? Color(hex: 0xECE5D3) : Color(hex: 0x17231E) }
-    static func ink2(_ dark: Bool) -> Color { dark ? Color(hex: 0x9FADA5) : Color(hex: 0x5A6862) }
-    static func inset(_ dark: Bool) -> Color { dark ? Color(hex: 0x1F302A) : Color(hex: 0xEFE9DA) }
-    static func dash(_ dark: Bool) -> Color { dark ? Color(hex: 0x56665E) : Color(hex: 0xB9B1A0) }
-    static func focusBg(_ dark: Bool) -> Color { dark ? Color(hex: 0x3A3218) : Color(hex: 0xF4E9C8) }
-    static func focusInk(_ dark: Bool) -> Color { dark ? Color(hex: 0xE8C766) : Color(hex: 0x7A5C05) }
-    static func chipBg(_ dark: Bool) -> Color { dark ? Color(hex: 0x24313A) : Color(hex: 0xE3E7EA) }
-    static func chipInk(_ dark: Bool) -> Color { dark ? Color(hex: 0x9DB6CE) : Color(hex: 0x4F6D8A) }
+struct Pal {
+    let dark: Bool
+    init(_ scheme: ColorScheme) { dark = scheme == .dark }
 
-    static let heroGradient = LinearGradient(colors: [forestTop, forest, forestBottom], startPoint: .top, endPoint: .bottom)
+    var card: Color { dark ? Color(hex: 0x1F2D26) : Color(hex: 0xFFFDF8) }
+    var ink: Color { dark ? Color(hex: 0xEEE8D8) : Color(hex: 0x17231E) }
+    var ink2: Color { dark ? Color(hex: 0xB3BDB2) : Color(hex: 0x56625B) }
+    var line: Color { dark ? Color(hex: 0x2F4036) : Color(hex: 0xEAE1CC) }
+    var ring: Color { dark ? Color(hex: 0x56665E) : Color(hex: 0xB9B1A0) }
+    /// Primary button: forest with a honey label (light); muted honey with a forest label (dark).
+    var primaryBg: Color { dark ? Color(hex: 0xD6B868) : Color(hex: 0x0F3D2E) }
+    var primaryInk: Color { dark ? Color(hex: 0x13281F) : Color(hex: 0xE5C55C) }
+    /// Secondary button: soft green tint with a forest label (light); deep green with a honey label (dark).
+    var secondaryBg: Color { dark ? Color(hex: 0x2B3A2C) : Color(hex: 0xE3EBE0) }
+    var secondaryInk: Color { dark ? Color(hex: 0xD6B868) : Color(hex: 0x0F3D2E) }
+    /// The gold "now" mark (never text on a light background).
+    var nowDot: Color { dark ? Color(hex: 0xE0BE62) : Color(hex: 0xA9821A) }
+    var moss: Color { dark ? Color(hex: 0x8FB39C) : Color(hex: 0x1B5A43) }
+    var ontime: Color { dark ? Color(hex: 0x8FB39C) : Color(hex: 0x5E9C7C) }
+    var madeup: Color { dark ? Color(hex: 0x9DB6CE) : Color(hex: 0x4F6D8A) }
+    var missed: Color { dark ? Color(hex: 0xD0624B) : Color(hex: 0x9E3F2C) }
+    var excused: Color { Color(hex: 0x8E9C94) }
+
+    func fill(_ state: String) -> Color {
+        switch state {
+        case "congregation": return primaryBg
+        case "ontime": return ontime
+        case "madeup": return madeup
+        case "missed": return missed
+        default: return excused
+        }
+    }
+}
+
+enum Z {
     static func serif(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font { .system(size: size, weight: weight, design: .serif) }
     static func sans(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font { .system(size: size, weight: weight) }
 }
 
+// MARK: - iOS 16 / 17 helpers
+
+extension View {
+    /// containerBackground on iOS 17+; a plain full-size background before that.
+    @ViewBuilder
+    func zadWidgetBackground(_ color: Color) -> some View {
+        if #available(iOS 17.0, *) {
+            self.containerBackground(for: .widget) { color }
+        } else {
+            self.frame(maxWidth: .infinity, maxHeight: .infinity).background(color)
+        }
+    }
+
+    /// Lock-screen background: the system's translucent disc for the circular widget only.
+    @ViewBuilder
+    func zadLockBackground(circular: Bool) -> some View {
+        if #available(iOS 17.0, *) {
+            self.containerBackground(for: .widget) {
+                if circular { AccessoryWidgetBackground() } else { Color.clear }
+            }
+        } else if circular {
+            ZStack {
+                AccessoryWidgetBackground()
+                self
+            }
+        } else {
+            self
+        }
+    }
+}
+
+extension WidgetConfiguration {
+    /// contentMarginsDisabled() on iOS 17+ (iOS 16 has no system margins). The views pad themselves.
+    func zadContentMarginsDisabled() -> some WidgetConfiguration {
+        if #available(iOS 17.0, *) {
+            return self.contentMarginsDisabled()
+        } else {
+            return self
+        }
+    }
+}
+
+// MARK: - Actions (shared by the widget intents and the Control)
+
+enum ZadActions {
+    /// Queue a log for `prayer` on `date` if the widget would offer that action right now (the prayer's time
+    /// is in; undo only after a widget log). The widget then redraws from the queue at once.
+    @discardableResult
+    static func log(date: String, prayer: String, status: String, src: String, now: Date = Date()) -> Bool {
+        let snap = SnapshotStore.load()
+        let added = PendingStore.append { pending -> PendingLog? in
+            guard let m = WidgetModel.build(snap, pending: pending, now: now, respectTimesOnly: false),
+                  m.isNow, m.focusP == prayer, m.focusDate == date else { return nil }
+            switch (status, m.action) {
+            case ("undo", .logged(_)), ("ontime", .buttons), ("congregation", .buttons), ("remember", .remembrance):
+                return PendingLog(date: date, prayer: prayer, status: status,
+                                  at: (now.timeIntervalSince1970 * 1000).rounded(), src: src)
+            default:
+                return nil
+            }
+        }
+        reloadAll()
+        return added != nil
+    }
+
+    /// The single-action surfaces (the Control): log the open prayer On time.
+    @discardableResult
+    static func logCurrentOnTime(src: String, now: Date = Date()) -> Bool {
+        guard let m = WidgetModel.build(SnapshotStore.load(), pending: PendingStore.load(), now: now, respectTimesOnly: false),
+              m.isNow, m.action == .buttons else {
+            reloadAll()
+            return false
+        }
+        return log(date: m.focusDate, prayer: m.focusP, status: "ontime", src: src, now: now)
+    }
+
+    static func reloadAll() {
+        WidgetCenter.shared.reloadAllTimelines()
+        if #available(iOS 18.0, *) {
+            ControlCenter.shared.reloadAllControls()
+        }
+    }
+}
+
+/// A button in a home-screen widget: logs `status` for the focus prayer.
+@available(iOS 17.0, *)
+struct LogPrayerIntent: AppIntent {
+    static let title: LocalizedStringResource = "Log prayer"
+    static let isDiscoverable: Bool = false
+    static let openAppWhenRun: Bool = false
+    static let authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
+
+    @Parameter(title: "Date") var date: String
+    @Parameter(title: "Prayer") var prayer: String
+    @Parameter(title: "Status") var status: String
+    @Parameter(title: "Source") var source: String
+
+    init() {}
+
+    init(date: String, prayer: String, status: String, source: String) {
+        self.date = date
+        self.prayer = prayer
+        self.status = status
+        self.source = source
+    }
+
+    func perform() async throws -> some IntentResult {
+        ZadActions.log(date: date, prayer: prayer, status: status, src: source)
+        return .result()
+    }
+}
+
+/// The Control's action: log the prayer whose time is in now as On time (nothing when none is open).
+@available(iOS 17.0, *)
+struct LogNowIntent: AppIntent {
+    static let title: LocalizedStringResource = "Log the current prayer on time"
+    static let isDiscoverable: Bool = false
+    static let openAppWhenRun: Bool = false
+    static let authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
+
+    init() {}
+
+    func perform() async throws -> some IntentResult {
+        ZadActions.logCurrentOnTime(src: "control")
+        return .result()
+    }
+}
+
 // MARK: - Shared pieces
 
-/// The status mark used in the tiles and the prayer row (same language as the app).
-struct StatusMark: View {
-    let state: String
-    let onForest: Bool
-    var size: CGFloat = 26
-    @Environment(\.colorScheme) private var scheme
+/// A one-tap log button for the focus prayer: an App Intent on iOS 17+, a link to its log sheet before that.
+struct LogButton<Content: View>: View {
+    let m: WidgetModel
+    let status: String // congregation | ontime | remember | undo
+    let content: Content
+
+    init(m: WidgetModel, status: String, @ViewBuilder content: () -> Content) {
+        self.m = m
+        self.status = status
+        self.content = content()
+    }
 
     var body: some View {
-        let dark = scheme == .dark
+        if #available(iOS 17.0, *) {
+            Button(intent: LogPrayerIntent(date: m.focusDate, prayer: m.focusP, status: status, source: "widget")) {
+                content
+            }
+            .buttonStyle(.plain)
+        } else {
+            Link(destination: WidgetModel.logLink(m.focusP, m.focusDate)) { content }
+        }
+    }
+}
+
+struct Pill: View {
+    let text: String
+    var icon: String? = nil
+    let bg: Color
+    let fg: Color
+    var height: CGFloat = 40
+    var size: CGFloat = 15
+    var expand: Bool = true
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if let icon = icon {
+                Image(systemName: icon).font(Z.sans(size - 1, .semibold))
+            }
+            Text(text).font(Z.sans(size, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .foregroundColor(fg)
+        .padding(.horizontal, expand ? 10 : 12)
+        .frame(maxWidth: expand ? .infinity : nil, minHeight: height, maxHeight: height)
+        .background(RoundedRectangle(cornerRadius: height * 0.36, style: .continuous).fill(bg))
+    }
+}
+
+struct NowTag: View {
+    let m: WidgetModel
+    let pal: Pal
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle().fill(m.isNow ? pal.nowDot : pal.ring).frame(width: 8, height: 8)
+            Text(m.label(m.isNow ? "now" : "next")).font(Z.sans(13, .semibold)).foregroundColor(pal.ink2).lineLimit(1)
+        }
+    }
+}
+
+/// The day's five dots (status colours; gold ring = the prayer whose time is in).
+struct DayDots: View {
+    let m: WidgetModel
+    let pal: Pal
+    var size: CGFloat = 10
+
+    var body: some View {
+        HStack(spacing: 5) {
+            ForEach(m.prayers) { x in
+                Group {
+                    switch x.state {
+                    case "now":
+                        Circle().strokeBorder(pal.nowDot, lineWidth: 2)
+                    case "late":
+                        Circle().strokeBorder(pal.ink2, style: StrokeStyle(lineWidth: 1.5, dash: [2, 1.5]))
+                    case "upcoming":
+                        Circle().strokeBorder(pal.ring, lineWidth: 1.5)
+                    default:
+                        Circle().fill(pal.fill(x.state))
+                    }
+                }
+                .frame(width: size, height: size)
+            }
+        }
+    }
+}
+
+/// The status mark at the start of a large-widget row.
+struct RowMark: View {
+    let state: String
+    let pal: Pal
+    var size: CGFloat = 26
+
+    var body: some View {
         ZStack {
             switch state {
-            case "congregation": filled(Z.gold, "person.2.fill", Z.forest)
-            case "ontime": filled(Z.ontime, "checkmark", .white)
-            case "madeup": filled(Z.madeup, "arrow.counterclockwise", .white)
-            case "missed": filled(Z.missed(dark), "minus", .white)
-            case "excused": filled(Z.excused, "moon.fill", .white)
-            case "next":
-                Circle().stroke(Z.gold, lineWidth: 2.2)
-                Circle().fill(Z.gold).frame(width: size * 0.33, height: size * 0.33)
-            case "due":
-                Circle().stroke(Z.gold, style: StrokeStyle(lineWidth: 2, dash: [3, 2.5]))
-                Image(systemName: "plus").font(.system(size: size * 0.42, weight: .bold)).foregroundColor(Z.gold)
-            default:
-                Circle().stroke(onForest ? Z.ivory.opacity(0.45) : Z.dash(dark), style: StrokeStyle(lineWidth: 2, dash: [3, 2.5]))
+            case "congregation": filled(pal.primaryBg, "person.2.fill", pal.primaryInk)
+            case "ontime": filled(pal.secondaryBg, "checkmark", pal.moss)
+            case "madeup": filled(pal.madeup, "arrow.counterclockwise", .white)
+            case "missed": filled(pal.missed, "minus", .white)
+            case "excused": filled(pal.excused, "moon.fill", .white)
+            case "now": Circle().strokeBorder(pal.nowDot, lineWidth: 2)
+            case "late": Circle().strokeBorder(pal.ink2, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2.5]))
+            default: Circle().strokeBorder(pal.ring, lineWidth: 1.5)
             }
         }
         .frame(width: size, height: size)
@@ -124,58 +366,123 @@ struct StatusMark: View {
     private func filled(_ bg: Color, _ symbol: String, _ fg: Color) -> some View {
         ZStack {
             Circle().fill(bg)
-            Image(systemName: symbol).font(.system(size: size * 0.45, weight: .bold)).foregroundColor(fg)
+            Image(systemName: symbol).font(.system(size: size * 0.42, weight: .bold)).foregroundColor(fg)
         }
     }
 }
 
-/// The small honey dot: filled when that prayer's sunnah is logged, hollow otherwise, absent when there is none.
-struct SunnahDot: View {
-    let sunnah: Bool?
-    let hollow: Color
-    var body: some View {
-        Group {
-            if let s = sunnah {
-                if s { Circle().fill(Z.gold) } else { Circle().stroke(hollow, lineWidth: 1) }
-            } else {
-                Color.clear
-            }
-        }
-        .frame(width: 5, height: 5)
-    }
-}
-
-struct TagPill: View {
-    let text: String
-    var body: some View {
-        Text(text.uppercased())
-            .font(Z.sans(10, .bold)).tracking(1.2)
-            .foregroundColor(Z.forest)
-            .padding(.horizontal, 8).padding(.vertical, 2)
-            .background(Capsule().fill(Z.gold))
-    }
-}
-
-struct PrayedButton: View {
+/// "ʿAsr logged ✓ · Undo" (compact: "Logged ✓  Undo"). Only Undo is tappable.
+struct LoggedBar: View {
     let m: WidgetModel
-    var height: CGFloat = 36
+    let pal: Pal
+    let compact: Bool
+
     var body: some View {
-        Link(destination: m.logURL) {
-            HStack(spacing: 6) {
-                Image(systemName: "checkmark").font(Z.sans(13, .bold))
-                Text(m.label(m.isNow ? "prayed" : "logToday")).font(Z.sans(15, .bold)).lineLimit(1)
+        HStack(spacing: 6) {
+            Text(compact ? m.label("loggedShort") : m.fill("logged", p: m.focusName))
+                .font(Z.sans(compact ? 14 : 15, .semibold)).foregroundColor(pal.secondaryInk)
+                .lineLimit(1).minimumScaleFactor(0.7)
+            if !compact {
+                Text("·").font(Z.sans(15)).foregroundColor(pal.ink2)
             }
-            .foregroundColor(Z.forest)
-            .frame(maxWidth: .infinity, minHeight: height, maxHeight: height)
-            .background(Capsule().fill(Z.gold))
+            if compact { Spacer(minLength: 2) }
+            LogButton(m: m, status: "undo") {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.uturn.backward").font(Z.sans(compact ? 12 : 13, .semibold))
+                    Text(m.label("undo")).font(Z.sans(compact ? 14 : 15, .semibold)).lineLimit(1)
+                }
+                .foregroundColor(pal.secondaryInk)
+                .padding(.horizontal, compact ? 8 : 6)
+                .frame(minHeight: compact ? 28 : 32)
+                .background(Capsule().fill(compact ? pal.card.opacity(0.6) : Color.clear))
+            }
+            if !compact { Spacer(minLength: 0) }
+        }
+        .padding(.horizontal, compact ? 10 : 16)
+        .frame(maxWidth: .infinity, minHeight: compact ? 38 : 44, maxHeight: compact ? 38 : 44)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(pal.secondaryBg))
+    }
+}
+
+/// The bottom of the small and medium widgets: the buttons, the logged bar, Remembrance, or (nothing to tap)
+/// when the next prayer begins / the day's times.
+struct ActionArea: View {
+    let m: WidgetModel
+    let pal: Pal
+    let compact: Bool // small widget: one button
+
+    var body: some View {
+        switch m.action {
+        case .buttons:
+            if compact || m.sister {
+                LogButton(m: m, status: "ontime") {
+                    Pill(text: m.label("onTime"), icon: "checkmark", bg: pal.primaryBg, fg: pal.primaryInk, height: compact ? 38 : 44)
+                }
+            } else {
+                HStack(spacing: 8) {
+                    LogButton(m: m, status: "congregation") {
+                        Pill(text: m.label("congregation"), icon: "person.2", bg: pal.primaryBg, fg: pal.primaryInk, height: 44)
+                    }
+                    LogButton(m: m, status: "ontime") {
+                        Pill(text: m.label("onTime"), icon: "checkmark", bg: pal.secondaryBg, fg: pal.secondaryInk, height: 44)
+                    }
+                }
+            }
+        case .remembrance:
+            LogButton(m: m, status: "remember") {
+                Pill(text: m.label(compact ? "remembranceShort" : "remembrance"), icon: "moon", bg: pal.secondaryBg,
+                     fg: pal.secondaryInk, height: compact ? 38 : 44, size: compact ? 14 : 15)
+            }
+        case .logged:
+            LoggedBar(m: m, pal: pal, compact: compact)
+        case .idle:
+            if m.showTimesOnly {
+                if !compact { TimesRow(m: m, pal: pal) }
+            } else if !m.isNow && !compact {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock").font(Z.sans(13, .medium))
+                    Text(m.fill("begins", p: m.focusName, t: m.focusTime)).font(Z.sans(14, .medium)).lineLimit(1).minimumScaleFactor(0.7)
+                }
+                .foregroundColor(pal.ink2)
+                .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44)
+                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(pal.line, lineWidth: 1))
+            }
+        }
+    }
+}
+
+/// Show times only: the day's five times (no statuses).
+struct TimesRow: View {
+    let m: WidgetModel
+    let pal: Pal
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Rectangle().fill(pal.line).frame(height: 1)
+            HStack(alignment: .top, spacing: 4) {
+                ForEach(m.prayers) { x in
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 3) {
+                            if x.focus && m.isNow {
+                                Circle().fill(pal.nowDot).frame(width: 6, height: 6)
+                            }
+                            Text(x.name).font(Z.sans(12)).foregroundColor(pal.ink2).lineLimit(1).minimumScaleFactor(0.7)
+                        }
+                        Text(WidgetModel.fmtTime(x.time)).font(Z.sans(15, .semibold)).foregroundColor(pal.ink)
+                            .lineLimit(1).minimumScaleFactor(0.6)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
         }
     }
 }
 
 struct StaleView: View {
     let text: String
+    let pal: Pal
     var body: some View {
-        Text(text).font(Z.serif(16)).foregroundColor(Z.ivory).multilineTextAlignment(.center).padding()
+        Text(text).font(Z.serif(16)).foregroundColor(pal.ink).multilineTextAlignment(.center).padding()
     }
 }
 
@@ -187,9 +494,9 @@ struct ZadHomeWidget: Widget {
             ZadHomeView(entry: entry)
         }
         .configurationDisplayName("Zad")
-        .description("Next prayer, today's prayers and Good Deeds.")
+        .description("The prayer whose time is in, with one-tap logging.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
-        .contentMarginsDisabled()
+        .zadContentMarginsDisabled()
     }
 }
 
@@ -199,187 +506,194 @@ struct ZadHomeView: View {
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
+        let pal = Pal(scheme)
         if let m = entry.model {
             switch family {
-            case .systemSmall: SmallView(m: m, now: entry.date)
-            case .systemMedium: MediumView(m: m, now: entry.date)
-            default: LargeView(m: m, now: entry.date)
+            case .systemSmall: SmallView(m: m, now: entry.date, pal: pal)
+            case .systemMedium: MediumView(m: m, now: entry.date, pal: pal)
+            default: LargeView(m: m, now: entry.date, pal: pal)
             }
         } else {
-            StaleView(text: entry.staleLabel)
+            StaleView(text: entry.staleLabel, pal: pal)
                 .widgetURL(WidgetModel.openURL("home"))
-                .containerBackground(for: .widget) { Z.heroGradient }
+                .zadWidgetBackground(pal.card)
         }
     }
 }
 
-/// Small A, "Hero card": always forest, the same in light and dark. The whole widget opens the log sheet.
+/// Small: the current prayer, its countdown and one On time button (or, before it begins, when it begins).
 struct SmallView: View {
     let m: WidgetModel
     let now: Date
+    let pal: Pal
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                TagPill(text: m.label(m.isNow ? "now" : "next"))
-                Spacer(minLength: 4)
-                Text(WidgetModel.fmt12(m.focusTime)).font(Z.sans(12, .medium)).foregroundColor(Z.ivory.opacity(0.72)).lineLimit(1)
+            NowTag(m: m, pal: pal)
+            Text(m.focusName).font(Z.serif(30)).foregroundColor(pal.ink).lineLimit(1).minimumScaleFactor(0.6)
+            if m.isNow {
+                Text(m.countdownLong(at: now)).font(Z.sans(20, .semibold)).foregroundColor(pal.ink)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                Text(m.countdownSub).font(Z.sans(12)).foregroundColor(pal.ink2).lineLimit(1).minimumScaleFactor(0.7)
+            } else {
+                Text(m.fill("beginsShort", t: m.focusTime)).font(Z.sans(18, .semibold)).foregroundColor(pal.ink)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                Text("\(m.label("in")) \(m.countdownLong(at: now))").font(Z.sans(12)).foregroundColor(pal.ink2)
+                    .lineLimit(1).minimumScaleFactor(0.7)
             }
-            Text(m.focusName).font(Z.serif(30)).foregroundColor(Z.ivory).lineLimit(1).minimumScaleFactor(0.7).padding(.top, 2)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(timerInterval: m.timerRange(at: now), countsDown: true).font(Z.serif(24, .bold)).foregroundColor(Z.goldText).lineLimit(1).minimumScaleFactor(0.7)
-                Text(m.isNow ? m.countdownLabel : m.label("left")).font(Z.sans(11)).foregroundColor(Z.ivory.opacity(0.72)).lineLimit(1)
+            Spacer(minLength: 4)
+            if m.action != .idle {
+                ActionArea(m: m, pal: pal, compact: true)
             }
-            Spacer(minLength: 6)
-            // Small widgets can't hold separate links: the button is drawn, the whole widget is the tap target
-            HStack(spacing: 6) {
-                Image(systemName: "checkmark").font(Z.sans(13, .bold))
-                Text(m.label(m.isNow ? "prayed" : "logToday")).font(Z.sans(15, .bold)).lineLimit(1)
-            }
-            .foregroundColor(Z.forest)
-            .frame(maxWidth: .infinity, minHeight: 36, maxHeight: 36)
-            .background(Capsule().fill(Z.gold))
         }
-        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(16)
         .widgetURL(m.logURL)
-        .containerBackground(for: .widget) { Z.heroGradient }
+        .zadWidgetBackground(pal.card)
     }
 }
 
-/// Medium A, "Tiles": forest card, next-prayer header and five tiles. Each tile opens that prayer's log sheet.
+/// Medium: the current prayer and countdown, the buttons (brothers: Congregation, On time; sisters: On time)
+/// and the day's five dots.
 struct MediumView: View {
     let m: WidgetModel
     let now: Date
+    let pal: Pal
+
     var body: some View {
-        VStack(spacing: 10) {
-            Link(destination: m.logURL) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    TagPill(text: m.label(m.isNow ? "now" : "next"))
-                    Text(m.focusName).font(Z.serif(21)).foregroundColor(Z.ivory).lineLimit(1)
-                    Text(WidgetModel.fmt12(m.focusTime)).font(Z.sans(12, .medium)).foregroundColor(Z.ivory.opacity(0.72)).lineLimit(1)
-                    Spacer(minLength: 4)
-                    Text(timerInterval: m.timerRange(at: now), countsDown: true).font(Z.serif(21, .bold)).foregroundColor(Z.goldText).lineLimit(1)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                NowTag(m: m, pal: pal)
+                Spacer(minLength: 4)
+                if !m.showTimesOnly && !m.excusedToday {
+                    DayDots(m: m, pal: pal)
                 }
             }
-            HStack(spacing: 6) {
-                ForEach(m.prayers) { x in
-                    Link(destination: WidgetModel.logLink(x.p, m.date)) {
-                        VStack(spacing: 3) {
-                            StatusMark(state: x.state, onForest: true, size: 26)
-                            Text(x.name).font(Z.sans(12, .bold)).foregroundColor(x.focus ? Z.goldText : Z.ivory).lineLimit(1).minimumScaleFactor(0.7)
-                            Text(WidgetModel.fmt12(x.time)).font(Z.sans(10)).foregroundColor(Z.ivory.opacity(0.72)).lineLimit(1).minimumScaleFactor(0.7)
-                            SunnahDot(sunnah: x.sunnah, hollow: Z.ivory.opacity(0.72))
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14).fill(x.focus ? Z.gold.opacity(0.16) : Color.white.opacity(0.09))
-                        )
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(x.focus ? Z.gold : .clear, lineWidth: 2))
-                    }
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(m.focusName).font(Z.serif(34)).foregroundColor(pal.ink).lineLimit(1).minimumScaleFactor(0.6)
+                Spacer(minLength: 4)
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text(m.countdownLong(at: now)).font(Z.sans(22, .semibold)).foregroundColor(pal.ink)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                    Text(m.countdownSub).font(Z.sans(12)).foregroundColor(pal.ink2).lineLimit(1).minimumScaleFactor(0.7)
                 }
             }
+            Spacer(minLength: 6)
+            ActionArea(m: m, pal: pal, compact: false)
         }
-        .padding(12)
-        .containerBackground(for: .widget) { Z.heroGradient }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(16)
+        .widgetURL(m.logURL)
+        .zadWidgetBackground(pal.card)
     }
 }
 
-/// Large A, "Hero + deeds": forest hero over the five-prayer row and the Good Deeds grid. The card follows the theme.
+/// Large: the header, then the day's five prayers. The open one has its buttons; logged ones say how.
 struct LargeView: View {
     let m: WidgetModel
     let now: Date
-    @Environment(\.colorScheme) private var scheme
+    let pal: Pal
 
     var body: some View {
-        let dark = scheme == .dark
-        VStack(spacing: 8) {
-            // Hero
-            Link(destination: m.logURL) {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        TagPill(text: m.label(m.isNow ? "now" : "next"))
-                        Spacer()
-                        Text(m.hijri).font(Z.serif(13)).foregroundColor(Z.ivory.opacity(0.72)).lineLimit(1)
-                    }
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(m.focusName).font(Z.serif(30)).foregroundColor(Z.ivory).lineLimit(1)
-                        Spacer()
-                        Text(timerInterval: m.timerRange(at: now), countsDown: true).font(Z.serif(28, .bold)).foregroundColor(Z.goldText).lineLimit(1)
-                    }
-                    HStack {
-                        Text(WidgetModel.fmt12(m.focusTime)).font(Z.sans(12, .medium)).foregroundColor(Z.ivory.opacity(0.72))
-                        Spacer()
-                        Text(m.countdownLabel).font(Z.sans(11)).foregroundColor(Z.ivory.opacity(0.72)).lineLimit(1)
-                    }
-                    PrayedButton(m: m, height: 32).padding(.top, 6)
+                    NowTag(m: m, pal: pal)
+                    Text(m.focusName).font(Z.serif(30)).foregroundColor(pal.ink).lineLimit(1).minimumScaleFactor(0.6)
                 }
-                .padding(.horizontal, 14).padding(.vertical, 10)
-                .background(RoundedRectangle(cornerRadius: 20).fill(Z.heroGradient))
-            }
-
-            // Prayer row (no times)
-            HStack(spacing: 4) {
-                ForEach(m.prayers) { x in
-                    Link(destination: WidgetModel.logLink(x.p, m.date)) {
-                        VStack(spacing: 2) {
-                            StatusMark(state: x.state, onForest: false, size: 24)
-                            Text(x.name).font(Z.sans(11, .bold)).foregroundColor(x.focus ? Z.focusInk(dark) : Z.ink(dark)).lineLimit(1).minimumScaleFactor(0.7)
-                            SunnahDot(sunnah: x.sunnah, hollow: Z.ink2(dark))
-                        }
-                        .padding(.vertical, 5)
-                        .frame(maxWidth: .infinity)
-                        .background(RoundedRectangle(cornerRadius: 14).fill(x.focus ? Z.focusBg(dark) : .clear))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(x.focus ? Z.gold : .clear, lineWidth: 2))
-                    }
+                Spacer(minLength: 4)
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text(m.countdownLong(at: now)).font(Z.sans(22, .semibold)).foregroundColor(pal.ink)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                    Text(m.countdownSub).font(Z.sans(12)).foregroundColor(pal.ink2).lineLimit(1).minimumScaleFactor(0.7)
                 }
             }
-
-            // Good Deeds and make-ups
-            if m.deeds != nil || m.makeups != nil {
-                HStack(spacing: 6) {
-                    if let d = m.deeds {
-                        Text(m.label("goodDeeds")).font(Z.serif(15, .bold)).foregroundColor(Z.ink(dark))
-                        Text("\(d.done)/\(d.total)").font(Z.sans(12, .bold)).foregroundColor(Z.ink2(dark))
-                    }
-                    Spacer()
-                    if let mk = m.makeupsLabel {
-                        Link(destination: WidgetModel.openURL("qada")) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "arrow.counterclockwise").font(Z.sans(10, .bold))
-                                Text(mk).font(Z.sans(11, .bold)).lineLimit(1)
-                            }
-                            .foregroundColor(Z.chipInk(dark))
-                            .padding(.horizontal, 9).padding(.vertical, 3)
-                            .background(Capsule().fill(Z.chipBg(dark)))
-                        }
-                    }
-                }
+            .padding(.bottom, 8)
+            // Last night's ʿIshāʾ (before Fajr) isn't one of today's rows: its buttons go under the header
+            if m.isNow && m.focusDate != m.date && m.action != .idle {
+                ActionArea(m: m, pal: pal, compact: false)
+                    .padding(.bottom, 8)
             }
-            if let d = m.deeds {
-                Link(destination: WidgetModel.openURL("home")) {
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)], spacing: 5) {
-                        ForEach(Array(d.items.prefix(6).enumerated()), id: \.offset) { _, item in
-                            HStack(spacing: 6) {
-                                Image(systemName: item.done ? "checkmark.circle.fill" : "circle")
-                                    .font(Z.sans(15)).foregroundColor(item.done ? Z.ontime : Z.ink2(dark))
-                                Text(item.name).font(Z.sans(12, .medium)).strikethrough(item.done)
-                                    .foregroundColor(item.done ? Z.ink2(dark) : Z.ink(dark)).lineLimit(1)
-                                Spacer(minLength: 0)
-                            }
-                            .padding(.horizontal, 8).frame(height: 26)
-                            .background(RoundedRectangle(cornerRadius: 12).fill(Z.inset(dark)))
-                        }
-                        if d.items.count == 5 {
-                            Text(m.label("addDeed")).font(Z.sans(12)).foregroundColor(Z.ink2(dark))
-                                .frame(maxWidth: .infinity, minHeight: 26)
-                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Z.dash(dark), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
-                        }
-                    }
-                }
+            ForEach(m.prayers) { x in
+                Rectangle().fill(pal.line).frame(height: 1)
+                PrayerRow(m: m, x: x, pal: pal)
+                    .frame(maxHeight: .infinity)
             }
-            Spacer(minLength: 0)
         }
-        .padding(10)
-        .containerBackground(for: .widget) { Z.card(dark) }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(16)
+        .widgetURL(m.logURL)
+        .zadWidgetBackground(pal.card)
+    }
+}
+
+struct PrayerRow: View {
+    let m: WidgetModel
+    let x: WidgetModel.Prayer
+    let pal: Pal
+
+    /// This row is the prayer whose time is in now (it carries the actions).
+    private var open: Bool { x.focus && m.isNow }
+
+    private var subtitle: String {
+        if m.showTimesOnly { return WidgetModel.fmtTime(x.time) }
+        if open { return "\(m.label("until")) \(WidgetModel.fmtTime(x.end ?? m.countdownTo))" }
+        if x.state == "upcoming" { return m.fill("beginsShort", t: x.time) }
+        return WidgetModel.fmtTime(x.time)
+    }
+
+    var body: some View {
+        let mark = m.showTimesOnly ? (open ? "now" : "upcoming") : x.state
+        HStack(spacing: 10) {
+            RowMark(state: mark, pal: pal)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(x.name).font(Z.sans(16, .semibold))
+                    .foregroundColor(x.state == "upcoming" && !m.showTimesOnly ? pal.ink2 : pal.ink)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                Text(subtitle).font(Z.sans(12)).foregroundColor(pal.ink2).lineLimit(1).minimumScaleFactor(0.7)
+            }
+            .layoutPriority(1)
+            Spacer(minLength: 4)
+            if !m.showTimesOnly {
+                trailing
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var trailing: some View {
+        if open && m.action == .buttons {
+            HStack(spacing: 6) {
+                if !m.sister {
+                    LogButton(m: m, status: "congregation") {
+                        Pill(text: m.label("congregation"), bg: pal.primaryBg, fg: pal.primaryInk, height: 32, size: 14, expand: false)
+                    }
+                }
+                LogButton(m: m, status: "ontime") {
+                    Pill(text: m.label("onTime"), bg: m.sister ? pal.primaryBg : pal.secondaryBg,
+                         fg: m.sister ? pal.primaryInk : pal.secondaryInk, height: 32, size: 14, expand: false)
+                }
+            }
+        } else if open && m.action == .remembrance {
+            LogButton(m: m, status: "remember") {
+                Pill(text: m.label("remembranceShort"), icon: "moon", bg: pal.secondaryBg, fg: pal.secondaryInk,
+                     height: 32, size: 14, expand: false)
+            }
+        } else if open && m.isLoggedAction {
+            HStack(spacing: 6) {
+                Text(m.label("loggedShort")).font(Z.sans(14, .semibold)).foregroundColor(pal.ink2).lineLimit(1)
+                LogButton(m: m, status: "undo") {
+                    Pill(text: m.label("undo"), icon: "arrow.uturn.backward", bg: pal.secondaryBg, fg: pal.secondaryInk,
+                         height: 30, size: 13, expand: false)
+                }
+            }
+        } else if x.state == "late" {
+            Link(destination: WidgetModel.logLink(x.p, m.date)) {
+                Text(m.statusLabel(x.state)).font(Z.sans(14)).foregroundColor(pal.ink2).lineLimit(1)
+            }
+        } else if x.state != "upcoming" && x.state != "now" {
+            Text(m.statusLabel(x.state)).font(Z.sans(14)).foregroundColor(pal.ink2).lineLimit(1).minimumScaleFactor(0.7)
+        }
     }
 }
 
@@ -391,7 +705,7 @@ struct ZadLockWidget: Widget {
             ZadLockView(entry: entry)
         }
         .configurationDisplayName("Zad")
-        .description("Next prayer and today's prayers.")
+        .description("The prayer whose time is in and the time left.")
         .supportedFamilies([.accessoryInline, .accessoryRectangular, .accessoryCircular])
     }
 }
@@ -405,56 +719,139 @@ struct ZadLockView: View {
             if let m = entry.model {
                 switch family {
                 case .accessoryInline:
-                    // "ʿAsr 3:42 PM"
-                    Label("\(m.focusName) \(WidgetModel.fmt12(m.focusTime))", systemImage: "moon.fill")
-                case .accessoryRectangular:
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(m.label(m.isNow ? "now" : "nextPrayer").uppercased()).font(Z.sans(11, .bold)).tracking(1).opacity(0.8)
-                        HStack(alignment: .firstTextBaseline) {
-                            Text(m.focusName).font(Z.serif(20, .semibold)).lineLimit(1)
-                            Spacer(minLength: 4)
-                            Text(WidgetModel.fmt12(m.focusTime)).font(Z.sans(16, .bold)).lineLimit(1)
-                        }
-                        ProgressView(timerInterval: m.progressRange, countsDown: false, label: { EmptyView() }, currentValueLabel: { EmptyView() }).tint(.primary).widgetAccentable()
+                    Label {
+                        Text(inline(m))
+                    } icon: {
+                        Image(systemName: "clock")
                     }
+                case .accessoryCircular:
+                    Gauge(value: 1 - m.progress(at: entry.date)) {
+                        EmptyView()
+                    } currentValueLabel: {
+                        VStack(spacing: -1) {
+                            Text(m.focusName).font(Z.sans(10, .medium)).lineLimit(1).minimumScaleFactor(0.6)
+                            Text(m.countdownClock(at: entry.date)).font(Z.sans(16, .bold)).lineLimit(1).minimumScaleFactor(0.6)
+                        }
+                    }
+                    .gaugeStyle(.accessoryCircularCapacity)
+                    .widgetAccentable()
                 default:
-                    PrayersRing(prayed: m.prayed, label: m.label("prayers"))
+                    LockRect(m: m, now: entry.date)
                 }
             } else {
                 switch family {
                 case .accessoryInline: Text(entry.staleLabel)
+                case .accessoryRectangular: Text(entry.staleLabel).font(Z.sans(13, .semibold))
                 default: Image(systemName: "moon.fill")
                 }
             }
         }
         .widgetURL(entry.model?.logURL ?? WidgetModel.openURL("home"))
-        .containerBackground(for: .widget) { AccessoryWidgetBackground() }
+        .zadLockBackground(circular: family == .accessoryCircular)
+    }
+
+    /// "ʿAsr · 1h 27m left" (now) or "Zuhr · 11:50" (next).
+    private func inline(_ m: WidgetModel) -> String {
+        m.isNow ? "\(m.focusName) · \(m.countdown(at: entry.date)) \(m.countdownLabel)"
+                : "\(m.focusName) · \(WidgetModel.fmtTime(m.focusTime))"
     }
 }
 
-/// Circular: "3/5" inside a five-segment ring.
-struct PrayersRing: View {
-    let prayed: Int
-    let label: String
+/// Rectangular: the current prayer and when it ends, the next prayer, and (only when the lock-screen dots
+/// setting is on, and Show times only is off) the day's five dots and "logged ✓". Times only by default.
+struct LockRect: View {
+    let m: WidgetModel
+    let now: Date
+
+    private var dots: Bool { m.lockDots && !m.showTimesOnly }
+
+    private var line1: String {
+        if !m.isNow { return m.fill("begins", p: m.focusName, t: m.focusTime) }
+        if dots && m.isLoggedAction { return m.fill("logged", p: m.focusName) }
+        return "\(m.focusName) · \(m.label("until")) \(WidgetModel.fmtTime(m.countdownTo))"
+    }
+
+    private var line2: String {
+        if !m.isNow { return "\(m.label("in")) \(m.countdown(at: now))" }
+        guard let n = m.upNextName, let t = m.upNextTime else { return "\(m.countdown(at: now)) \(m.countdownLabel)" }
+        return "\(m.label("next")) \(n) \(WidgetModel.fmtTime(t))"
+    }
+
     var body: some View {
-        ZStack {
-            ForEach(0..<5, id: \.self) { i in
-                let gap = 0.025
-                Circle()
-                    .trim(from: Double(i) / 5 + gap, to: Double(i + 1) / 5 - gap)
-                    .stroke(style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .opacity(i < prayed ? 1 : 0.3)
-                    .rotationEffect(.degrees(-90))
-            }
-            .padding(3)
-            VStack(spacing: -2) {
-                HStack(alignment: .firstTextBaseline, spacing: 0) {
-                    Text("\(prayed)").font(Z.sans(18, .bold))
-                    Text("/5").font(Z.sans(10, .bold)).opacity(0.7)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(line1).font(Z.sans(15, .bold)).lineLimit(1).minimumScaleFactor(0.7).widgetAccentable()
+            Text(line2).font(Z.sans(13)).lineLimit(1).minimumScaleFactor(0.7).opacity(0.8)
+            if dots {
+                HStack(spacing: 5) {
+                    ForEach(m.prayers) { x in
+                        Group {
+                            if x.isPrayed || x.state == "excused" {
+                                Circle().fill(Color.primary)
+                            } else if x.state == "now" {
+                                Circle().strokeBorder(Color.primary, lineWidth: 2.5)
+                            } else {
+                                Circle().strokeBorder(Color.primary.opacity(0.7), lineWidth: 1.2)
+                            }
+                        }
+                        .frame(width: 9, height: 9)
+                    }
                 }
-                Text(label.uppercased()).font(Z.sans(6, .bold)).opacity(0.8)
+                .padding(.top, 2)
+                .widgetAccentable()
             }
         }
-        .widgetAccentable()
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// MARK: - iOS 18 Control ("Log ʿAsr · on time")
+
+struct ZadControlValue {
+    let title: String
+    let symbol: String
+
+    /// What the Control shows now: "Log ʿAsr · on time" when a prayer is open; otherwise when the next one
+    /// begins (pressing it then does nothing). Excused days show nothing to log. With Show times only on,
+    /// the logged state isn't shown.
+    static func current(now: Date = Date()) -> ZadControlValue {
+        let snap = SnapshotStore.load()
+        guard let m = WidgetModel.build(snap, pending: PendingStore.load(), now: now, respectTimesOnly: false) else {
+            return ZadControlValue(title: WidgetModel.label("stale", snap?.labels ?? [:]), symbol: "checkmark")
+        }
+        let timesOnly = snap?.showTimesOnly == true
+        switch m.action {
+        case .buttons:
+            return ZadControlValue(title: m.fill("logOnTime", p: m.focusName), symbol: "checkmark")
+        case .logged:
+            return timesOnly ? ZadControlValue(title: m.fill("logOnTime", p: m.focusName), symbol: "checkmark")
+                             : ZadControlValue(title: m.fill("logged", p: m.focusName), symbol: "checkmark.circle.fill")
+        case .remembrance:
+            return ZadControlValue(title: m.label("nothingOpen"), symbol: "clock")
+        case .idle:
+            if !m.isNow { return ZadControlValue(title: m.fill("begins", p: m.focusName, t: m.focusTime), symbol: "clock") }
+            return ZadControlValue(title: m.label("nothingOpen"), symbol: "clock")
+        }
+    }
+}
+
+@available(iOS 18.0, *)
+struct ZadControlProvider: ControlValueProvider {
+    var previewValue: ZadControlValue { ZadControlValue(title: "Log ʿAsr · on time", symbol: "checkmark") }
+
+    func currentValue() async throws -> ZadControlValue { ZadControlValue.current() }
+}
+
+@available(iOS 18.0, *)
+struct ZadLogControl: ControlWidget {
+    static let kind = "com.zad.app.ZadWidget.LogPrayer"
+
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: ZadLogControl.kind, provider: ZadControlProvider()) { value in
+            ControlWidgetButton(action: LogNowIntent()) {
+                Label(value.title, systemImage: value.symbol)
+            }
+        }
+        .displayName("Log prayer")
+        .description("Logs the prayer whose time is in as on time.")
     }
 }

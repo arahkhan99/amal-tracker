@@ -33,6 +33,16 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npx cap sync ios
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+      - name: Add the widget extension target
+        # project.pbxproj has no ZadWidget target in git: this adds it on every run (sources, Info.plist,
+        # entitlements, frameworks, embed in App.app/PlugIns, dependency). See docs/build/widgets.md.
+        run: |
+          gem install xcodeproj --no-document -v '~> 1.27'
+          ruby scripts/ios/add-widget-target.rb
+          xcodebuild -project ios/App/App.xcodeproj -list
       - name: Firebase config from secret
         env:
           GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
@@ -52,6 +62,13 @@ jobs:
           test -f "$APP/PrivacyInfo.xcprivacy"
           test -f "$APP/GoogleService-Info.plist"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' -c 'Print :CFBundleDisplayName' "$APP/Info.plist"
+          # The widget extension (home and lock-screen widgets, Control) must be built and embedded.
+          WIDGET="$APP/PlugIns/ZadWidget.appex"
+          test -d "$WIDGET"
+          test -f "$WIDGET/ZadWidget"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' -c 'Print :NSExtension:NSExtensionPointIdentifier' \
+            -c 'Print :MinimumOSVersion' -c 'Print :CFBundleShortVersionString' "$WIDGET/Info.plist"
+          ls "$WIDGET"
 
   testflight:
     needs: build
@@ -72,6 +89,16 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npx cap sync ios
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+      - name: Add the widget extension target
+        # project.pbxproj has no ZadWidget target in git: this adds it on every run (sources, Info.plist,
+        # entitlements, frameworks, embed in App.app/PlugIns, dependency). See docs/build/widgets.md.
+        run: |
+          gem install xcodeproj --no-document -v '~> 1.27'
+          ruby scripts/ios/add-widget-target.rb
+          xcodebuild -project ios/App/App.xcodeproj -list
       - name: Version for this build
         run: |
           # Version shown in the App Store: year.month.day (up to three integers, as Apple requires).
@@ -102,6 +129,7 @@ jobs:
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
             MARKETING_VERSION="$IOS_VERSION" CURRENT_PROJECT_VERSION="$IOS_BUILD" \
             archive | tail -60
+          test -d "$RUNNER_TEMP/Zad.xcarchive/Products/Applications/App.app/PlugIns/ZadWidget.appex"
       - name: Export and upload to TestFlight
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}

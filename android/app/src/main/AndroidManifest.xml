@@ -38,20 +38,20 @@
         </activity>
 
         <!-- Home-screen widgets (docs/build/widgets.md). They read the snapshot the app writes
-             through the ZadWidgets plugin. -->
-        <receiver android:name=".widget.ZadSmallWidgetProvider" android:exported="false" android:label="Zad · Next prayer">
+             through the ZadWidgets plugin, and their one-tap buttons write the pending-log queue. -->
+        <receiver android:name=".widget.ZadSmallWidgetProvider" android:exported="false" android:label="Zad · Now">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/zw_widget_small_info" />
         </receiver>
-        <receiver android:name=".widget.ZadMediumWidgetProvider" android:exported="false" android:label="Zad · Today">
+        <receiver android:name=".widget.ZadMediumWidgetProvider" android:exported="false" android:label="Zad · Now and today">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/zw_widget_medium_info" />
         </receiver>
-        <receiver android:name=".widget.ZadLargeWidgetProvider" android:exported="false" android:label="Zad · Today and Good Deeds">
+        <receiver android:name=".widget.ZadLargeWidgetProvider" android:exported="false" android:label="Zad · Today">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -65,8 +65,24 @@
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
                 <action android:name="android.intent.action.DATE_CHANGED" />
                 <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+                <!-- The ongoing Now notification and the next boundary tick after a restart or an update -->
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+        <!-- One-tap logging from the widgets and the Now notification: appends to the pending-log queue (src/pending.js merges it) -->
+        <receiver android:name=".widget.LogActionReceiver" android:exported="false" />
+        <!-- Quick Settings tile: "Log ʿAsr · On time" -->
+        <service
+            android:name=".widget.ZadTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_stat_zad"
+            android:label="@string/zw_tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -98,7 +114,8 @@
     <!-- Prayer reminders (@capacitor/local-notifications, src/notify.js) -->
     <!-- Show the reminders (asked at runtime on Android 13+). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Re-arm the scheduled reminders after the phone restarts (the plugin's boot receiver). -->
+    <!-- Re-arm the scheduled reminders after the phone restarts (the plugin's boot receiver), and redraw the
+         widgets and the optional Now notification (WidgetTickReceiver). -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- On-time reminders. Pre-granted on Android 12-13; on Android 14+ the user allows it under
          "Alarms & reminders". Without it the plugin falls back to an inexact alarm

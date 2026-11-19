@@ -1,582 +1,375 @@
-/* Progress: Week / Month / Year in chapters (P-A content, P-B chapters, CH1 stacked bars).
- * Renders into #v-progress. Class names below are written plain and prefixed "pg-" by cls();
- * CSS tokens are --pg-* (src/css/progress.css), so nothing depends on the shell styles. */
-import { S, UI, A, $, NOW, todayKey, onRender, render, openSheet, closeSheet, toast } from "../app.js";
+/*
+ * The Progress tab (#v-progress): chapters Reflections · Week · Charts · Provisions · Make-ups, each only when its
+ * feature is on (features.progressChapters). The same chapter component as Today (views/chapters.js).
+ * - Reflections: what's going well, one thing to work on, and the day's reflection (src/reflections.js).
+ * - Week: three numbers, a row per day (tap → the calendar's day sheet), streaks, congregation, sunnah, good deeds.
+ *   Earlier weeks with the arrows.
+ * - Charts: prayers each day, each prayer, how you prayed, congregation by week, sunnah and good deeds;
+ *   30 days (earlier periods with the arrows) or a year.
+ * - Provisions: views/provisions.js provisionsChapter(). Make-ups: views/qada.js makeupsChapter().
+ * Status is never shown by colour alone: every mark carries its icon, and every chart has a text label.
+ * Layout from design-review/mockups2/redesign/final (fin-prog-*), colours from css/theme.css (OG Calm A).
+ */
+import { S, UI, A, $, NOW, todayKey, onRender, go, avatarBtn } from "../app.js";
 import * as store from "../store.js";
-import { PRAYERS, MON, MON3, dkey, parseKey, addDays, esc, topIn, stickyBottom } from "../util.js";
+import { PRAYERS, DOW, MON, MON3, dkey, parseKey, addDays, esc } from "../util.js";
 import * as st from "../stats.js";
 import { weekDates, weekRangeLabel } from "../times.js";
-import { isOn } from "../features.js";
+import { isOn, progressChapters, toolVisible } from "../features.js";
+import { READ_IDS, readsByDay } from "../points.js";
 import { madhhabOf } from "../rules/madhhab.js";
 import { reflectionFor } from "../reflections.js";
-import { gloss } from "../glossary.js";
-import {
-  APP, COMMON, PROGRESS, EXCUSED, STATUS, MEASURE, MAKEUPS, DEEDS, TIER, WITR_UI, SUNNAH_NAME, SUNNAH_UI,
-  WEEK_LETTERS_SUN, prayerName,
-} from "../strings.js";
-import { PROGRESS_L } from "../strings.js";
-import { progressCard } from "./provisions.js";
+import { COMMON, PROGRESS, PROGRESS_L as L, PROG, STATUS, STATUS_SHORT, EXCUSED, DEEDS, TIER, WITR_UI, SUNNAH_NAME, READ, prayerName } from "../strings.js";
+import { statusMark } from "./home.js";
+import { provisionsChapter } from "./provisions.js";
+import { makeupsChapter } from "./qada.js";
+import { makeChapters, setHTML } from "./chapters.js";
 
-/* Progress-only labels (strings.js PROGRESS_L). */
-const L = PROGRESS_L;
-
-/* ---------- state ---------- */
-const V = { week: 0, month: 0, year: 0, chapter: "salah" };
-let lastHTML = "", W = 390;
-A.selDay = b => { UI.trkDay = b; A.go("tracker"); };
-A.pgRange = r => { UI.range = r; render(); };
-A.pgOff = d => { V[UI.range] = Math.max(0, V[UI.range] - d); render(); };
-A.pgGo = id => {
-  const el = document.getElementById("pg-" + id);
-  if (!el) return;
-  const scr = $("#screen"), chips = document.querySelector(".pg-jump");
-  const top = topIn(el, scr) - (stickyBottom(chips) + 6); // all screen px, so it holds under the tablet zoom
-  scr.scrollTo({ top, behavior: "smooth" });
-};
-A.pgExplain = id => {
-  const g = gloss(id); if (!g) return;
-  openSheet(`<h3>${esc(g.term)} ${g.ar ? `<span style="font-family:var(--serif,'Amiri',serif);color:var(--ink2,#56645E);font-size:20px;margin-left:6px">${g.ar}</span>` : ""}</h3><p style="margin-top:8px;line-height:1.5">${esc(g.meaning)}</p>${g.draft ? `<p style="margin-top:10px;font-size:12px;opacity:.7">${esc(APP.draftFlag)}</p>` : ""}<div class="cta"><button class="btn primary" onclick="A.closeSheet()">${COMMON.gotIt}</button></div>`);
-};
-A.pgDot = (p, key) => A.prayerSheet?.(p, key);
-A.pgReminder = () => { A.go("settings"); };
-A.pgQada = () => A.go("qada");
+/* ---------- state: the week shown, and the Charts period ---------- */
+const V = { week: 0, month: 0, year: 0, r: "month" };
+A.prWeek = d => { V.week = Math.max(0, V.week + d); renderProgress(); };
+A.prRange = r => { if (r === "month" || r === "year") { V.r = r; renderProgress(); } };
+A.prOff = d => { V[V.r] = Math.max(0, V[V.r] + d); renderProgress(); };
+A.prReminder = () => go("settings");
+/** Open Progress on a chapter (reflect, week, charts, provisions, makeups). */
+A.progressChapter = id => { UI.progressCh = id; if (UI.view !== "progress") go("progress"); else CH.show(id); };
 
 /* ---------- helpers ---------- */
-/** Prefix class names and CSS variables so the view is isolated from the shell styles. */
-const cls = h => h.replace(/class="([^"]*)"/g, (_, c) => `class="${c.split(/\s+/).filter(Boolean).map(x => "pg-" + x).join(" ")}"`).replace(/var\(--(?!pg-)/g, "var(--pg-");
-const info = id => `<button class="info" onclick="A.pgExplain('${id}')" aria-label="${esc(L.whatMeans)}">ⓘ</button>`;
-const DL = WEEK_LETTERS_SUN; // S M T W T F S
-const pc = (n, d) => d ? Math.round(n / d * 100) : 0;
-const SHORT = { congregation: "j", ontime: "o", madeup: "r", missed: "m", excused: "x", unlogged: "u", future: "f" };
-const nowFor = to => dkey(to) >= todayKey() ? NOW() : addDays(to, 1);
-const optsFor = to => dkey(to) >= todayKey() ? { settings: S.settings } : {};
-const pName = p => prayerName(p);
-
-function glyph(s, cx, cy, r) {
-  const w = Math.max(1.6, r * .2);
-  if (s === "j") return `<circle cx="${cx}" cy="${cy}" r="${r}" style="fill:var(--sJ)"/><path d="M${cx - r * .42} ${cy + r * .02} l${r * .3} ${r * .3} l${r * .52} -${r * .58}" style="fill:none;stroke:var(--glyph);stroke-width:${w};stroke-linecap:round;stroke-linejoin:round"/>`;
-  if (s === "o") return `<circle cx="${cx}" cy="${cy}" r="${r}" style="fill:var(--sO)"/>`;
-  if (s === "m") return `<circle cx="${cx}" cy="${cy}" r="${r}" style="fill:var(--sM)"/><line x1="${cx - r * .45}" y1="${cy}" x2="${cx + r * .45}" y2="${cy}" style="stroke:var(--glyph);stroke-width:${Math.max(1.6, r * .22)};stroke-linecap:round"/>`;
-  if (s === "r") { const w2 = Math.max(1.4, r * .17); return `<circle cx="${cx}" cy="${cy}" r="${r - .75}" style="fill:var(--sR);stroke:var(--sRline);stroke-width:1.5"/><path d="M${cx - r * .5} ${cy} A${r * .5} ${r * .5} 0 1 0 ${cx - r * .15} ${cy - r * .48}" style="fill:none;stroke:var(--sRink);stroke-width:${w2};stroke-linecap:round"/><path d="M${cx - r * .42} ${cy - r * .68} L${cx - r * .1} ${cy - r * .48} L${cx - r * .36} ${cy - r * .2}" style="fill:none;stroke:var(--sRink);stroke-width:${w2};stroke-linecap:round;stroke-linejoin:round"/>`; }
-  if (s === "x") return `<circle cx="${cx}" cy="${cy}" r="${r}" style="fill:var(--sX)"/><path d="M${cx + r * .12} ${cy - r * .52} A${r * .52} ${r * .52} 0 1 0 ${cx + r * .5} ${cy + r * .28} A${r * .42} ${r * .42} 0 1 1 ${cx + r * .12} ${cy - r * .52}z" style="fill:var(--sXink)"/>`;
-  if (s === "u") return `<circle cx="${cx}" cy="${cy}" r="${r - 1.2}" style="fill:none;stroke:var(--hollow);stroke-width:2"/>`;
-  if (s === "d") return `<circle cx="${cx}" cy="${cy}" r="${r - 1.2}" style="fill:none;stroke:var(--sO);stroke-width:2;stroke-dasharray:2.4 2.6"/>`;
-  return `<circle cx="${cx}" cy="${cy}" r="2" style="fill:var(--hollow)"/>`;
-}
-const gl = (s, r = 6) => `<svg width="${r * 2 + 2}" height="${r * 2 + 2}" viewBox="0 0 ${r * 2 + 2} ${r * 2 + 2}">${glyph(s, r + 1, r + 1, r)}</svg>`;
-const LEG = { j: STATUS.congregation, o: STATUS.ontime, r: STATUS.madeup, m: STATUS.missed, x: STATUS.excused, u: PROGRESS.notLogged, d: L.dueNow };
-const legend = ks => `<div class="legend">${ks.map(k => `<span>${gl(k)}${LEG[k]}</span>`).join("")}</div>`;
-const ICON = {
-  rug: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 21V8l6-5 6 5v13zM9 21v-6a3 3 0 0 1 6 0v6"/></svg>`,
-  fire: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-6 1-9z"/></svg>`,
-  star: `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></svg>`,
-  mosque: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 20v-7a7 5 0 0 1 14 0v7zM12 3v3M3 20h18M10 20v-3a2 2 0 0 1 4 0v3"/></svg>`,
-  book: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 6c-2-1.5-5-2-8-1.5v14c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-14c-3-.5-6 0-8 1.5zM12 6v14"/></svg>`,
-  hands: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4-2 7-6 7-10V5l-7-2-7 2v6c0 4 3 8 7 10z"/><path d="M9 11.5l2 2 4-4"/></svg>`,
-  flag: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>`,
-  sun: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 18h16M7 18a5 5 0 0 1 10 0M12 6v3M5.5 9.5l2 2M18.5 9.5l-2 2"/></svg>`,
-  chevL: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>`,
-  chevR: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>`,
-  up: `<svg width="11" height="11" viewBox="0 0 12 12"><path d="M6 2l4.5 6.5h-9z" fill="currentColor"/></svg>`,
-  clock: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>`,
-  fire14: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-6 1-9z"/></svg>`,
+const I = {
+  chevL: '<path d="M15 6l-6 6 6 6"/>', chevR: '<path d="M9 6l6 6-6 6"/>',
+  leaf: '<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z"/><path d="M5 19l8-8"/>',
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+  cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', dcheck: '<path d="M2.5 12.5l4 4L15 8"/><path d="M10.5 16.5L19 8"/>',
+  dash: '<path d="M7 12h10"/>', clock: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+  moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>',
 };
+const icon = (k, cls = "i") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${I[k]}</svg>`;
+const MINI = { congregation: "dcheck", ontime: "check", madeup: "clock", missed: "dash", excused: "moon" };
+const pc = (n, d) => (d ? Math.round(n / d * 100) : 0);
+const pName = p => prayerName(p);
+const nowFor = to => (dkey(to) >= todayKey() ? NOW() : addDays(to, 1));
+const optsFor = to => (dkey(to) >= todayKey() ? { settings: S.settings } : {});
+const sister = () => store.genderOf(S) === "f";
+const short = d => `${d.getDate()} ${MON3[d.getMonth()]}`;
+const longDay = d => `${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`;
 
-/* ---------- period ---------- */
-function period() {
-  const now = NOW(), r = UI.range;
-  if (r === "week") {
-    const off = V.week, ds = weekDates(now, -off);
-    const from = ds[0], to = ds[6], end = dkey(to) > todayKey() ? now : to;
-    return { r, off, from, to, end, now: nowFor(end), title: off === 0 ? L.thisWeek : off === 1 ? L.lastWeek : weekRangeLabel(now, -off), sub: weekRangeLabel(now, -off), prev: weekDates(now, -off - 1)[6] >= parseKey(S.createdKey) };
+/** A chapter head: big serif title, a line under it, and optional controls on the right. */
+const head = (title, sub = "", right = "") => `<header class="zt-chh pr-chh"><div class="pr-hl"><h1 class="zt-title">${title}</h1>${sub ? `<p class="zt-sub">${sub}</p>` : ""}</div>${right}</header>`;
+/** ‹ › for an earlier or later period. */
+const arrows = (prev, next, onPrev, onNext, lp, ln, f) => `<div class="pr-nav"><button type="button" class="zt-ib" data-f="${f}p" aria-label="${esc(lp)}" ${prev ? "" : "disabled"} onclick="${onPrev}">${icon("chevL")}</button><button type="button" class="zt-ib" data-f="${f}n" aria-label="${esc(ln)}" ${next ? "" : "disabled"} onclick="${onNext}">${icon("chevR")}</button></div>`;
+const sec = (title, sub = "") => `<div class="pr-sec"><h2>${title}</h2>${sub ? `<span>${sub}</span>` : ""}</div>`;
+const cap = t => `<p class="pr-cap">${t}</p>`;
+const word = v => (v === "future" ? PROG.notYet : v === null ? PROG.dueNow : v === "unlogged" ? PROGRESS.notLogged.toLowerCase() : (STATUS[v] || "").toLowerCase());
+/** A small status mark for a grid (Week rows): the icon is always there, so status never rests on colour. */
+const smark = v => (v === "future" ? `<span class="z-mk pr-fut"></span>` : v === null ? `<span class="z-mk z-now"></span>` : v === "unlogged" ? `<span class="z-mk pr-un"></span>` : statusMark(v));
+const LEG = { congregation: STATUS_SHORT.congregation, ontime: STATUS_SHORT.ontime, madeup: STATUS_SHORT.madeup, missed: STATUS_SHORT.missed, excused: STATUS_SHORT.excused, unlogged: PROGRESS.notLogged };
+const legend = ks => `<div class="pr-leg">${ks.map(k => `<span>${smark(k === "unlogged" ? "unlogged" : k)}${esc(LEG[k])}</span>`).join("")}</div>`;
+const stats = list => `<div class="pr-stats">${list.map(([b, s]) => `<div><b>${b}</b><small>${s}</small></div>`).join("")}</div>`;
+
+/* =================================================================================================
+   Reflections
+   ================================================================================================= */
+function reflectChapter() {
+  const { good, warn } = st.insights(S, NOW());
+  const item = (it, mk) => `<div class="pr-ins">${mk}<div class="t"><b>${esc(it.title)}</b>${it.sub ? `<small>${esc(it.sub)}</small>` : ""}</div></div>`;
+  const okMark = `<span class="z-mk z-o pr-imk">${icon("check", "")}</span>`;
+  const leaf = `<span class="pr-imk pr-leaf">${icon("leaf", "")}</span>`;
+  let h = `<div class="zt-card pad pr-ref"><h2 class="pr-k">${esc(PROGRESS.goingWell)}</h2>`;
+  h += good.length ? good.slice(0, 3).map(i => item(i, okMark)).join("") : `<p class="pr-empty">${esc(PROGRESS.doingWellEmpty)}</p>`;
+  h += `<hr class="pr-hr"><h2 class="pr-k">${esc(PROG.workOn)}</h2>`;
+  if (warn.length) {
+    const w = warn[0];
+    const act = /reminder/i.test(w.sub || "") ? `<button type="button" class="zt-link pr-act" onclick="A.prReminder()">${icon("bell")}${esc(L.setReminder)}</button>`
+      : /calendar/i.test(w.sub || "") ? `<button type="button" class="zt-link pr-act" onclick="A.calOpen()">${icon("cal")}${esc(PROG.openCalendar)}</button>` : "";
+    h += item(w, leaf) + (act ? `<div class="pr-actw">${act}</div>` : "");
+  } else h += `<p class="pr-empty">${esc(PROGRESS.needsCareEmpty)}</p>`;
+  if (S.settings.reflection !== false) {
+    const r = reflectionFor(NOW());
+    h += `<figure class="pr-dua">${r.ar ? `<div class="ar" lang="ar" dir="rtl">${r.ar}</div>` : ""}<blockquote class="en">“${esc(r.en)}”</blockquote><figcaption>${esc(r.src)}</figcaption></figure>`;
   }
-  if (r === "month") {
-    const off = V.month, end = addDays(now, -30 * off), from = addDays(end, -29);
-    const f = d => `${d.getDate()} ${MON3[d.getMonth()]}`;
-    return { r, off, from, to: end, end, now: nowFor(end), title: off === 0 ? L.last30 : L.prev30(30 * off), sub: `${f(from)} – ${f(end)}`, prev: addDays(from, -1) >= parseKey(S.createdKey) };
-  }
-  const y = now.getFullYear() - V.year, from = new Date(y, 0, 1), to = new Date(y, 11, 31), end = V.year === 0 ? now : to;
-  return { r, off: V.year, from, to, end, now: nowFor(end), title: String(y), sub: parseKey(S.createdKey).getFullYear() === y && dkey(parseKey(S.createdKey)) > dkey(from) ? `since ${parseKey(S.createdKey).getDate()} ${MON3[parseKey(S.createdKey).getMonth()]}` : String(y), year: y, prev: y - 1 >= parseKey(S.createdKey).getFullYear() };
-}
-const counts = P => st.statusCountsRange(S, P.from, P.end, P.now, optsFor(P.end));
-
-/* ---------- chapters ---------- */
-function chapters() {
-  return [["salah", true], ["streaks", true], ["sunnah", isOn(S, "sunnah")], ["jamaah", true], ["habits", isOn(S, "deeds")], ["qada", isOn(S, "makeups")], ["reflect", true]]
-    .filter(c => c[1]).map(c => c[0]);
-}
-const CH_ICON = { salah: ICON.rug, streaks: ICON.fire, sunnah: ICON.star, jamaah: ICON.mosque, habits: ICON.book, qada: ICON.hands, reflect: ICON.flag };
-const CH_INFO = { sunnah: "sunnah", jamaah: "jamaah", qada: "qada" };
-const CH_NAME = id => id === "habits" ? DEEDS.title : id === "qada" ? PROGRESS.chapters.qada : PROGRESS.chapters[id];
-const sub = (t, s) => `<div class="sub"><h4>${t}</h4>${s ? `<span>${s}</span>` : ""}</div>`;
-const cap = t => `<p class="cap" style="margin:9px 4px 0">${t}</p>`;
-function chapter(id, list, h3, body, last) {
-  const k = list.indexOf(id);
-  return `<section class="ch2 ${last ? "last" : ""}" id="pg-${id}" data-ch="${id}"><div class="chh"><div class="node">${CH_ICON[id]}</div><div><div class="eyebrow">${CH_NAME(id)}${CH_INFO[id] ? info(CH_INFO[id]) : ""}<em>${PROGRESS.chapterOf(k + 1, list.length)}</em></div><h3>${h3}</h3></div></div>${body}</section>`;
+  return head(esc(PROG.chapters.reflect), esc(PROG.reflectSub)) + h + `</div><div class="zt-fill"></div>`;
 }
 
-/* ---------- salah ---------- */
-function weekGrid(w, series, P) {
-  const lab = 64, tal = 36, cw = (w - lab - tal - 6) / 7, top = 40, rh = 34, h = top + rh * 5 + 6;
-  const todayIdx = series.findIndex(d => d.key === todayKey());
-  let s = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(PROGRESS.weekSalah)}">`;
-  if (todayIdx >= 0) s += `<rect x="${lab + cw * todayIdx + cw / 2 - 15}" y="4" width="30" height="${h - 8}" rx="15" style="fill:var(--today)"/>`;
-  series.forEach((d, k) => {
-    const x = lab + cw * k + cw / 2, fut = d.future;
-    s += `<text x="${x}" y="18" text-anchor="middle" font-size="10.5" font-weight="700" class="${fut ? "t3" : "t2"}">${DL[k]}</text><text x="${x}" y="32" text-anchor="middle" font-size="11" font-weight="${k === todayIdx ? 800 : 600}" class="${fut ? "t3" : k === todayIdx ? "t1" : "t2"}">${d.date.getDate()}</text>`;
-  });
-  PRAYERS.forEach((p, r) => {
-    const y = top + rh * r + rh / 2; let pr = 0, due = 0;
-    s += `<text x="2" y="${y + 4.5}" font-size="13" font-weight="600" class="t1">${pName(p)}</text>`;
-    series.forEach((d, k) => {
-      const v = d.statuses[p], c = v === null ? "d" : v === "unlogged" ? "u" : SHORT[v];
-      if (c !== "f" && c !== "x" && d.tracked) { if (c === "j" || c === "o" || c === "r") { pr++; due++; } else if (c === "m" || c === "u" || c === "d") due++; }
-      const x = lab + cw * k + cw / 2;
-      s += glyph(d.tracked || c === "x" ? c : "f", x, y, 10);
-      if (!d.future) s += `<rect x="${x - 15}" y="${y - 15}" width="30" height="30" fill="transparent" style="cursor:pointer" onclick="A.pgDot('${p}','${d.key}')" role="button" aria-label="${esc(pName(p))} ${d.key}"/>`;
-    });
-    s += `<text x="${w - 2}" y="${y + 4.5}" text-anchor="end" font-size="13" font-weight="700" class="t1" style="font-variant-numeric:tabular-nums">${pr}<tspan class="t2" font-weight="600">/${due}</tspan></text>`;
-  });
-  return s + "</svg>";
-}
-function breakdown(w, c) {
-  const segs = [["j", c.congregation, "--sJ"], ["o", c.ontime, "--sO"], ["r", c.madeup, "--sR"], ["m", c.missed, "--sM"]];
-  const tot = segs.reduce((a, x) => a + x[1], 0) + c.unlogged;
-  let bar = "";
-  if (tot) {
-    bar = `<svg width="${w}" height="14" viewBox="0 0 ${w} 14" style="display:block;margin:2px 0 0"><clipPath id="pgbk"><rect x="0" y="0" width="${w}" height="14" rx="7"/></clipPath><g clip-path="url(#pgbk)">`;
-    let x = 0;
-    [...segs, ["u", c.unlogged, "--track"]].forEach(([k, n, v]) => { const ww = n / tot * w; if (ww > 0) { bar += `<rect x="${x}" y="0" width="${Math.max(0, ww - (k === "u" ? 0 : 2))}" height="14" style="fill:var(${v})"/>`; x += ww; } });
-    bar += `</g></svg>`;
-  }
-  const row = (k, label, n, sub2) => `<div>${gl(k)}<span>${label}${sub2 ? ` <small>· ${sub2}</small>` : ""}</span><b>${n}</b></div>`;
-  return `<div style="padding:16px 16px 6px">${bar || `<p class="cap">${PROGRESS.noneLogged7}</p>`}</div><div class="brk">${row("j", STATUS.congregation, c.congregation)}${row("o", STATUS.ontime, c.ontime)}${row("r", STATUS.madeup, c.madeup, PROGRESS.madeUpSub)}${row("m", STATUS.missed, c.missed, PROGRESS.missedSub)}${c.excused ? row("x", STATUS.excused, c.excused, PROGRESS.excusedSub) : ""}${c.unlogged ? row("u", PROGRESS.notLogged, c.unlogged) : ""}</div>`;
-}
-/** CH1: 100% stacked bars, one per prayer. */
-function eachStack(w, rows) {
-  const lab = 72, val = 44, bw = w - lab - val - 8, rh = 40, h = rh * 5 + 4, bh = 12;
-  const ok = rows.filter(r => r.counts.due);
-  const weakest = ok.length ? ok.reduce((m, r) => (r.prayedPct < m.prayedPct ? r : m)) : null;
-  let s = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(PROGRESS.eachPrayer)}">`;
-  rows.forEach((r, k) => {
-    const c = r.counts, y = k * rh + rh / 2, id = "pgcl" + k, due = c.due + c.unlogged || 1;
-    const isW = weakest && r === weakest && ok.length > 1;
-    s += `<text x="2" y="${y + (isW ? -1 : 4.5)}" font-size="13" font-weight="600" class="t1">${esc(r.name)}</text>`;
-    if (isW) s += `<text x="2" y="${y + 13}" font-size="10.5" font-weight="700" style="fill:var(--goldink)">${L.edge || "growth edge"}</text>`;
-    s += `<clipPath id="${id}"><rect x="${lab}" y="${y - bh / 2}" width="${bw}" height="${bh}" rx="4"/></clipPath><g clip-path="url(#${id})">`;
-    let x = lab; const rx = [];
-    [["congregation", "--sJ"], ["ontime", "--sO"], ["madeup", "--sR"], ["missed", "--sM"], ["unlogged", "--track"]].forEach(([kk, v]) => {
-      const ww = c[kk] / due * bw; if (ww <= 0) return;
-      if (kk === "madeup") rx.push([x, ww]);
-      s += `<rect x="${x}" y="${y - bh / 2}" width="${Math.max(0, ww - 2)}" height="${bh}" style="fill:var(${v})"/>`; x += ww;
-    });
-    s += `</g>`;
-    rx.forEach(([x0, ww]) => s += `<rect x="${x0 + .75}" y="${y - bh / 2 + .75}" width="${Math.max(0, ww - 3.5)}" height="${bh - 1.5}" rx="1.5" style="fill:none;stroke:var(--sRline);stroke-width:1.5"/>`);
-    s += `<text x="${w - 2}" y="${y + 4.5}" text-anchor="end" font-size="13" font-weight="700" class="t1">${r.prayedPct == null ? "–" : r.prayedPct + "%"}</text>`;
-  });
-  return s + "</svg>";
-}
-function ringsCal(w, P) {
-  const start = addDays(weekDates(P.end, 0)[0], -28), cw = w / 7, rh = 56, top = 22, h = top + rh * 5 + 4, r = 16, sw = 4.5;
-  const pt = (cx, cy, deg) => { const t = (deg - 90) * Math.PI / 180; return [cx + r * Math.cos(t), cy + r * Math.sin(t)]; };
-  const arc = (cx, cy, d0, d1) => { const [x0, y0] = pt(cx, cy, d0), [x1, y1] = pt(cx, cy, d1); return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`; };
-  let s = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(PROGRESS.lastFiveWeeks)}">`;
-  DL.forEach((l, k) => s += `<text x="${cw * k + cw / 2}" y="12" text-anchor="middle" font-size="10.5" font-weight="700" class="t2">${l}</text>`);
-  for (let q = 0; q < 35; q++) {
-    const d = addDays(start, q), key = dkey(d), cx = cw * (q % 7) + cw / 2, cy = top + rh * Math.floor(q / 7) + rh / 2;
-    const fut = key > todayKey(), isT = key === todayKey(), day = store.getDay(S, key);
-    if (fut || key < S.createdKey) { s += `<text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="11" font-weight="600" class="t3">${d.getDate()}</text>`; continue; }
-    if (isT) s += `<rect x="${cx - 24}" y="${cy - 24}" width="48" height="48" rx="14" style="fill:var(--today)"/>`;
-    s += `<rect x="${cx - 24}" y="${cy - 24}" width="48" height="48" fill="transparent" style="cursor:pointer" onclick="A.selDay(${Math.round((parseKey(todayKey()) - d) / 864e5)})" role="button" aria-label="${key}"/>`;
-    if (day.excused) { s += `<circle cx="${cx}" cy="${cy}" r="${r + 2}" style="fill:var(--sX)"/>${glyph("x", cx + 12, cy - 12, 5.5).replace(/fill:var\(--sX\)/, "fill:var(--card)")}<text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="11" font-weight="600" class="t3">${d.getDate()}</text>`; continue; }
-    PRAYERS.forEach((p, k) => {
-      const v = store.statusOf(day, p), d0 = k * 72 + 5, d1 = k * 72 + 67;
-      if (v === "madeup") { s += `<path d="${arc(cx, cy, d0, d1)}" style="fill:none;stroke:var(--sRline);stroke-width:${sw};stroke-linecap:round"/><path d="${arc(cx, cy, d0, d1)}" style="fill:none;stroke:var(--sR);stroke-width:${sw - 2.4};stroke-linecap:round"/>`; return; }
-      const col = { congregation: "--sJ", ontime: "--sO", missed: "--sM", excused: "--sX" }[v] || "--track";
-      s += `<path d="${arc(cx, cy, d0, d1)}" style="fill:none;stroke:var(${col});stroke-width:${v === "missed" ? 2 : sw};stroke-linecap:round"/>`;
-    });
-    s += `<text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="11" font-weight="${isT ? 800 : 600}" class="t1">${d.getDate()}</text>`;
-  }
-  return s + "</svg>";
-}
-const ringKey = exc => `<div class="legend" style="padding-top:2px">${[["--sJ", STATUS.congregation], ["--sO", STATUS.ontime], ["--sR", STATUS.madeup], ["--sM", STATUS.missed]].map(([v, l]) => `<span><svg width="20" height="12"><path d="M3 9 A8 8 0 0 1 17 9" style="fill:none;stroke:var(${v});stroke-width:4.5;stroke-linecap:round"/></svg>${l}</span>`).join("")}${exc ? `<span>${gl("x")}${STATUS.excused}</span>` : ""}</div>`;
-
-/* ---------- streaks ---------- */
-function streakPair(P, note) {
-  const s = st.streaks(S, NOW()), a = s.all, o = s.onTime, d = n => n === 1 ? "day" : "days";
-  const hasEx = counts(P).excusedDays > 0;
-  return `<div class="strk"><div><span class="tt" style="color:var(--accent)">${ICON.fire14}<span style="color:var(--ink)">${PROGRESS.allFive}</span></span><b style="margin-top:6px">${a.cur}<span> ${d(a.cur)}</span></b><small>${PROGRESS.bestKeep(a.best)}</small></div>
-  <div><span class="tt" style="color:var(--goldink)">${ICON.clock}<span style="color:var(--ink)">${PROGRESS.allOnTime}</span></span><b style="margin-top:6px">${o.cur}<span> ${d(o.cur)}</span></b><small>${PROGRESS.bestOnTime(o.best)}</small></div></div>${note ? cap(`${hasEx ? PROGRESS.streakExcused : ""}${PROGRESS.streakToday}`) : ""}`;
+/* =================================================================================================
+   Week
+   ================================================================================================= */
+function weekChapter() {
+  const now = NOW(), off = V.week, ser = st.weekSeries(S, now, -off, { settings: S.settings });
+  const from = ser[0].date, to = ser[6].date, end = dkey(to) > todayKey() ? now : to, pnow = nowFor(end), o = optsFor(end);
+  const c = st.statusCountsRange(S, from, end, pnow, o);
+  const prev = weekDates(now, -off - 1)[6] >= parseKey(S.createdKey);
+  const sub = off === 0 ? `${from.getDate()} – ${to.getDate()} ${MON[to.getMonth()]}` : weekRangeLabel(now, -off);
+  const nav = arrows(prev, off > 0, "A.prWeek(1)", "A.prWeek(-1)", PROG.prevWeek, PROG.nextWeek, "w");
+  // three numbers
+  const f4 = st.statusCountsRange(S, addDays(end, -27), end, pnow, o);
+  const streak = st.streaks(S, now);
+  const third = sister() ? [String(streak.all.cur), PROG.allFiveRun] : [String(c.congregation), PROG.inCongregation];
+  const nums = stats([[`${c.prayed}<span>/${c.due}</span>`, PROG.prayed], third, [`${pc(f4.prayed, f4.due)}%`, off === 0 ? PROG.last4 : PROG.four]]);
+  // compared with the week before
+  const pw = weekDates(now, -off - 1), c2 = st.statusCountsRange(S, pw[0], pw[6], addDays(pw[6], 1));
+  const p1 = pc(c.prayed, c.due), p0 = pc(c2.prayed, c2.due);
+  const delta = c2.due && c.due ? (p1 > p0 ? L.upFrom(p0) : p1 === p0 ? L.steady : L.lastWas(p0)) : "";
+  // a row per day
+  const used = new Set();
+  const rows = ser.map(d => {
+    const isT = d.key === todayKey(), lbl = isT ? COMMON.today : `${DOW[d.date.getDay()]} ${d.date.getDate()}`;
+    const off2 = d.future || (!d.tracked && d.key < S.createdKey);
+    const sts = PRAYERS.map(p => (off2 ? "future" : d.statuses[p]));
+    sts.forEach(v => { if (v && v !== "future") used.add(v); });
+    const marks = sts.map(smark).join("");
+    const n = off2 ? "" : d.excused && !d.due ? `<span class="pr-x">${esc(STATUS_SHORT.excused)}</span>` : `${d.prayed}/${d.due}`;
+    if (off2) return `<div class="pr-day fut"><span class="dl">${esc(lbl)}</span><span class="ms" aria-hidden="true">${marks}</span><span class="n"></span></div>`;
+    const aria = PROG.dayAria(isT ? COMMON.today : longDay(d.date), PRAYERS.map((p, k) => `${pName(p)} ${word(sts[k])}`).join(", "), d.prayed, d.due);
+    return `<button type="button" class="pr-day ${isT ? "t" : ""}" data-f="d${d.key}" aria-label="${esc(aria)}" onclick="A.daySheet('${d.key}')"><span class="dl">${esc(lbl)}</span><span class="ms" aria-hidden="true">${marks}</span><span class="n">${n}</span></button>`;
+  }).join("");
+  const keys = ["congregation", "ontime", "madeup", "missed", "excused", "unlogged"].filter(k => k === "ontime" || k === "missed" || (k === "congregation" && !sister()) || used.has(k));
+  const exDay = ser.find(x => x.excused && !x.future);
+  const note = exDay ? EXCUSED.weekCap(longDay(exDay.date).split(" ")[0]) : c.madeup ? PROGRESS.madeUpCap(c.madeup) : "";
+  let h = head(esc(PROG.weekTitle(off)), esc(sub), nav)
+    + `<div class="zt-card pr-wk">${nums}${delta ? `<p class="pr-delta">${esc(delta)}</p>` : ""}<div class="pr-days">${rows}</div>${legend(keys)}</div>${note ? cap(esc(note)) : ""}`;
+  h += streaksCard();
+  if (c.due && (!sister() || c.congregation)) h += congWeek(from, end, pnow, o);
+  if (isOn(S, "sunnah")) h += sunnahWeek(ser);
+  if (isOn(S, "deeds")) h += deedsWeek(ser, from, end);
+  return h + `<div class="zt-fill"></div>`;
 }
 
-/* ---------- sunnah ---------- */
-const itemName = x => x.prayer === "day" || !x.prayer ? esc(SUNNAH_NAME[x.name] || x.name || x.label) : `${esc(x.jumuah ? prayerName("Dhuhr", { date: new Date(2026, 0, 2), jumuah: true }) : pName(x.prayer))} ${esc(x.label)}`;
-function tierBlock(sr, kind) {
-  const m = madhhabOf(S), items = sr.items;
-  const solid = items.filter(x => x.display === "solid"), outline = items.filter(x => x.display === "outline"), other = items.filter(x => x.display === "hidden");
-  return { m, solid, outline, other };
+function streaksCard() {
+  const s = st.streaks(S, NOW()), hasEx = st.statusCountsRange(S, addDays(NOW(), -30), NOW(), NOW()).excusedDays > 0;
+  return sec(esc(PROG.streaks)) + `<div class="zt-card pad">${stats([[esc(COMMON.days(s.all.cur)), `${esc(PROGRESS.allFive)}<em>${esc(PROGRESS.bestKeep(s.all.best))}</em>`], [esc(COMMON.days(s.onTime.cur)), `${esc(PROGRESS.allOnTime)}<em>${esc(PROGRESS.bestOnTime(s.onTime.best))}</em>`]])}</div>`
+    + cap(esc((hasEx ? PROGRESS.streakExcused : "") + PROGRESS.streakToday));
 }
-function sunnahWeek(w, P, sr) {
-  const days = weekDates(P.end, 0).map(d => ({ d, key: dkey(d) }));
-  const lab = 108, tal = 34, cw = (w - lab - tal) / 7, rh = 28, jum = days.some(x => st.isJumuahDay(S, x.d));
-  const { solid, outline, other } = tierBlock(sr);
-  let y = 40, s = "", body = "";
-  const todayIdx = days.findIndex(x => x.key === todayKey());
-  const section = (title, list) => {
-    if (!list.length) return;
-    body += `<text x="2" y="${y + 6}" font-size="10" font-weight="800" letter-spacing=".06em" class="t2">${title}</text>`; y += 20;
-    list.forEach(x => {
-      body += `<text x="2" y="${y + 5}" font-size="12.5" font-weight="600" class="t1">${itemName(x)}</text>`;
-      let n = 0, dn = 0;
-      days.forEach((dd, k) => {
-        const cx = lab + cw * k + cw / 2, day = store.getDay(S, dd.key);
-        if (dd.key > todayKey() || dd.key < S.createdKey) { body += `<circle cx="${cx}" cy="${y}" r="2" style="fill:var(--hollow)"/>`; return; }
-        if (day.excused) { body += `<circle cx="${cx}" cy="${y}" r="2" style="fill:var(--sXink);opacity:.5"/>`; return; }
-        const chips = x.prayer ? store.sunnahChips(S, dd.key, x.prayer, { all: true }) : [];
-        const chip = chips.find(c => c.id === x.id);
-        if (!chip) { body += `<circle cx="${cx}" cy="${y}" r="2" style="fill:var(--hollow)"/>`; return; }
-        if (chip.allowed) n++;
-        const bx = cx - 9, by = y - 9;
-        if (chip.done) { dn++; body += `<rect x="${bx}" y="${by}" width="18" height="18" rx="5" style="fill:var(--sun)"/><path d="M${cx - 4} ${y} l3 3 l5.5 -6" style="fill:none;stroke:var(--card);stroke-width:1.8;stroke-linecap:round"/>`; }
-        else if (!chip.allowed) body += `<line x1="${cx - 4}" x2="${cx + 4}" y1="${y}" y2="${y}" style="stroke:var(--hollow);stroke-width:1.6;stroke-linecap:round"/>`;
-        else body += `<rect x="${bx + .75}" y="${by + .75}" width="16.5" height="16.5" rx="4.5" style="fill:none;stroke:var(--hollow);stroke-width:1.5${x.display === "outline" ? ";stroke-dasharray:3 2.5" : ""}"/>`;
-      });
-      body += `<text x="${w - 2}" y="${y + 5}" text-anchor="end" font-size="12.5" font-weight="700" class="t1">${x.done}<tspan class="t2" font-weight="600">/${x.due}</tspan></text>`;
-      y += rh;
-    });
-    y += 4;
-  };
-  section(`${TIER.muakkadah.name.toUpperCase()} · ${TIER.muakkadah.gloss.toUpperCase()}`, solid);
-  section(`${TIER.ghayr.name.toUpperCase()} · ${TIER.ghayr.gloss.toUpperCase()}`, outline);
-  section(`NAFL`, other);
-  // Witr
+
+function congWeek(from, end, pnow, o) {
+  const per = st.perPrayerCounts(S, from, end, pnow, o);
+  const cells = PRAYERS.map(p => `<div><b>${per[p].congregation}<span>/${per[p].due}</span></b><small>${esc(pName(p))}</small></div>`).join("");
+  return sec(esc(PROG.congWeek), esc(PROG.congWeekSub)) + `<div class="zt-card pad"><div class="pr-five">${cells}</div></div>` + cap(esc(PROGRESS.jamaahCap));
+}
+
+/** The week's grid head: S M T W T F S, today marked. */
+function gridHead(ser) {
+  return `<div class="pr-gr hd" aria-hidden="true">${ser.map(d => `<span class="${d.key === todayKey() ? "t" : ""}">${"SMTWTFS"[d.date.getDay()]}</span>`).join("")}<span></span></div>`;
+}
+/** One cell: done (a tick), not done, not counted (dash), or nothing that day. */
+const cell = (state, dashed) => state === "done" ? `<i class="pr-c on">${icon("check", "")}</i>`
+  : state === "open" ? `<i class="pr-c${dashed ? " ds" : ""}"></i>` : state === "no" ? `<i class="pr-c no">${icon("dash", "")}</i>`
+    : state === "ex" ? `<i class="pr-c ex">${icon("moon", "")}</i>` : `<i class="pr-c na"></i>`;
+const stateWord = s => (s === "done" ? "done" : s === "open" ? "not done" : s === "no" ? "not counted" : s === "ex" ? STATUS.excused.toLowerCase() : "–");
+const gridRow = (name, states, n, of, dashed, sub = "") => `<div class="pr-gr" role="img" aria-label="${esc(`${name}: ${n} of ${of}`)}"><span class="nm" aria-hidden="true">${esc(name)}${sub ? `<small>${esc(sub)}</small>` : ""}</span>${states.map(s => cell(s, dashed)).join("")}<span class="v" aria-hidden="true">${n}<small>/${of}</small></span></div>`;
+
+const itemName = x => (x.prayer === "day" || !x.prayer ? SUNNAH_NAME[x.name] || x.name || x.label : `${x.jumuah ? prayerName("Dhuhr", { date: new Date(2026, 0, 2), jumuah: true }) : pName(x.prayer)} ${x.label}`);
+function sunnahWeek(ser) {
+  const from = ser[0].date, last = ser[6].date, now = NOW();
+  const sr = st.sunnahRange(S, from, dkey(last) > todayKey() ? now : last, now);
   const m = madhhabOf(S);
-  if (S.settings.madhhab !== undefined || true) {
-    body += `<text x="2" y="${y + 6}" font-size="10" font-weight="800" letter-spacing=".06em" class="t2">${esc(WITR_UI.rowLabel[m].toUpperCase())}</text>`; y += 20;
-    body += `<text x="2" y="${y + 5}" font-size="12.5" font-weight="600" class="t1">${esc(WITR_UI.chip(store.witrChip(S, days[0].key).rakahs || 3))}</text>`;
-    let wd = 0, wdue = 0;
-    days.forEach((dd, k) => {
-      const cx = lab + cw * k + cw / 2, day = store.getDay(S, dd.key);
-      if (dd.key > todayKey() || dd.key < S.createdKey || day.excused) { body += `<circle cx="${cx}" cy="${y}" r="2" style="fill:var(--hollow)"/>`; return; }
-      wdue++;
-      const done = day.witr === "done" || day.witr === "madeup";
-      const dia = `M${cx} ${y - 9} L${cx + 9} ${y} L${cx} ${y + 9} L${cx - 9} ${y}z`;
-      if (done) { wd++; body += `<path d="${dia}" style="fill:var(--goldink);opacity:.9"/><path d="M${cx - 4} ${y} l3 3 l5.5 -6" style="fill:none;stroke:var(--card);stroke-width:1.8;stroke-linecap:round"/>`; }
-      else if (day.witr === "missed") body += `<path d="${dia}" style="fill:none;stroke:var(--sM);stroke-width:1.5"/>`;
-      else body += `<path d="${dia}" style="fill:none;stroke:var(--hollow);stroke-width:1.5"/>`;
-    });
-    body += `<text x="${w - 2}" y="${y + 5}" text-anchor="end" font-size="12.5" font-weight="700" class="t1">${wd}<tspan class="t2" font-weight="600">/${wdue}</tspan></text>`;
-    y += rh;
+  const groups = [["solid", TIER.muakkadah], ["outline", TIER.ghayr], ["hidden", TIER.nafl]];
+  let body = "";
+  for (const [disp, t] of groups) {
+    const list = sr.items.filter(x => x.display === disp);
+    if (!list.length) continue;
+    body += `<p class="pr-gh">${esc(t.name)} · ${esc(t.gloss)}</p>`;
+    for (const x of list) {
+      const states = ser.map(d => {
+        const day = store.getDay(S, d.key);
+        if (d.key > todayKey() || d.key < S.createdKey) return "na";
+        if (day.excused) return "ex";
+        const chip = x.prayer ? store.sunnahChips(S, d.key, x.prayer, { all: true }).find(c => c.id === x.id) : null;
+        if (!chip) return "na";
+        return chip.done ? "done" : chip.allowed ? "open" : "no";
+      });
+      body += gridRow(itemName(x), states, x.done, x.due, disp === "outline");
+    }
   }
-  const h = y + 4;
-  let head = "";
-  if (todayIdx >= 0) head += `<rect x="${lab + cw * todayIdx + cw / 2 - 15}" y="4" width="30" height="${h - 8}" rx="15" style="fill:var(--today)"/>`;
-  days.forEach((dd, k) => {
-    const x = lab + cw * k + cw / 2, fut = dd.key > todayKey();
-    head += `<text x="${x}" y="18" text-anchor="middle" font-size="10.5" font-weight="700" class="${fut ? "t3" : "t2"}">${DL[k]}</text><text x="${x}" y="32" text-anchor="middle" font-size="11" font-weight="${k === todayIdx ? 800 : 600}" class="${fut ? "t3" : k === todayIdx ? "t1" : "t2"}">${dd.d.getDate()}</text>`;
-    if (st.isJumuahDay(S, dd.d)) head += `<text x="${x}" y="43" text-anchor="middle" font-size="7.5" font-weight="800" class="t3">${SUNNAH_UI.jumuahTag}</text>`;
+  // Witr
+  let wd = 0, wdue = 0;
+  const ws = ser.map(d => {
+    const day = store.getDay(S, d.key);
+    if (d.key > todayKey() || d.key < S.createdKey) return "na";
+    if (day.excused) return "ex";
+    wdue++;
+    if (day.witr === "done" || day.witr === "madeup") { wd++; return "done"; }
+    return day.witr === "missed" ? "no" : "open";
   });
-  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(PROGRESS.sunnahPrayers)}">${head}${body}</svg>`;
+  body += `<p class="pr-gh">${esc(WITR_UI.rowLabel[m])}</p>` + gridRow(WITR_UI.chip(store.witrChip(S, ser[0].key).rakahs || 3), ws, wd, wdue, false);
+  return sec(esc(PROG.sunnahWeek), esc(PROGRESS.apartFromFard)) + `<div class="zt-card pad pr-grid">${gridHead(ser)}${body}</div>${tierKey(sr)}`;
 }
-/** Month/year: one bar per sunnah, grouped by tier. */
-function sunnahBars(w, sr) {
-  const { solid, outline, other } = tierBlock(sr), m = madhhabOf(S);
-  const lab = 108, val = 40, bw = w - lab - val - 6, rh = 26;
-  let y = 0, s = "";
-  const sec = (title, list) => {
-    if (!list.length) return;
-    s += `<text x="2" y="${y + 10}" font-size="10" font-weight="800" letter-spacing=".06em" class="t2">${title}</text>`; y += 22;
-    list.forEach(x => {
-      const p = pc(x.done, x.due);
-      s += `<text x="2" y="${y + 4}" font-size="12.5" font-weight="600" class="t1">${itemName(x)}</text><rect x="${lab}" y="${y - 4}" width="${bw}" height="9" rx="4.5" style="fill:var(--track)"/><rect x="${lab}" y="${y - 4}" width="${Math.max(0, bw * p / 100)}" height="9" rx="4.5" style="fill:var(--${x.display === "solid" ? "sun" : "sunLight"})${x.display === "outline" ? ";stroke:var(--sun);stroke-width:1.2" : ""}"/><text x="${w - 2}" y="${y + 4}" text-anchor="end" font-size="12.5" font-weight="700" class="t1">${p}%</text>`;
-      y += rh;
-    }); y += 2;
-  };
-  sec(`${TIER.muakkadah.name.toUpperCase()} · ${TIER.muakkadah.gloss.toUpperCase()}`, solid);
-  sec(`${TIER.ghayr.name.toUpperCase()} · ${TIER.ghayr.gloss.toUpperCase()}`, outline);
-  sec("NAFL", other);
-  const wp = sr.witr.pct ?? 0;
-  s += `<text x="2" y="${y + 10}" font-size="10" font-weight="800" letter-spacing=".06em" class="t2">${esc(WITR_UI.rowLabel[m].toUpperCase())}</text>`; y += 22;
-  s += `<text x="2" y="${y + 4}" font-size="12.5" font-weight="600" class="t1">${esc(WITR_UI.chip(store.witrChip(S, todayKey()).rakahs || 3))}</text><rect x="${lab}" y="${y - 4}" width="${bw}" height="9" rx="4.5" style="fill:var(--track)"/><rect x="${lab}" y="${y - 4}" width="${bw * wp / 100}" height="9" rx="4.5" style="fill:var(--goldink);opacity:.85"/><text x="${w - 2}" y="${y + 4}" text-anchor="end" font-size="12.5" font-weight="700" class="t1">${wp}%</text>`;
-  y += rh;
-  return `<svg width="${w}" height="${y}" viewBox="0 0 ${w} ${y}" role="img" aria-label="${esc(PROGRESS.sunnahPrayers)}">${s}</svg>`;
-}
-function tierLegend(sr) {
+function tierKey(sr) {
   const m = madhhabOf(S), rows = [];
-  const chipTier = (cl, label) => `<span class="tierchip ${cl}">${esc(label)}</span>`;
-  const sh = sr.items.some(x => x.display === "solid"), go = sr.items.some(x => x.display === "outline");
-  if (sh) rows.push(`<div>${chipTier("mu", TIER.muakkadah.name)}<span><b>${esc(TIER.muakkadah.gloss)}.</b> ${esc(TIER.muakkadah.line)}</span></div>`);
-  if (go) rows.push(`<div>${chipTier("gh", TIER.ghayr.name)}<span><b>${esc(TIER.ghayr.gloss)}.</b> ${esc(TIER.ghayr.line)}</span></div>`);
-  rows.push(`<div>${chipTier("wj", WITR_UI.rowLabel[m].split(" · ")[0] + " · " + (m === "hanafi" ? TIER.wajib.name.toLowerCase() : "sunnah"))}<span><b>${esc(m === "hanafi" ? TIER.wajib.gloss : TIER.sunnah.gloss)}.</b> ${esc(WITR_UI.line[m])}</span></div>`);
-  if (S.settings.sunnahNafl) rows.push(`<div>${chipTier("nf", TIER.nafl.name)}<span><b>${esc(TIER.nafl.gloss)}.</b> ${esc(TIER.nafl.line)}</span></div>`);
-  return `<div class="tiers">${rows.join("")}</div>`;
-}
-const measureTxt = (sr, k) => sr.kind === "raghibahWitr" ? MEASURE.raghibahWitrValue(sr.got, sr.of) : MEASURE.rakahs(sr.got, sr.of);
-
-/* ---------- jamaah ---------- */
-function jamTiles(P, c0) {
-  const per = st.perPrayerCounts(S, P.from, P.end, P.now, optsFor(P.end));
-  const rows = PRAYERS.map(p => ({ p, j: per[p].congregation, due: per[p].due })).filter(r => r.due).sort((a, b) => b.j / b.due - a.j / a.due || b.j - a.j).slice(0, 3);
-  return `<div class="mini">${rows.map(r => `<div><b>${r.j}/${r.due}</b><small>${esc(pName(r.p))}</small></div>`).join("")}</div>`;
-}
-function jamCols(w, weeks = 12) {
-  const end = weekDates(NOW(), 0)[6], vals = [];
-  for (let k = weeks - 1; k >= 0; k--) {
-    const a = addDays(weekDates(NOW(), -k)[0], 0), b = addDays(a, 6), e = dkey(b) > todayKey() ? NOW() : addDays(b, 1);
-    const c = st.statusCountsRange(S, a, b, e, optsFor(b));
-    vals.push({ a, v: c.prayed ? Math.round(c.congregation / c.prayed * 100) : 0 });
-  }
-  const mx = Math.max(25, Math.ceil(Math.max(...vals.map(x => x.v)) / 25) * 25);
-  const l = 30, top = 22, ph = 96, h = top + ph + 24, bw = (w - l - 4) / weeks;
-  let s = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(PROGRESS.prayersInJamaah)}">`;
-  [0, mx / 2, mx].forEach(t => { const y = top + ph - t / mx * ph; s += `<line x1="${l}" x2="${w}" y1="${y}" y2="${y}" style="stroke:var(--line)"/><text x="${l - 6}" y="${y + 3.5}" text-anchor="end" font-size="10" class="t3">${Math.round(t)}%</text>`; });
-  vals.forEach((o, k) => {
-    const x = l + bw * k + (bw - 16) / 2, hh = o.v / mx * ph, y = top + ph - hh, last = k === weeks - 1;
-    s += `<path d="M${x} ${top + ph} V${y + 4} q0 -4 4 -4 h8 q4 0 4 4 V${top + ph}z" style="fill:var(--sJ);opacity:${last ? 1 : .42}"/>`;
-    if (last) s += `<text x="${x + 8}" y="${y - 6}" text-anchor="middle" font-size="12" font-weight="800" class="t1">${o.v}%</text>`;
-  });
-  s += `<text x="${l + bw / 2 - 8}" y="${h - 6}" font-size="10.5" font-weight="600" class="t2">${vals[0].a.getDate()} ${MON3[vals[0].a.getMonth()]}</text><text x="${w}" y="${h - 6}" text-anchor="end" font-size="10.5" font-weight="700" class="t1">${L.thisWeek}</text>`;
-  return { svg: s + "</svg>", last: vals[weeks - 1].v };
+  if (sr.items.some(x => x.display === "solid")) rows.push(`<b>${esc(TIER.muakkadah.gloss)}.</b> ${esc(TIER.muakkadah.line)}`);
+  if (sr.items.some(x => x.display === "outline")) rows.push(`<b>${esc(TIER.ghayr.gloss)}.</b> ${esc(TIER.ghayr.line)}`);
+  rows.push(`<b>${esc(m === "hanafi" ? TIER.wajib.gloss : TIER.sunnah.gloss)}.</b> ${esc(WITR_UI.line[m])}`);
+  if (S.settings.sunnahNafl) rows.push(`<b>${esc(TIER.nafl.gloss)}.</b> ${esc(TIER.nafl.line)}`);
+  return `<ul class="pr-tiers">${rows.map(r => `<li>${r}</li>`).join("")}</ul>`;
 }
 
-/* ---------- good deeds ---------- */
-function deedIds(P) {
+function deedList(from, end) {
   const ids = new Map();
-  for (let d = P.from; dkey(d) <= dkey(P.end); d = addDays(d, 1)) {
+  for (let d = from; dkey(d) <= dkey(end); d = addDays(d, 1)) {
     if (dkey(d) < S.createdKey) continue;
     for (const a of store.amalForDay(S, dkey(d))) if (!ids.has(a.id)) ids.set(a.id, a);
   }
   const order = [...S.amalList.map(a => a.id), "listen", "dua"];
   return [...ids.values()].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
 }
-function amalStrips(w, P, letters) {
-  const list = deedIds(P), n = Math.round((P.end - P.from) / 864e5) + 1, nm = 112;
-  const cellsW = w - 32 - nm - 10 - 46, pitch = cellsW / n, cwid = Math.max(4, pitch - (n > 10 ? 1.6 : 4));
-  let out = "";
-  const days = Array.from({ length: n }, (_, k) => { const d = addDays(P.from, k); return { d, key: dkey(d) }; });
-  if (letters) out += `<div class="arow" style="padding-bottom:0;padding-top:12px"><div class="nm" style="width:${nm}px"></div><svg width="${cellsW}" height="12">${days.map((x, k) => `<text x="${k * pitch + cwid / 2}" y="10" text-anchor="middle" font-size="10" font-weight="700" class="${x.key > todayKey() ? "t3" : "t2"}">${DL[k % 7]}</text>`).join("")}</svg><div class="v"></div></div>`;
-  for (const a of list) {
-    let dn = 0, cnt = 0, cells = "";
-    days.forEach((x, k) => {
-      const state = st.amalDayState(S, x.key, a.id, NOW()), X = k * pitch;
-      if (state === "future") { cells += `<rect x="${X}" y="${letters ? 6 : 3}" width="${cwid}" height="${letters ? 6 : 12}" rx="${letters ? 3 : 1.5}" style="fill:none;stroke:var(--line)"/>`; return; }
-      if (state === "untracked") { cells += `<rect x="${X}" y="${letters ? 6 : 3}" width="${cwid}" height="${letters ? 6 : 12}" rx="1.5" style="fill:var(--track);opacity:.5"/>`; return; }
-      if (state === "excused") { cells += glyph("x", X + cwid / 2, 9, Math.min(8, cwid / 2)); return; }
-      const ok = state === "done"; if (state !== "pending") cnt++; if (ok) { dn++; }
-      cells += `<rect x="${X}" y="${letters ? 0 : 2}" width="${cwid}" height="${letters ? 18 : 14}" rx="${letters ? 5 : 1.8}" style="fill:var(${ok ? "--sO" : "--track"})"/>${letters && ok ? `<path d="M${X + cwid / 2 - 4} 9.5 l3 3 l5.5 -6" style="fill:none;stroke:var(--glyph);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"/>` : ""}`;
+const READ_TOOL = { hizb: "hizb", mulk: "quran", kahf: "quran", manzil: "manzil" };
+function deedsWeek(ser, from, end) {
+  const list = deedList(from, dkey(ser[6].date) > todayKey() ? NOW() : ser[6].date);
+  // the readings that count as good deeds (Hizb, al-Mulk, al-Kahf, the Manzil), while Read shows them
+  const reads = READ_IDS.filter(id => toolVisible(S, READ_TOOL[id])).map(id => ({ id, name: READ.item[id], read: true }));
+  if (!list.length && !reads.length) return sec(esc(PROG.deedsWeek)) + `<div class="zt-card pad"><p class="pr-empty">${esc(L.habitsNone)}</p></div>`;
+  const rd = reads.length ? readsByDay(S) : null;
+  const rows = [...list, ...reads].map(a => {
+    let dn = 0, cnt = 0;
+    const states = ser.map(d => {
+      const s = a.read ? st.readDayState(S, d.key, a.id, NOW(), rd) : st.amalDayState(S, d.key, a.id, NOW());
+      if (s === "done") { dn++; cnt++; return "done"; }
+      if (s === "missed") { cnt++; return "open"; }
+      if (s === "pending") return "open";
+      return s === "excused" ? "ex" : "na";
     });
     const noTarget = a.id === "salawat" || a.id === "sadaqah";
-    out += `<div class="arow"><div class="nm" style="width:${nm}px">${esc(a.name)}${noTarget ? `<small>${L.noTarget}</small>` : ""}</div><svg width="${cellsW}" height="18" aria-hidden="true">${cells}</svg><div class="v">${dn}<span>/${cnt}</span></div></div>`;
-  }
-  return { html: out, list };
+    return gridRow(a.name, states, dn, cnt, false, noTarget ? L.noTarget : "");
+  }).join("");
+  return sec(esc(PROG.deedsWeek), esc(PROGRESS.thisWeekLower)) + `<div class="zt-card pad pr-grid">${gridHead(ser)}${rows}</div>` + cap(esc(DEEDS.noTarget));
 }
 
-/* ---------- reflections ---------- */
-function reflections(per) {
-  const { good, warn } = st.insights(S, NOW());
-  const item = (i, ic, cl) => `<div class="ins ${cl || ""}"><div class="mk">${ic}</div><div><b>${esc(i.title)}</b><small>${esc(i.sub)}</small>${cl === "step" ? `<button class="act" onclick="A.pgReminder()">${L.setReminder}</button>` : ""}</div></div>`;
-  let h = `<div class="card" style="margin-top:16px"><div class="kicker">${PROGRESS.goingWell}</div>${good.length ? good.slice(0, 2).map(i => item(i, ICON.star)).join("") : `<div class="ins"><div><small>${esc(PROGRESS.doingWellEmpty)}</small></div></div>`}`;
-  if (warn.length) h += `<div class="kicker" style="border-top:1px solid var(--line);padding-top:14px">${PROGRESS.oneStep(per)}</div>${item(warn[0], ICON.sun, "step")}`;
-  h += `</div>`;
-  if (S.settings.reflection !== false) { const r = reflectionFor(NOW()); h += `<div class="hadith">“${esc(r.en)}”<small>${esc(r.src)}</small></div>`; }
-  return h;
+/* =================================================================================================
+   Charts
+   ================================================================================================= */
+function period() {
+  const now = NOW();
+  if (V.r === "month") {
+    const end = addDays(now, -30 * V.month), from = addDays(end, -29);
+    return { r: "month", from, end, now: nowFor(end), title: V.month === 0 ? L.last30 : L.prev30(30 * V.month), sub: `${short(from)} – ${short(end)}`, prev: addDays(from, -1) >= parseKey(S.createdKey), next: V.month > 0 };
+  }
+  const y = now.getFullYear() - V.year, from = new Date(y, 0, 1), end = V.year === 0 ? now : new Date(y, 11, 31);
+  return { r: "year", year: y, from, end, now: nowFor(end), title: String(y), sub: String(y), prev: y - 1 >= parseKey(S.createdKey).getFullYear(), next: V.year > 0 };
+}
+function chartsChapter() {
+  const P = period(), o = optsFor(P.end), c = st.statusCountsRange(S, P.from, P.end, P.now, o);
+  const seg = `<div class="pr-seg" role="group" aria-label="${esc(PROG.period)}">${["month", "year"].map(r => `<button type="button" data-f="r${r}" class="${r === P.r ? "on" : ""}" aria-pressed="${r === P.r}" onclick="A.prRange('${r}')">${esc(PROG.ranges[r])}</button>`).join("")}</div>`;
+  const nav = `<div class="pr-pnav">${seg}<div class="pr-pl"><b>${esc(P.title)}</b>${P.r === "month" ? `<small>${esc(P.sub)}</small>` : ""}</div></div>`;
+  let h = head(esc(PROG.chartsTitle), "", arrows(P.prev, P.next, "A.prOff(1)", "A.prOff(-1)", PROG.earlier, PROG.later, "c")) + nav;
+  if (!c.due && !c.excusedDays) return h + `<div class="zt-card pad"><p class="pr-empty">${esc(L.noData)}</p></div><div class="zt-fill"></div>`;
+  if (P.r === "month") h += perDay(P);
+  else {
+    h += `<div class="zt-card pad">${stats([[c.prayed.toLocaleString("en"), L.fardPrayedN], [c.congregation.toLocaleString("en"), PROG.inCongregation], [String(c.madeup), L.madeUpSame]])}</div>`;
+    if (c.excusedDays) h += cap(esc(EXCUSED.progressNote(c.excusedDays)));
+    h += byMonth(P);
+  }
+  const rows = st.eachPrayerSeries(S, P.now, { from: P.from, to: P.end, settings: o.settings || null });
+  h += sec(esc(PROGRESS.eachPrayer), esc(PROG.eachSub)) + `<div class="zt-card pad">${eachPrayer(rows)}</div>`;
+  if (c.madeup) h += cap(esc(PROGRESS.madeUpCap(c.madeup)));
+  h += sec(esc(PROGRESS.howYouPrayed), esc(P.r === "month" ? PROGRESS.last30Lower : String(P.year))) + `<div class="zt-card pr-brk">${breakdown(c)}</div>`;
+  if (P.r === "month" && (!sister() || c.congregation)) h += congCols();
+  if (isOn(S, "sunnah")) h += sunnahBars(P);
+  if (isOn(S, "deeds")) h += deedRates(P);
+  return h + `<div class="zt-fill"></div>`;
 }
 
-/* ---------- screens ---------- */
-function head(P, list) {
-  const seg = ["week", "month", "year"].map(r => `<button class="${r === P.r ? "on" : ""}" aria-pressed="${r === P.r}" onclick="A.pgRange('${r}')">${PROGRESS.ranges[r]}</button>`).join("");
-  const nav = `<div class="pnav"><button class="arr ${P.prev ? "" : "off"}" ${P.prev ? "" : "disabled"} aria-label="${esc(COMMON.back)}" onclick="A.pgOff(-1)">${ICON.chevL}</button><div style="text-align:center">${P.title}<small>${P.sub}</small></div><button class="arr ${P.off ? "" : "off"}" ${P.off ? "" : "disabled"} aria-label="${esc(COMMON.continue)}" onclick="A.pgOff(1)">${ICON.chevR}</button></div>`;
-  const jump = `<nav class="jump2 jump" aria-label="${L.chips}"><div class="jt">${list.map(id => `<a class="${id === V.chapter ? "on" : ""}" data-ch="${id}" role="button" tabindex="0" onclick="A.pgGo('${id}')">${CH_NAME(id)}</a>`).join("")}</div></nav>`;
-  return { top: `<div class="top"><h1>${PROGRESS.title}</h1><p>${L.sub}</p></div><!--pvcard--><div class="seg">${seg}</div>${nav}`, jump };
-}
-function heroWeek(P, c) {
-  const prev = weekDates(NOW(), -P.off - 1), c2 = st.statusCountsRange(S, prev[0], prev[6], addDays(prev[6], 1));
-  const pct = pc(c.prayed, c.due), lp = pc(c2.prayed, c2.due);
-  const cmp = !c2.due ? "" : pct > lp ? L.upFrom(lp) : pct === lp ? L.steady : L.lastWas(lp);
-  // daily habits (salawat and sadaqah have no target, counted apart)
-  let done = 0, due = 0, sal = 0, sad = 0;
-  if (isOn(S, "deeds")) for (const d of weekDates(P.end, 0)) {
-    const key = dkey(d);
-    for (const a of store.amalForDay(S, key)) {
-      const s = st.amalDayState(S, key, a.id, NOW());
-      if (a.id === "salawat") { if (s === "done") sal++; continue; }
-      if (a.id === "sadaqah") { if (s === "done") sad++; continue; }
-      if (s === "done") { done++; due++; } else if (s === "missed") due++;
-    }
-  }
-  const best = bestJam(P, c);
-  return `<div class="sum"><div class="row2"><div class="k"><small>${PROGRESS.fardPrayed}</small><b>${c.prayed}<span> ${PROGRESS.ofDue(c.due)}</span></b><div class="meter"><i style="width:${pct}%;background:var(--heroJ)"></i></div><div class="delta" style="color:var(--heroJ)">${cmp ? (pct > lp ? ICON.up + " " : "") + cmp : "&nbsp;"}</div></div>
-  ${isOn(S, "deeds") ? `<div class="k"><small>${PROGRESS.dailyHabits}</small><b>${done}<span> ${L.habitsOf(done, due)}</span></b><div class="meter"><i style="width:${pc(done, due)}%;background:var(--heroO)"></i></div><div class="delta" style="color:var(--heroO);font-weight:600">${L.plusDeeds(sal, sad)}</div></div>` : ""}</div>
-  <div class="foot"><span>${PROGRESS.jamaahThisWeek}</span><span><b>${L.nPrayers(c.congregation)}</b>${best ? " · " + L.bestYet : ""}</span></div></div>`;
-}
-function bestJam(P, c) {
-  if (!c.congregation) return false;
-  for (let k = 1; k <= 12; k++) { const d = weekDates(P.end, -k); const x = st.statusCountsRange(S, d[0], d[6], addDays(d[6], 1)); if (x.congregation >= c.congregation) return false; }
-  return true;
-}
-function statRow(cards) { return `<div class="statrow">${cards.map(c => `<div class="card"><b>${c[0]}</b><small>${c[1]}</small></div>`).join("")}</div>`; }
-const excNote = n => n ? `<p class="excnote">${gl("x", 7)}<span>${EXCUSED.progressNote(n)}</span></p>` : "";
-
-function body(P, list) {
-  const W2 = W - 40, CW = W2 - 2, c = counts(P), m = P.r;
-  const isW = m === "week", isM = m === "month", isY = m === "year";
-  const sr = isOn(S, "sunnah") ? st.sunnahRange(S, P.from, P.end, P.now) : null;
-  const out = [];
-  let intro = "";
-  const per = isW ? "week" : isM ? "month" : "year";
-  if (isW) intro = heroWeek(P, c);
-  else if (isM) {
-    const pp = st.statusCountsRange(S, addDays(P.from, -30), addDays(P.from, -1), addDays(P.from, 0));
-    const days = Math.max(0, c.days - c.excusedDays);
-    let full = 0; for (let d = P.from; dkey(d) <= dkey(P.end); d = addDays(d, 1)) { const k = dkey(d); if (k >= todayKey() || k < S.createdKey) continue; const dy = store.getDay(S, k); if (dy.excused) continue; if (PRAYERS.every(p => st.prayerStreak && ["congregation", "ontime", "madeup"].includes(store.statusOf(dy, p)))) full++; }
-    intro = statRow([[`${pc(c.prayed, c.due)}%`, `${L.ofFard}${pp.due ? ", " + L.upFromPct(pc(pp.prayed, pp.due)) : ""}`], [`${pc(c.congregation + c.ontime, c.due)}%`, L.onTime], [`${full}<span>/${Math.max(0, c.days - c.excusedDays - (dkey(P.end) >= todayKey() ? 1 : 0))}</span>`, L.prayedDays]]) + excNote(c.excusedDays);
-  } else {
-    const rk = c.madeup;
-    intro = statRow([[c.prayed.toLocaleString(), L.fardPrayedN], [c.congregation.toLocaleString(), STATUS.congregation.toLowerCase()], [rk, L.madeUpSame]]) + excNote(c.excusedDays);
-  }
-
-  /* salah */
-  let salahH, salahB = "";
-  if (!c.due && !c.excusedDays) salahH = L.noData;
-  else if (isW) salahH = c.missed || c.unlogged ? L.mostPrayed(c.prayed, c.due) : L.allPrayed(c.congregation + c.ontime, c.madeup);
-  else if (isM || isY) salahH = `<b>${pc(c.prayed, c.due)}%</b> ${L.ofFard}; <b>${pc(c.congregation + c.ontime, c.due)}%</b> ${L.onTime}.`;
-  if (isW) {
-    const series = st.weekSeries(S, P.now, 0, { settings: S.settings }).map(x => x);
-    const ser = weekDates(P.end, 0).length ? st.weekSeries(S, NOW(), -P.off, { settings: S.settings }) : series;
-    const ks = ["j", "o", "r", "m", ...(c.excusedDays ? ["x"] : []), "u", "d"];
-    const exDay = ser.find(x => x.excused);
-    salahB = `${sub(PROGRESS.weekSalah, PROGRESS.tapDot)}<div class="card"><div style="padding:10px 14px 2px">${weekGrid(CW - 28, ser, P)}</div>${legend(ks)}</div>${exDay ? cap(EXCUSED.weekCap(["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][exDay.date.getDay()])) : c.madeup ? cap(PROGRESS.madeUpCap(c.madeup)) : ""}
-    ${sub(PROGRESS.howYouPrayed, PROGRESS.thisWeekLower)}<div class="card">${breakdown(CW - 32, c)}</div>`;
-  } else if (isM) {
-    const ser = st.eachPrayerSeries(S, P.now, { from: P.from, to: P.end, settings: optsFor(P.end).settings });
-    const ok = ser.filter(r => r.counts.due), weak = ok.length ? ok.reduce((a, b) => (b.prayedPct < a.prayedPct ? b : a)) : null;
-    let capt = "";
-    if (weak) {
-      const mA = new Date(P.end.getFullYear(), P.end.getMonth(), 1), mB = new Date(mA.getFullYear(), mA.getMonth() - 1, 1);
-      const one = d => st.eachPrayerSeries(S, P.now, { from: d, to: new Date(d.getFullYear(), d.getMonth() + 1, 0) > P.end ? P.end : new Date(d.getFullYear(), d.getMonth() + 1, 0), settings: optsFor(P.end).settings }).find(r => r.p === weak.p);
-      const a = one(mA), b = one(mB);
-      capt = a?.prayedPct != null && b?.prayedPct != null ? `${esc(weak.name)}: <b>${b.prayedPct}% in ${MON3[mB.getMonth()]}, ${a.prayedPct}% in ${MON3[mA.getMonth()]}</b>.` : `${esc(weak.name)}: <b>${weak.prayedPct}%</b>.`;
-    }
-    const best = ok.length ? ok.reduce((a, b) => (b.prayedPct > a.prayedPct ? b : a)) : null;
-    if (best && weak && best !== weak) salahH = `${esc(best.name)} is your strongest. ${esc(weak.name)} has the most room to grow.`;
-    salahB = `${sub(PROGRESS.lastFiveWeeks, PROGRESS.tapDay)}<div class="card"><div style="padding:12px 10px 0">${ringsCal(CW - 20, P)}</div>${ringKey(c.excusedDays)}</div>${cap(PROGRESS.ringCap + (c.excusedDays ? " " + L.noRings : ""))}
-    ${sub(PROGRESS.howYouPrayed, PROGRESS.last30Lower)}<div class="card">${breakdown(CW - 32, c)}</div>${c.madeup ? cap(PROGRESS.madeUpCap(c.madeup)) : ""}
-    ${sub(PROGRESS.eachPrayer, PROGRESS.last30Lower)}<div class="card"><div style="padding:10px 16px 0">${eachStack(CW - 32, ser)}</div>${capt ? `<p class="cap" style="padding:2px 16px 8px">${capt}</p>` : ""}${legend(["j", "o", "r", "m", "u"])}</div>`;
-  } else {
-    const ym = st.yearMonths(S, P.year, P.now);
-    const l = 34, top = 24, ph = 110, h = top + ph + 26, bw = (CW - 32 - l) / 12, w = CW - 32;
-    let s = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(L.fardByMonth)}">`;
-    [0, 50, 100].forEach(t => { const y = top + ph - t / 100 * ph; s += `<line x1="${l}" x2="${w}" y1="${y}" y2="${y}" style="stroke:var(--line)"/><text x="${l - 6}" y="${y + 3.5}" text-anchor="end" font-size="10" class="t3">${t}%</text>`; });
-    ym.forEach((v, k) => {
-      const cx = l + bw * k + bw / 2, cur = P.year === NOW().getFullYear() && k === NOW().getMonth();
-      if (v === null) s += `<line x1="${cx - 6}" x2="${cx + 6}" y1="${top + ph}" y2="${top + ph}" style="stroke:var(--hollow);stroke-width:2;stroke-linecap:round"/>`;
-      else { const hh = v / 100 * ph, y = top + ph - hh; s += `<path d="M${cx - 8} ${top + ph} V${y + 4} q0 -4 4 -4 h8 q4 0 4 4 V${top + ph}z" style="fill:var(--sO);opacity:${cur ? .55 : 1}"/><text x="${cx}" y="${y - 6}" text-anchor="middle" font-size="11" font-weight="700" class="t1">${v}</text>`; }
-      s += `<text x="${cx}" y="${h - 8}" text-anchor="middle" font-size="10" font-weight="${cur ? 800 : 600}" class="t2">${MON3[k][0]}</text>`;
-    });
-    s += "</svg>";
-    // each prayer by month: heat table
-    const lw = 64, cw2 = (w - lw) / 12, rh = 24;
-    let t = `<svg width="${w}" height="${rh * 5 + 22}" viewBox="0 0 ${w} ${rh * 5 + 22}" role="img" aria-label="${esc(L.eachByMonth)}">`;
-    MON3.forEach((mm, k) => t += `<text x="${lw + cw2 * k + cw2 / 2}" y="11" text-anchor="middle" font-size="9.5" font-weight="700" class="t2">${mm[0]}</text>`);
-    const byM = MON3.map((_, k) => { const a = new Date(P.year, k, 1), b = new Date(P.year, k + 1, 0); return dkey(a) > todayKey() || dkey(b) < S.createdKey ? null : st.eachPrayerSeries(S, P.now, { from: a, to: dkey(b) > dkey(P.end) ? P.end : b }); });
-    PRAYERS.forEach((p, r) => {
-      const y = 22 + rh * r; t += `<text x="2" y="${y + 15}" font-size="12.5" font-weight="600" class="t1">${esc(pName(p))}</text>`;
-      byM.forEach((row, k) => {
-        const v = row?.[r]?.prayedPct; const x = lw + cw2 * k;
-        if (v == null) { t += `<rect x="${x + 1}" y="${y + 2}" width="${cw2 - 2}" height="${rh - 4}" rx="4" style="fill:var(--track);opacity:.5"/>`; return; }
-        const lv = v >= 98 ? 5 : v >= 90 ? 4 : v >= 75 ? 3 : v >= 50 ? 2 : 1;
-        t += `<rect x="${x + 1}" y="${y + 2}" width="${cw2 - 2}" height="${rh - 4}" rx="4" style="fill:var(--seq${lv})"/>`;
-      });
-    });
-    t += "</svg>";
-    salahB = `${sub(L.fardByMonth, L.pctDue)}<div class="card"><div style="padding:14px 16px 4px">${s}</div></div>${sub(L.eachByMonth)}<div class="card"><div style="padding:14px 16px 12px">${t}</div></div>${cap(`${L.fewer} → ${L.more}`)}`;
-  }
-  out.push(chapter("salah", list, salahH, salahB));
-
-  /* streaks */
-  const sk = st.streaks(S, NOW());
-  out.push(chapter("streaks", list, isW ? L.streakHead(sk.all.cur, sk.onTime.cur) : L.streakMonth(sk.all.cur, sk.all.best), streakPair(P, isW)));
-
-  /* sunnah */
-  if (sr) {
-    let h, b;
-    const showWitr = true;
-    if (isW) {
-      const y0 = addDays(NOW(), -1), ym = st.sunnahMeasureDay(S, dkey(y0)), tm = st.sunnahMeasureDay(S, todayKey());
-      h = P.off === 0 ? L.sunnahYest(ym.got, ym.of, tm.got, tm.of) : `${PROGRESS.sunnahPrayers}: <b>${measureTxt(sr)}</b>`;
-      b = `${sub(PROGRESS.sunnahPrayers, PROGRESS.apartFromFard)}<div class="card"><div style="padding:12px 14px 6px">${sunnahWeek(CW - 28, P, sr)}</div><div class="kicker" style="border-top:1px solid var(--line);padding-top:12px;padding-bottom:8px">${SUNNAH_UI.legend}</div>${tierLegend(sr)}</div>`;
-    } else {
-      h = L.sunnahPeriod(sr.pct ?? 0, sr.witr.due ? sr.witr.pct : null);
-      b = `${sub(PROGRESS.sunnahPrayers, isM ? PROGRESS.last30Lower : String(P.year))}<div class="card"><div style="padding:14px 16px 6px">${sunnahBars(CW - 32, sr)}</div><p class="cap" style="padding:2px 16px 10px">${sr.excusedDays ? EXCUSED.progressNote(sr.excusedDays) : ""}</p>${tierLegend(sr)}</div>`;
-    }
-    out.push(chapter("sunnah", list, h, b));
-  }
-
-  /* jamaah */
-  {
-    let b, h;
-    if (isW) { h = L.jamHead(c.congregation); b = jamTiles(P, c) + cap(PROGRESS.jamaahCap); }
-    else {
-      const jc = jamCols(CW - 32), share = c.prayed ? Math.round(c.prayed / Math.max(1, c.congregation)) : 0;
-      h = c.congregation ? L.jamMonth(share) : L.jamHead(0);
-      b = `${sub(PROGRESS.prayersInJamaah, PROGRESS.sharePerWeek)}<div class="card"><div style="padding:14px 16px 12px">${jc.svg}</div></div>${jamTiles(P, c)}`;
-    }
-    out.push(chapter("jamaah", list, h, b));
-  }
-
-  /* habits */
-  if (isOn(S, "deeds")) {
-    const strips = amalStrips(CW, P, isW);
-    const rates = st.amalRates(S, isW ? 7 : isM ? 30 : 90, P.now).filter(r => r.a.id !== "salawat" && r.a.id !== "sadaqah");
-    const hi = rates.length ? rates.reduce((a, b) => (b.rate > a.rate ? b : a)) : null, lo = rates.length > 1 ? rates.reduce((a, b) => (b.rate < a.rate ? b : a)) : null;
-    const h = hi ? L.habitsHead(esc(hi.a.name), lo && lo !== hi ? esc(lo.a.name) : "") : L.habitsNone;
-    out.push(chapter("habits", list, h, `${sub(DEEDS.daily, isW ? PROGRESS.thisWeekLower : isM ? PROGRESS.last30Lower : String(P.year))}<div class="card">${isY ? yearHabits(rates) : `<div style="height:${isW ? 0 : 6}px"></div>${strips.html}`}</div>${cap(DEEDS.noTarget)}`));
-  }
-
-  /* make-ups */
-  if (isOn(S, "makeups")) {
-    const total = st.qadaClearedTotal(S), n = isY ? st.qadaClearedInYear(S, P.year) : st.qadaClearedInMonth(S, P.end), sp = store.qadaSplit(S);
-    const h = isY ? L.makeupYear(n) : L.makeupHead(n);
-    out.push(chapter("qada", list, h, `<div style="height:6px"></div><button class="card pad" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left" onclick="A.pgQada()"><div style="flex:1"><b style="font-size:22px;color:var(--head)">${total}</b><small style="display:block;font-size:12px;color:var(--ink2);font-weight:600;margin-top:2px">${esc(MAKEUPS.restored(total).replace(/^\d+ /, ""))} · ${esc(MAKEUPS.toGo(sp.fard, sp.witr))}</small></div><span style="color:var(--accent)">${ICON.chevR}</span></button>`));
-  }
-
-  /* reflections */
-  out.push(chapter("reflect", list, L.reflectHead, reflections(per), true));
-  return `<div class="intro">${intro}</div>${out.join("")}`;
-}
-function yearHabits(rates) {
-  return rates.map(r => `<div class="arow"><div class="nm">${esc(r.a.name)}</div><svg width="${W - 40 - 32 - 112 - 56}" height="10"><rect x="0" y="1" width="100%" height="8" rx="4" style="fill:var(--track)"/><rect x="0" y="1" width="${r.rate}%" height="8" rx="4" style="fill:var(--sO)"/></svg><div class="v">${r.rate}<span>%</span></div></div>`).join("");
+/** One bar a day: how many of the five were prayed. Excused days show a moon; days before you started, nothing. */
+function perDay(P) {
+  const days = [];
+  for (let d = P.from; dkey(d) <= dkey(P.end); d = addDays(d, 1)) days.push(d);
+  let sum = 0, cnt = 0, full = 0;
+  const bars = days.map(d => {
+    const key = dkey(d), day = store.getDay(S, key);
+    if (key < S.createdKey || key > todayKey()) return `<span class="b"></span>`;
+    if (day.excused) return `<span class="b ex" title="${esc(PROG.barExcused(short(d)))}">${icon("moon", "")}</span>`;
+    const n = PRAYERS.filter(p => store.isPrayed(store.statusOf(day, p))).length, isT = key === todayKey();
+    if (!isT) { sum += n; cnt++; if (n === 5) full++; }
+    return `<span class="b${isT ? " t" : ""}" title="${esc(PROG.barTitle(short(d), n))}"><i style="height:${Math.max(n ? 6 : 2, n / 5 * 100)}%"></i></span>`;
+  }).join("");
+  const ticks = days.map((d, i) => (d.getDay() === 0 && i < days.length - 2 ? `<span style="grid-column:${i + 1} / span 4">${short(d)}</span>` : "")).join("");
+  const avg = cnt ? (Math.round(sum / cnt * 10) / 10).toString() : "0";
+  return sec(esc(PROG.perDay), esc(PROG.perDaySub)) + `<div class="zt-card pad"><div class="pr-pd" role="img" aria-label="${esc(PROG.perDayAria(short(P.from), short(P.end), avg, full))}"><div class="bars" style="grid-template-columns:repeat(${days.length},1fr)" aria-hidden="true">${bars}</div><div class="ax" aria-hidden="true"><span>5</span><span>0</span></div><div class="tk" style="grid-template-columns:repeat(${days.length},1fr)" aria-hidden="true">${ticks}</div></div></div>`;
 }
 
-/* ---------- render ---------- */
+/** Fard by month (a year): one column a month with its number on top. */
+function byMonth(P) {
+  const ym = st.yearMonths(S, P.year, P.now), curM = P.year === NOW().getFullYear() ? NOW().getMonth() : -1;
+  const cols = ym.map((v, k) => `<div class="col${k === curM ? " cur" : ""}" style="--h:${v == null ? 0 : Math.max(2, v)}%" title="${MON[k]}: ${v == null ? "–" : v + "%"}"><b>${v == null ? "" : v}</b><i></i><span>${MON3[k][0]}</span></div>`).join("");
+  const label = ym.map((v, k) => `${MON3[k]} ${v == null ? "–" : v + "%"}`).join(", ");
+  return sec(esc(L.fardByMonth), esc(L.pctDue)) + `<div class="zt-card pad"><div class="pr-cols m12" role="img" aria-label="${esc(`${L.fardByMonth}: ${label}`)}">${cols}</div></div>`;
+}
+
+/** Each prayer: one stacked bar per prayer. Segments carry their status icon when there is room. */
+function eachPrayer(rows) {
+  const SEG = [["congregation", "c1"], ["ontime", "c2"], ["madeup", "c3"], ["missed", "c4"], ["unlogged", "c5"]];
+  const any = k => rows.some(r => r.counts[k] > 0);
+  const used = SEG.filter(([k]) => any(k) || k === "ontime" || k === "missed" || (k === "congregation" && !sister()));
+  const lines = rows.map(r => {
+    const cn = r.counts, tot = used.reduce((a, [k]) => a + (cn[k] || 0), 0);
+    const segs = tot ? used.filter(([k]) => cn[k]).map(([k, cl]) => `<i class="pr-${cl}" style="flex:${cn[k]} 1 0">${MINI[k] && cn[k] / tot >= 0.12 ? icon(MINI[k], "") : ""}</i>`).join("") : "";
+    const parts = used.filter(([k]) => cn[k]).map(([k]) => `${cn[k]} ${LEG[k].toLowerCase()}`).join(", ") || L.noData;
+    const v = r.prayedPct == null ? "–" : `${r.prayedPct}%`;
+    return `<div class="pr-hb" role="img" aria-label="${esc(PROG.eachAria(r.name, v, parts))}"><span class="nm" aria-hidden="true">${esc(r.name)}</span><span class="bar" aria-hidden="true">${segs}</span><span class="v" aria-hidden="true">${v}</span></div>`;
+  }).join("");
+  const leg = `<div class="pr-leg sq" aria-hidden="true">${used.map(([k, cl]) => `<span><i class="pr-${cl}">${MINI[k] ? icon(MINI[k], "") : ""}</i>${esc(LEG[k])}</span>`).join("")}</div>`;
+  return leg + lines;
+}
+
+function breakdown(c) {
+  const row = (k, label, n, sub) => `<div class="r">${smark(k)}<span class="t">${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ""}</span><b>${n}</b></div>`;
+  return row("congregation", STATUS.congregation, c.congregation) + row("ontime", STATUS.ontime, c.ontime) + row("madeup", STATUS.madeup, c.madeup, PROGRESS.madeUpSub)
+    + row("missed", STATUS.missed, c.missed, isOn(S, "makeups") ? PROGRESS.missedSub : "") + (c.excused ? row("excused", STATUS.excused, c.excused, PROGRESS.excusedSub) : "") + (c.unlogged ? row("unlogged", PROGRESS.notLogged, c.unlogged) : "");
+}
+
+/** Share of prayers in congregation, a column per week for 12 weeks; this week labelled. */
+function congCols(weeks = 12) {
+  const vals = [];
+  for (let k = weeks - 1; k >= 0; k--) {
+    const a = weekDates(NOW(), -k)[0], b = addDays(a, 6), e = dkey(b) > todayKey() ? NOW() : addDays(b, 1);
+    const c = st.statusCountsRange(S, a, b, e, optsFor(b));
+    vals.push({ a, v: c.prayed ? Math.round(c.congregation / c.prayed * 100) : 0, none: !c.due });
+  }
+  const mx = Math.max(25, Math.ceil(Math.max(...vals.map(x => x.v)) / 25) * 25);
+  const cols = vals.map((o, k) => `<div class="col${k === weeks - 1 ? " cur" : ""}" style="--h:${o.none ? 0 : Math.max(2, o.v / mx * 100)}%" title="${esc(PROG.colTitle(short(o.a), o.v))}"><b>${k === weeks - 1 ? o.v + "%" : ""}</b><i></i></div>`).join("");
+  const label = `${PROG.congCols}: ${vals.map(o => `${short(o.a)} ${o.v}%`).join(", ")}`;
+  return sec(esc(PROG.congCols), "") + `<div class="zt-card pad"><p class="pr-cs">${esc(PROG.congColsSub)}</p><div class="pr-cols" role="img" aria-label="${esc(label)}">${cols}</div><div class="pr-cax" aria-hidden="true"><span>${short(vals[0].a)}</span><span>${esc(L.thisWeek)}</span></div></div>`;
+}
+
+const pbar = (name, pct, cls = "", sub = "") => `<div class="pr-pb ${cls}" role="img" aria-label="${esc(`${name}: ${pct}%`)}"><span class="nm" aria-hidden="true">${esc(name)}${sub ? `<small>${esc(sub)}</small>` : ""}</span><span class="tr" aria-hidden="true"><i style="width:${pct}%"></i></span><span class="v" aria-hidden="true">${pct}%</span></div>`;
+function sunnahBars(P) {
+  const sr = st.sunnahRange(S, P.from, P.end, P.now), m = madhhabOf(S);
+  let body = "";
+  for (const [disp, t] of [["solid", TIER.muakkadah], ["outline", TIER.ghayr], ["hidden", TIER.nafl]]) {
+    const list = sr.items.filter(x => x.display === disp);
+    if (!list.length) continue;
+    body += `<p class="pr-gh">${esc(t.name)} · ${esc(t.gloss)}</p>` + list.map(x => pbar(itemName(x), pc(x.done, x.due), disp === "outline" ? "ol" : "")).join("");
+  }
+  body += `<p class="pr-gh">${esc(WITR_UI.rowLabel[m])}</p>` + pbar(WITR_UI.chip(store.witrChip(S, todayKey()).rakahs || 3), sr.witr.pct ?? 0);
+  const headline = L.sunnahPeriod(sr.pct ?? 0, sr.witr.due ? sr.witr.pct : null);
+  return sec(esc(PROGRESS.sunnahPrayers), esc(PROG.sunnahSub)) + `<div class="zt-card pad"><p class="pr-cs">${headline}</p>${body}</div>${sr.excusedDays ? cap(esc(EXCUSED.progressNote(sr.excusedDays))) : ""}${tierKey(sr)}`;
+}
+function deedRates(P) {
+  if (P.r === "year" && V.year > 0) return "";
+  const n = P.r === "month" ? 30 : Math.max(1, Math.round((NOW() - new Date(NOW().getFullYear(), 0, 1)) / 864e5));
+  if (P.r === "month" && V.month > 0) return ""; // amalRates counts back from today only
+  const rates = st.amalRates(S, n, NOW());
+  if (!rates.length) return "";
+  const hl = rates.filter(r => r.a.id !== "salawat" && r.a.id !== "sadaqah");
+  const hi = hl.length ? hl.reduce((a, b) => (b.rate > a.rate ? b : a)) : null, lo = hl.length > 1 ? hl.reduce((a, b) => (b.rate < a.rate ? b : a)) : null;
+  const line = hi ? L.habitsHead(esc(hi.a.name), lo && lo !== hi ? esc(lo.a.name) : "") : "";
+  return sec(esc(PROG.deedsWeek), esc(PROG.deedsSub)) + `<div class="zt-card pad">${line ? `<p class="pr-cs">${line}</p>` : ""}${rates.map(r => pbar(r.a.name, r.rate, "", r.a.id === "salawat" || r.a.id === "sadaqah" ? L.noTarget : "")).join("")}</div>`;
+}
+
+/* =================================================================================================
+   The view
+   ================================================================================================= */
+const BUILD = { reflect: reflectChapter, week: weekChapter, charts: chartsChapter, provisions: provisionsChapter, makeups: makeupsChapter };
+const CH = makeChapters({ prefix: "pr", label: PROG.chaptersLabel, get: () => UI.progressCh, set: id => { UI.progressCh = id; } });
+
 function renderProgress() {
   if (UI.view !== "progress") return;
-  const sec = $("#v-progress"); if (!sec) return;
-  if (!["week", "month", "year"].includes(UI.range)) UI.range = "week";
-  W = Math.max(320, Math.min(520, $("#screen")?.clientWidth || 390));
-  const P = period(), list = chapters();
-  if (!list.includes(V.chapter)) V.chapter = "salah";
-  const h = head(P, list);
-  const key = ""; const html = cls(`${h.top}${h.jump}<div class="pgbody">${body(P, list)}</div>`).replace("<!--pvcard-->", () => progressCard()) + `<!--${todayKey()}-->`; // P1: lifetime, so above Week / Month / Year
-  const norm = html.replace(/class="pg-on" data-ch/g, 'class="" data-ch');
-  if (norm === lastHTML && sec.childElementCount) return;
-  lastHTML = norm;
-  const jt = sec.querySelector(".pg-jt"), sl = jt ? jt.scrollLeft : 0;
-  sec.innerHTML = html;
-  const jt2 = sec.querySelector(".pg-jt"); if (jt2) jt2.scrollLeft = sl;
-  markChapter();
+  const el = $("#v-progress"); if (!el) return;
+  if (UI.range === "week") { UI.progressCh = "week"; UI.range = ""; } // Today's "This week" line (A.openWeek)
+  const list = progressChapters(S);
+  if (!list.length) { go(isOn(S, "makeups") ? "qada" : "home"); return; } // Progress was switched off
+  CH.ensure(el, list, PROG.chapters);
+  setHTML(CH.top(), `<h1 class="zt-pg">${esc(PROGRESS.title)}</h1>${avatarBtn()}`);
+  for (const c of list) setHTML(CH.panel(c), BUILD[c]());
+  CH.land();
 }
-function markChapter() {
-  const scr = $("#screen"), sec = $("#v-progress"); if (!scr || !sec || UI.view !== "progress") return;
-  const chs = [...sec.querySelectorAll("section[data-ch]")], jump = sec.querySelector(".pg-jump");
-  if (!chs.length) return;
-  const line = scr.getBoundingClientRect().top + stickyBottom(jump) + 40;
-  let cur = chs[0].dataset.ch;
-  for (const c of chs) if (c.getBoundingClientRect().top <= line) cur = c.dataset.ch;
-  if (scr.scrollTop + scr.clientHeight >= scr.scrollHeight - 4) cur = chs[chs.length - 1].dataset.ch;
-  if (cur === V.chapter && sec.querySelector(".pg-jump a.pg-on")?.dataset.ch === cur) return;
-  V.chapter = cur;
-  sec.querySelectorAll(".pg-jump a").forEach(a => { const on = a.dataset.ch === cur; a.classList.toggle("pg-on", on); if (on) { const jt = a.parentElement; if (jt) jt.scrollTo?.({ left: a.offsetLeft - 20, behavior: "smooth" }); } });
-}
-$("#screen")?.addEventListener("scroll", () => { if (UI.view === "progress") markChapter(); }, { passive: true });
 onRender(renderProgress);
