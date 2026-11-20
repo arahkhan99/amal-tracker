@@ -115,3 +115,8 @@
   .pv-ask{margin-inline:20px}
   .pv-calm .lead{max-width:38ch}
 }
+
+/* Direction B (19 Nov 2026; declutter bx-prog-provisions): no boxes below the band. The niyyah reminder sits under
+   a hairline, "How provisions work" is a thin row. The gold level bar stays (the one gold fill). */
+.pv-nq{background:transparent!important;border-radius:0!important;padding:14px 0 0!important;margin-top:18px!important;border-top:1px solid var(--line)}
+:is(#v-progress,#v-qada) .zt-line.pv-howl{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:0;margin:18px 0 0 8px;width:calc(100% - 8px)}

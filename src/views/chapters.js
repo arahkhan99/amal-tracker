@@ -1,9 +1,10 @@
 /*
- * Chapters: a tab's row of names over its chapters, side by side. Used by Today (Now · Today, views/home.js),
- * Progress and Read, so they all look and behave the same: swipe (scroll-snap) or tap a name; keyboard: arrows,
+ * Chapters: a tab's row of names over its chapters, side by side. Used by Progress and Read (Today is one page
+ * since 19 Nov 2026), so they look and behave the same: swipe (scroll-snap) or tap a name; keyboard: arrows,
  * Home, End; no animation with reduced motion; each chapter scrolls on its own; the chapters off screen are out of
  * the tab order. The bar of names scrolls sideways when they don't fit (narrow phones, large text) and keeps the
- * active one in view. Styles: css/today.css (.zt-cb, .zt-track, .zt-ch) and css/progress.css (.ch-scroll).
+ * active one in view. The top row and the names sit in the time-of-day band (css/band.css .zb, .zb-ch). Styles:
+ * css/today.css (.zt-cb, .zt-track, .zt-ch) and css/progress.css (.ch-scroll).
  *
  * Swiping stays smooth (19 Nov 2026: "lag when swiping between chapters"):
  * - During a swipe only the names' classes change (once a frame at most, and only when the chapter under the middle
@@ -46,11 +47,14 @@ export function resetChapters(root, { now = false } = {}) {
   for (const c of ALL) if (c.inside(root)) c.reset(now);
 }
 
+/** A page without chapters (Today, since 19 Nov 2026) that still goes back to its top on a reset. */
+export function registerReset(inside, reset) { ALL.add({ inside, reset }); }
+
 /** Which chapter is under the middle of the track (0-based). */
 export const chapterAt = (scrollLeft, width, n) => (width > 0 ? Math.max(0, Math.min(n - 1, Math.round(scrollLeft / width))) : 0);
 
 /**
- * scrollBar: the bar of names may scroll sideways (Progress, Read). Today's two names always fit, so its bar is plain.
+ * scrollBar: the bar of names may scroll sideways (Progress, Read).
  */
 export function makeChapters({ prefix, label, get, set, scrollBar = true }) {
   let ids = [], el = null;
@@ -174,7 +178,7 @@ export function makeChapters({ prefix, label, get, set, scrollBar = true }) {
     shown = -1; moving = false; target = -1;
     const many = ids.length > 1, cur = index();
     const barHTML = many ? `<div class="zt-cb${scrollBar ? " ch-scroll" : ""}" role="tablist" aria-label="${esc(label)}">${ids.map((c, i) => `<button type="button" role="tab" id="${prefix}-tab-${c}" aria-controls="${prefix}-ch-${c}" aria-selected="${i === cur}" tabindex="${i === cur ? 0 : -1}" class="${i === cur ? "on" : ""}" data-i="${i}">${esc(names[c] || c)}</button>`).join("")}</div>` : "";
-    el.innerHTML = `<div class="zt-top"></div>${barHTML}<div class="zt-track ${many ? "" : "one"}">${ids.map((c, i) => `<section class="zt-ch" id="${prefix}-ch-${c}" ${many ? `role="tabpanel" aria-labelledby="${prefix}-tab-${c}"${i === cur ? "" : " inert"}` : ""}></section>`).join("")}</div>`;
+    el.innerHTML = `<header class="zb zb-ch"><div class="zt-top"></div>${barHTML}</header><div class="zt-track ${many ? "" : "one"}">${ids.map((c, i) => `<section class="zt-ch" id="${prefix}-ch-${c}" ${many ? `role="tabpanel" aria-labelledby="${prefix}-tab-${c}"${i === cur ? "" : " inert"}` : ""}></section>`).join("")}</div>`;
     el.dataset.sig = ids.join();
     const tr = track();
     tr.addEventListener("scroll", onScroll, { passive: true });

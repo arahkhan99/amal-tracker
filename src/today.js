@@ -1,26 +1,30 @@
 /*
  * The Today tab's rules, without the DOM (views/home.js draws them; tests import this file).
  *
- * Now chapter, one-tap logging:
- * - Brothers: "Prayed in congregation" (primary), then "Prayed on time".
- * - Sisters: "Prayed on time" only. "In congregation" is under Other.
- * - Not set ("prefer not to say"): "Prayed on time" (primary), then "Prayed in congregation".
- * - Other: the remaining statuses. "Made up later" only once the prayer's time has ended (logging.madeUpAllowed),
- *   Excused only when excused days are on.
- * - No buttons before a prayer begins (logging.canLog): the chapter says "Begins at …" instead.
+ * Today is one page (19 Nov 2026, the merged Today; Direction B "Time of day" the same night): a header tinted by
+ * the time of day (bandAt) with the current prayer (or the next one) in a mihrab arch (heroOf), the five prayers as
+ * one thin list (Sunrise between Fajr and Zuhr), then two pills (Good deeds · Make-ups). Logging:
+ * - Tap a prayer: not logged → on time → in congregation → cleared, for everyone (tapNext). It is a "tap again"
+ *   cycle on what is stored, not a timed double tap. A tap on a prayer stored as Made up, Missed or Excused opens
+ *   the options sheet instead (so a tap never overwrites one of those).
+ * - The options sheet (long press, or ⋯) lists every status. "Made up later" only once the prayer's time has
+ *   ended (logging.madeUpAllowed), Excused only when excused days are on.
+ * - A prayer that hasn't begun can't be tapped (logging.canLog): its row only shows its time.
+ * - The big Prayed button on the current prayer is the same as one tap on its row.
  * Every tap goes through logPrayer(): the same rules as manual logging (logAllowed, day.first stamped by
  * store.setPrayer), and it returns a snapshot so the toast's Undo can put things back exactly (restoreSnapshot).
  */
 import * as store from "./store.js";
-import { logAllowed, madeUpAllowed } from "./logging.js";
-import { navTabs, isOn } from "./features.js";
+import { canLog, logAllowed, madeUpAllowed } from "./logging.js";
+import { isOn, toolVisible } from "./features.js";
+import { helpState } from "./guide.js";
 import { timesFor, currentWindow, nextPrayer } from "./times.js";
 import { PRAYERS, dkey, addDays, parseKey } from "./util.js";
 import { prayerStreak, sunnahMeasureDay } from "./stats.js";
-import { sheetCount } from "./reading.js";
+import { readItems, READ_DEEDS } from "./reading.js";
 import { NAFL_ADDON, itemById, madhhabOf } from "./rules/madhhab.js";
 
-/** The Now chapter's buttons, in order (statuses; the first is the primary button). */
+/** The one-tap statuses, in order (the first is the primary one): widgets, notifications and the options sheet's order. */
 export function logButtons(S) {
   const g = store.genderOf(S);
   if (g === "m") return ["congregation", "ontime"];
@@ -77,28 +81,24 @@ export function logPrayer(S, key, p, status, now = new Date()) {
 }
 
 /**
- * The rows of the Today chapter, in order: the five prayers with Sunrise between Fajr and Zuhr. Sunrise is only
+ * The rows of the Today page, in order: the five prayers with Sunrise between Fajr and Zuhr. Sunrise is only
  * shown (it marks the end of Fajr's time); it is never logged, and nothing counts it (stats and provisions use PRAYERS).
  */
 export const TODAY_ROWS = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
 
-/** The Today tab's chapters. With one tab only (prayers only) there is one chapter and no chapter bar. */
-export function todayChapters(S) {
-  return navTabs(S).length > 1 ? ["now", "today"] : ["today"];
-}
-
-/** The first-run guide line ("Tap when you've prayed") shows until anything is logged for the first time. */
+/** The first-run guide line ("Tap a prayer when you've prayed it") shows until anything is logged for the first time. */
 export function guideLineDue(S) {
   if (!S?.profile?.onboarded) return false;
   return !Object.values(S.days || {}).some(d => d && (d.first > 0 || Object.keys(d.prayers || {}).length > 0));
 }
 
-/* ---------- "Make up Zuhr now?" (the Now chapter) ----------
- * One quiet card under the main card when a fard prayer of TODAY is missed (logged "missed", or its time ended
- * unlogged) and not yet made up. "I made it up" logs it as made up (logPrayer, the same rules as Other's "Made up
- * later": changing Missed to Made up takes it off the make-ups again, store.setPrayer). "Not now" hides it for
- * that prayer today. It follows the make-up nudge setting (settings.makeupNudge) and the Make-ups feature, and
- * isn't shown on an excused day, before the first log ever, or during the three times no ṣalāh is prayed.
+/* ---------- "Make up now" on a missed prayer's row ----------
+ * A fard prayer of TODAY that is missed (logged "missed", or its time ended unlogged) and not yet made up gets a
+ * small "Make up now" on its own row (makeUpNowOn). It logs it as made up (logPrayer, the same rules as the
+ * sheet's "Made up later": changing Missed to Made up takes it off the make-ups again, store.setPrayer). "Not
+ * now" (in the row's options sheet) hides it for that prayer today. It follows the make-up nudge setting
+ * (settings.makeupNudge) and the Make-ups feature, and isn't shown on an excused day, before the first log ever,
+ * or during the three times no ṣalāh is prayed.
  */
 
 /**
@@ -138,7 +138,17 @@ export function makeUpNowFor(S, now = new Date(), { dismissed = [] } = {}) {
   return p;
 }
 
-/* ---------- "Make-ups · 8 left" on the Today chapter ---------- */
+/** Whether prayer `p` of day `key` shows "Make up now" on its row at `now` (the rules above; today's prayers only). */
+export function makeUpNowOn(S, key, p, now = new Date(), { dismissed = [] } = {}) {
+  if (!PRAYERS.includes(p) || key !== dkey(now)) return false;
+  if (!isOn(S, "makeups") || S.settings.makeupNudge === false || guideLineDue(S)) return false;
+  if (store.isExcusedDay(S, key) || dismissed.includes(p)) return false;
+  const s = store.prayerStatus(S, key, p);
+  if (s && s !== "missed") return false;
+  return madeUpAllowed(S, key, p, now) && !forbiddenTime(now, S.settings);
+}
+
+/* ---------- "Make-ups · 8 left" on the Today page ---------- */
 /**
  * What the Make-ups line says, or null to hide it: { prayers, fasts } owed (fasts: qada.fasts, as the Make-ups
  * chapter shows them), or { clear: true } when nothing is owed but make-ups were logged before. Hidden when the
@@ -152,13 +162,13 @@ export function makeupsLine(S, key) {
   return logged ? { prayers: 0, fasts: 0, clear: true } : null;
 }
 
-/* ---------- the Now chapter after logging (19 Nov 2026: "Now moves on to the next prayer") ---------- */
+/* ---------- what is current (19 Nov 2026: "after logging, move on to the next prayer"; todayFocus builds on it) ---------- */
 /**
- * What the Now chapter is about at `now`:
+ * What is current at `now`:
  * - { kind: "open", p, key, cur }: a prayer's time is open and it is not logged yet (the one-tap buttons);
  * - { kind: "next", p, key, time, tomorrow, after }: otherwise, the next prayer, with no buttons until it begins.
  *   `after` is the prayer just logged (its window is still open), or null (between sunrise and Zuhr).
- * Edits to a logged prayer are made on the Today chapter, so a logged prayer is never shown here again.
+ * A logged prayer is never the focus here (todayFocus keeps a logged ʿIshāʾ highlighted, since tomorrow is not on the page).
  */
 export function nowFocus(S, now = new Date()) {
   const cur = currentWindow(now, S.settings);
@@ -168,7 +178,7 @@ export function nowFocus(S, now = new Date()) {
 }
 
 /**
- * The "all five prayed" moment on Now (M6): { key, streak } once every fard of the day whose prayers are current
+ * The "all five prayed" moment on Today (M6): { key, streak } once every fard of the day whose prayers are current
  * (last night's ʿIshāʾ window belongs to yesterday) is prayed, else null. Not on an excused day.
  */
 export function allFiveMoment(S, now = new Date()) {
@@ -177,6 +187,59 @@ export function allFiveMoment(S, now = new Date()) {
   if (store.isExcusedDay(S, key)) return null;
   if (!PRAYERS.every(p => store.isPrayed(store.prayerStatus(S, key, p)))) return null;
   return { key, streak: prayerStreak(S, now) };
+}
+
+/* ---------- the merged Today page: rows, the highlighted row, the tap cycle ---------- */
+/** One tap on a prayer row: what it stores next (null clears), or "sheet" (Made up, Missed, Excused: open the options). */
+const CYCLE = { "": "ontime", ontime: "congregation", congregation: null };
+export function tapNext(status) {
+  const k = status || "";
+  return k in CYCLE ? CYCLE[k] : "sheet";
+}
+
+/** The one-time hint after the first tap ever ("Tap again for congregation"), kept with the other seen flags. */
+export const tapHintDue = S => !S?.settings?.help?.tips?.tapAgain;
+export function markTapHint(S) { helpState(S).tips.tapAgain = true; }
+
+/**
+ * The page's rows, in order: { p, key } for TODAY_ROWS of today; after midnight, while last night's ʿIshāʾ is
+ * still open (until Fajr), that ʿIshāʾ comes first ({ lastNight: true }), so it can still be logged here.
+ */
+export function todayRows(S, now = new Date()) {
+  const key = dkey(now), cur = currentWindow(now, S.settings);
+  const rows = TODAY_ROWS.map(p => ({ p, key }));
+  if (cur && dkey(cur.date) !== key) rows.unshift({ p: cur.p, key: dkey(cur.date), lastNight: true });
+  return rows;
+}
+
+/**
+ * The highlighted row: { kind: "now", p, key, cur } while a prayer's time is open and it isn't logged (on an
+ * excused day: while it is open), else { kind: "next", p, key, time } (the next prayer; not tappable until it
+ * begins). After ʿIshāʾ is logged the next prayer is tomorrow's Fajr, which isn't on the page, so ʿIshāʾ stays
+ * highlighted ({ kind: "now", next }) with its Witr until midnight passes.
+ */
+export function todayFocus(S, now = new Date()) {
+  const cur = currentWindow(now, S.settings);
+  const ck = cur ? dkey(cur.date) : null;
+  if (cur && (store.isExcusedDay(S, ck) || !store.prayerStatus(S, ck, cur.p))) return { kind: "now", p: cur.p, key: ck, cur };
+  const nx = nextPrayer(now, S.settings);
+  if (nx.tomorrow && cur) return { kind: "now", p: cur.p, key: ck, cur, next: nx };
+  return { kind: "next", p: nx.p, key: nx.tomorrow ? dkey(addDays(now, 1)) : dkey(now), time: nx.time };
+}
+
+/**
+ * What one prayer row shows (no wording; views/home.js draws it):
+ * { p, key, status, begun, tap: "ontime" | "congregation" | null | "sheet" | "none", hl: "now" | "next" | "",
+ *   mkNow, lastNight }. tap "none": not begun, not tappable (a stored status is still cleared from ⋯).
+ */
+export function rowState(S, row, now = new Date(), focus = todayFocus(S, now), { dismissed = [] } = {}) {
+  const { p, key } = row;
+  const status = store.prayerStatus(S, key, p);
+  const begun = canLog(S, key, p, now);
+  const excusedDay = store.isExcusedDay(S, key);
+  const tap = !begun ? "none" : excusedDay ? "sheet" : tapNext(status);
+  const hl = focus && focus.p === p && focus.key === key ? focus.kind : "";
+  return { p, key, status, begun, tap, hl, mkNow: makeUpNowOn(S, key, p, now, { dismissed }), lastNight: !!row.lastNight };
 }
 
 /* ---------- the nafl add-on in the Good deeds sheet ---------- */
@@ -206,17 +269,79 @@ export function naflTimes(key, settings, now = new Date()) {
   };
 }
 
-/* ---------- the quiet lines on the Today chapter ---------- */
+/* ---------- the Good deeds sheet (19 Nov 2026: Reading · Deeds · Nafl prayers) ---------- */
 /**
- * "Good deeds · n of m" (always shown while the Good deeds feature is on): the deeds that are not read in Read,
- * plus the nafl prayers shown in the sheet. empty: nothing to tick (the line says "add your own"). Null when off.
+ * The sheet's items for day `key`, in three groups, and the daily count:
+ * - reading: today, Read's For today items (readItems, every one the user reads, Durūd / Salawāt every day), each
+ *   ticked with Read's own tick (reading.setReadDone: the same day log and tool stamps). Reading deeds whose
+ *   reader is hidden, and on an earlier day the reading deeds of the list, are plain deed ticks (store.setAmal).
+ * - deeds: the rest of the deeds list (sadaqah, the user's own; Duʿāʾ & istighfār on an excused day).
+ * - nafl: the nafl add-on shown (naflShown), ticked as their sunnah items.
+ * Each item: { id (the sheet id: Read item, deed id or nafl key), kind: "read" | "amal" | "nafl", done, daily, … }.
+ * done / of: the items chosen as daily deeds (store.dailyIds) that are on the sheet that day. On an excused day
+ * Listen to Qurʾān stands in for recitation, and Duʿāʾ & istighfār counts.
  */
-export function deedsLine(S, key) {
+export function deedGroups(S, key, now = new Date(), extra = {}) {
+  const isToday = key === dkey(now), day = store.getDay(S, key), ex = store.isExcusedDay(S, key);
+  const daily = new Set(store.dailyIds(S));
+  const isDaily = id => daily.has(id) || (id === "listen" && daily.has("quran")) || (id === "dua" && ex);
+  const reading = [], deeds = [], nafl = [], covered = new Set();
+  if (isToday) for (const it of readItems(S, now, { ...extra, all: true })) {
+    covered.add(it.id); if (it.deed) covered.add(it.deed);
+    reading.push({ id: it.id, kind: "read", name: it.title, sub: it.sub, done: it.done, at: it.at, deed: it.deed, daily: isDaily(it.id) });
+  }
+  for (const a of store.amalForDay(S, key)) {
+    if (covered.has(a.id)) continue;
+    const id = store.DEED_ITEM_ID[a.id] || a.id;
+    (READ_DEEDS[a.id] ? reading : deeds).push({ id, amal: a.id, kind: "amal", name: a.name, a, done: !!day.amal[a.id]?.done, daily: isDaily(id) });
+  }
+  for (const x of naflShown(S, key)) nafl.push({ id: x.key, sid: x.id, kind: "nafl", x, done: store.sunnahDone(S, key, x.id), daily: daily.has(x.key) });
+  const counted = [...reading, ...deeds, ...nafl].filter(i => i.daily);
+  return { reading, deeds, nafl, done: counted.filter(i => i.done).length, of: counted.length };
+}
+
+/** Everything "Choose daily deeds" offers: { reading: [ids], deeds: [amal], nafl: [keys] } (whatever the day shows). */
+export function dailyChoices(S) {
+  const reading = ["morning", "evening", "hizb", "quran", "yasinAm", "yasinPm", "manzil", "mulk", "kahf", "durud"].filter(id => {
+    const tool = { morning: "adhkar", evening: "adhkar", hizb: "hizb", manzil: "manzil", durud: "durud" }[id] || "quran";
+    return toolVisible(S, tool) || (id === "durud" && S.amalList.some(a => a.id === "salawat")) || (READ_DEEDS[id] && S.amalList.some(a => a.id === id));
+  });
+  return { reading, deeds: S.amalList.filter(a => !READ_DEEDS[a.id]), nafl: naflShown(S).map(x => x.key) };
+}
+
+/** Turn one item on or off as a daily deed (the first change keeps the default list as the starting point). */
+export function setDaily(S, id, on) {
+  const cur = store.dailyIds(S).filter(x => x !== id);
+  S.settings.dailyDeeds = on ? [...cur, id] : cur;
+}
+
+/* ---------- the quiet lines on the Today page ---------- */
+/**
+ * "Good deeds · n of m" (while the Good deeds feature is on): the daily deeds done today (deedGroups).
+ * empty: none chosen (the pill offers to choose). Null when the feature is off.
+ */
+export function deedsLine(S, key, now = new Date()) {
   if (!isOn(S, "deeds")) return null;
-  const c = sheetCount(S, key), nf = naflShown(S, key);
-  const naflDone = nf.filter(x => store.sunnahDone(S, key, x.id)).length;
-  const done = c.done + naflDone, of = c.of + nf.length;
-  return { done, of, empty: of === 0, inRead: c.inRead };
+  const g = deedGroups(S, key, now);
+  return { done: g.done, of: g.of, empty: g.of === 0 };
+}
+
+/* ---------- the time of day (the Today header's band, 19 Nov 2026 Direction B) ---------- */
+// the band itself lives in src/band.js (every page uses it); re-exported here for Today and its tests
+export { BANDS, bandAt } from "./band.js";
+
+/**
+ * The header's hero (the arch): { mode: "now" | "next", p, key, status, act } from todayFocus.
+ * act: "pray" (the Prayed button: one tap on the prayer, as its row), "remember" (an excused day's open prayer:
+ * remembrance at prayer time), or "" (the next prayer hasn't begun: no button, only Qibla).
+ * After the current prayer is logged the hero shows the next one; ʿIshāʾ stays until midnight (tomorrow's Fajr isn't
+ * on the page), with its Prayed button showing how it was logged (tap again: congregation, as its row).
+ */
+export function heroOf(S, now = new Date(), focus = todayFocus(S, now)) {
+  const { p, key } = focus, status = store.prayerStatus(S, key, p);
+  if (focus.kind === "next") return { mode: "next", p, key, status, act: "" };
+  if (store.isExcusedDay(S, key)) return { mode: "now", p, key, status, act: "remember" };
+  return { mode: "now", p, key, status, act: "pray" };
 }
 
 /**

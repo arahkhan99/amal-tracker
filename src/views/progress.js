@@ -4,8 +4,8 @@
  * - Reflections: what's going well, one thing to work on, and the day's reflection (src/reflections.js).
  * - Week: sub-tabs Days · Streaks · Congregation · Sunnah · Good deeds (views/subtabs.js). Days: three numbers and a
  *   row per day (tap → the calendar's day sheet). Earlier weeks with the arrows.
- * - Charts: sub-tabs Prayers · Each prayer · Congregation · Sunnah · Good deeds, over 30 days (earlier periods with
- *   the arrows) or a year.
+ * - Charts: sub-tabs Prayers · Each prayer · Congregation · Sunnah · Good deeds · Qurʾān (pages or minutes read each
+ *   day, in the reader and with "I read…"), over 30 days (earlier periods with the arrows) or a year.
  * - Provisions: views/provisions.js provisionsChapter(). Make-ups: views/qada.js makeupsChapter() (sub-tabs too).
  * Only the chosen sub-tab is built. A chapter goes back to its first sub-tab when you leave it (once the swipe has
  * settled and the page is idle) and every chapter does when you leave the tab.
@@ -27,9 +27,21 @@ import { provisionsChapter } from "./provisions.js";
 import { makeupsChapter } from "./qada.js";
 import { makeChapters, setHTML } from "./chapters.js";
 import { subOf, subIsFirst, resetSubs, onSubTab, subTabsHTML, subPanel } from "./subtabs.js";
+import { readingSeries, goalOf } from "../quran-goal.js";
+import { QGOAL } from "../strings.js";
 
 /* ---------- state: the week shown, and the Charts period ---------- */
-const V = { week: 0, month: 0, year: 0, r: "month" };
+const V = { week: 0, month: 0, year: 0, r: "month", qu: "pages" };
+// only the Charts chapter is redrawn (the Qurʾān sub-tab's Pages / Minutes)
+A.prQUnit = u => {
+  if ((u !== "pages" && u !== "min") || u === V.qu) return;
+  V.qu = u;
+  if (UI.view !== "progress") return;
+  drawOne("charts");
+  // keep the Qurʾān sub-tab in view in its (scrolling) bar, as a tap on it does
+  const t = document.getElementById("st-charts-quran"), w = t?.closest(".st-wrap");
+  if (w && w.scrollWidth > w.clientWidth) w.scrollLeft = w.scrollWidth;
+};
 A.prWeek = d => { V.week = Math.max(0, V.week + d); renderProgress(); };
 A.prRange = r => { if (r === "month" || r === "year") { V.r = r; renderProgress(); } };
 A.prOff = d => { V[V.r] = Math.max(0, V[V.r] + d); renderProgress(); };
@@ -220,7 +232,7 @@ function tierKey(sr) {
   const m = madhhabOf(S), rows = [];
   if (sr.items.some(x => x.display === "solid")) rows.push(`<b>${esc(TIER.muakkadah.gloss)}.</b> ${esc(TIER.muakkadah.line)}`);
   if (sr.items.some(x => x.display === "outline")) rows.push(`<b>${esc(TIER.ghayr.gloss)}.</b> ${esc(TIER.ghayr.line)}`);
-  rows.push(`<b>${esc(m === "hanafi" ? TIER.wajib.gloss : TIER.sunnah.gloss)}.</b> ${esc(WITR_UI.line[m])}`);
+  rows.push(`<b>${esc(m === "hanafi" ? WITR_UI.name : TIER.sunnah.gloss)}.</b> ${esc(WITR_UI.line[m])}`); // Hanafī: just "Witr" (no tier word)
   if (S.settings.sunnahNafl) rows.push(`<b>${esc(TIER.nafl.gloss)}.</b> ${esc(TIER.nafl.line)}`);
   return `<ul class="pr-tiers">${rows.map(r => `<li>${r}</li>`).join("")}</ul>`;
 }
@@ -295,6 +307,7 @@ function chartsChapter() {
   if (!sister() || c.congregation) items.push(["cong", PROG.sub.cong, guard(() => congCols(c))]);
   if (isOn(S, "sunnah")) items.push(["sunnah", PROG.sub.sunnah, guard(() => sunnahBars(P))]);
   if (isOn(S, "deeds")) items.push(["deeds", PROG.sub.deeds, guard(() => deedRates(P))]);
+  if (toolVisible(S, "quran")) items.push(["quran", QGOAL.chartTab, () => nav + quranChart(P)]);
   return h + withSubs("charts", items) + `<div class="zt-fill"></div>`;
 }
 
@@ -401,6 +414,41 @@ function sunnahBars(P) {
   const headline = L.sunnahPeriod(sr.pct ?? 0, sr.witr.due ? sr.witr.pct : null);
   return sec(esc(PROGRESS.sunnahPrayers), esc(PROG.sunnahSub), "sunnah") + `<div class="zt-card pad"><p class="pr-cs">${headline}</p>${body}</div>${sr.excusedDays ? cap(esc(EXCUSED.progressNote(sr.excusedDays))) : ""}${tierKey(sr)}`;
 }
+/** Qurʾān: pages (or minutes) read each day over the 30 days, or each month of a year. Flat bars; excused days a moon. */
+function quranChart(P) {
+  const u = V.qu, today = todayKey();
+  const seg = `<div class="pr-seg qg-cseg" role="group" aria-label="${esc(QGOAL.segLabel)}">${["pages", "min"].map(k => `<button type="button" data-f="qu-${k}" class="${k === u ? "on" : ""}" aria-pressed="${k === u}" onclick="A.prQUnit('${k}')">${esc(QGOAL.seg[k])}</button>`).join("")}</div>`;
+  const ser = readingSeries(S, P.from, P.end).filter(x => x.key >= S.createdKey && x.key <= today);
+  const val = x => (u === "min" ? x.min : x.pages);
+  const tp = ser.reduce((a, x) => a + x.pages, 0), tm = ser.reduce((a, x) => a + x.min, 0), dr = ser.filter(x => x.pages || x.min).length;
+  const g = goalOf(S);
+  let h = `<div class="zt-card pad pr-st3">${stats(QGOAL.totals(tp, tm, dr).map(([b, l]) => [b, esc(l)]))}</div>`;
+  if (!dr) return h + `<div class="zt-card pad"><p class="pr-empty">${esc(QGOAL.none)}</p></div>`;
+  if (P.r === "month") {
+    const days = [];
+    for (let d = P.from; dkey(d) <= dkey(P.end); d = addDays(d, 1)) days.push(d);
+    const by = new Map(ser.map(x => [x.key, x]));
+    const mx = Math.max(1, ...ser.map(val)), top = mx <= 5 ? 5 : Math.ceil(mx / 5) * 5;
+    const bars = days.map(d => {
+      const k = dkey(d), x = by.get(k);
+      if (!x) return `<span class="b"></span>`;
+      const v = val(x);
+      if (x.excused && !v) return `<span class="b ex" title="${esc(QGOAL.barExcused(short(d)))}">${icon("moon", "")}</span>`;
+      return `<span class="b${k === today ? " t" : ""}" title="${esc(QGOAL.barTitle(short(d), v, u))}">${v ? `<i style="height:${Math.max(4, v / top * 100)}%"></i>` : ""}</span>`;
+    }).join("");
+    const ticks = days.map((d, i) => (d.getDay() === 0 && i < days.length - 2 ? `<span style="grid-column:${i + 1} / span 4">${short(d)}</span>` : "")).join("");
+    const tot = u === "min" ? tm : tp;
+    h += sec(esc(QGOAL.perDay), esc(u === "min" ? QGOAL.perDaySubM : QGOAL.perDaySubP)) + `<div class="zt-card pad"><div class="pr-qseg">${seg}</div><div class="pr-pd qg-pd" role="img" aria-label="${esc(QGOAL.chartAria(u, short(P.from), short(P.end), tot, dr))}"><div class="bars" style="grid-template-columns:repeat(${days.length},1fr)" aria-hidden="true">${bars}</div><div class="ax" aria-hidden="true"><span>${top}</span><span>0</span></div><div class="tk" style="grid-template-columns:repeat(${days.length},1fr)" aria-hidden="true">${ticks}</div></div></div>`;
+  } else {
+    const m = Array(12).fill(0);
+    for (const x of ser) m[+x.key.slice(5, 7) - 1] += val(x);
+    const mx = Math.max(1, ...m), curM = P.year === NOW().getFullYear() ? NOW().getMonth() : -1;
+    const cols = m.map((v, k) => `<div class="col${k === curM ? " cur" : ""}" style="--h:${v ? Math.max(2, v / mx * 100) : 0}%"><b>${v || ""}</b><i></i><span>${MON3[k][0]}</span></div>`).join("");
+    const label = m.map((v, k) => `${MON3[k]} ${v}`).join(", ");
+    h += sec(esc(QGOAL.perMonth), esc(QGOAL.seg[u])) + `<div class="zt-card pad"><div class="pr-qseg">${seg}</div><div class="pr-cols m12" role="img" aria-label="${esc(`${QGOAL.perMonth} (${QGOAL.seg[u]}): ${label}`)}">${cols}</div></div>`;
+  }
+  return h + cap(esc(g ? `${QGOAL.goalLine(QGOAL.goalName(g))}. ${QGOAL.chartCap}` : QGOAL.chartCap));
+}
 function deedRates(P) {
   // amalRates counts back from today only: an earlier period has no good-deed rates
   const none = `<div class="zt-card pad"><p class="pr-empty">${esc(PROG.deedsNow)}</p></div>`;
@@ -461,7 +509,7 @@ function renderProgress(why) {
   // Back on the tab: every chapter starts on its first sub-tab (the redraw below is a full one)
   if (away) { away = false; resetSubs(...SUBS); pending.clear(); why = null; }
   const built = CH.ensure(el, list, PROG.chapters);
-  setHTML(CH.top(), `<h1 class="zt-pg">${esc(PROGRESS.title)}</h1>${avatarBtn()}`);
+  setHTML(CH.top(), `<h1 class="zb-t">${esc(PROGRESS.title)}</h1>${avatarBtn()}`);
   // The 20 s clock tick: every chapter's charts cost a few hundred ms on a slow phone (and could land mid-swipe),
   // and nothing here changes until the log does or a prayer begins or ends
   const sig = timeSig(list);

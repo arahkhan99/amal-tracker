@@ -62,7 +62,7 @@ A.mkPick = (from = "") => {
   const fast = today && q.fasts > 0 ? `<div class="z-opt"><button type="button" class="z-optb" data-f="mk-fast" onclick="A.mkTap('fast')"><span class="z-t"><b>${esc(X.aFast)}</b><small>${esc(X.left(q.fasts))}</small></span>${icon("chev", "z-cv")}</button></div>` : "";
   const all = today ? `<button type="button" class="z-tbtn mk-all" data-f="mk-all" onclick="A.mkSeeAll()">${esc(X.seeAll)}</button>` : "";
   openSheet(`<div class="z-sh"><div class="z-lhd"><div><h3>${esc(PROG.pickTitle)}</h3><p class="z-sub">${esc(PROG.pickSub)}</p></div><button class="z-cls" onclick="A.closeSheet()" aria-label="${esc(COMMON.close)}">${icon("close", "z-i")}</button></div>
-  <div class="z-opts">${keys.map(p => `<div class="z-opt"><button type="button" class="z-optb" ${q[p] > 0 ? "" : "disabled"} onclick="A.mkTap('${p}')"><span class="z-t"><b>${esc(nameOf(p))}${p === "Witr" ? ` <span class="z-art">· ${esc(X.witrTag)}</span>` : ""}</b><small>${esc(X.left(q[p] || 0))}</small></span>${icon("chev", "z-cv")}</button></div>`).join("")}${fast}</div>
+  <div class="z-opts">${keys.map(p => `<div class="z-opt"><button type="button" class="z-optb" ${q[p] > 0 ? "" : "disabled"} onclick="A.mkTap('${p}')"><span class="z-t"><b>${esc(nameOf(p))}${p === "Witr" && X.witrTag ? ` <span class="z-art">· ${esc(X.witrTag)}</span>` : ""}</b><small>${esc(X.left(q[p] || 0))}</small></span>${icon("chev", "z-cv")}</button></div>`).join("")}${fast}</div>
   <div class="z-shfoot">${all}<button class="z-tbtn" onclick="A.closeSheet()">${esc(COMMON.cancel)}</button></div></div>`);
 };
 A.mkTap = p => { closeSheet(); if (p === "fast") A.madeUpFast(); else A.madeUp(p); };
@@ -96,7 +96,7 @@ export function makeupsChapter(group = "makeups") {
   const proj = [[X.aMonth(goal), X.yourGoal, addDays(now, Math.ceil(owed / goal) * 30)], [X.oneADay, X.aboutMonth, addDays(now, owed)], [X.twoADay, "", addDays(now, Math.ceil(owed / 2))]];
 
   const head = `<header class="zt-chh"><h1 class="zt-title">${esc(NAV.qada)}</h1><p class="zt-sub pr-subi">${esc(PROG.mkSub)} <span class="pr-ar">(qaḍāʾ)</span>${glossBtn("qada")}</p></header>`;
-  const rows = keys.map(p => `<div class="mk-row"><span class="t">${esc(nameOf(p))}${p === "Witr" ? ` <small>${esc(X.witrTag)}</small>${glossBtn("witr")}` : ""}</span><b class="${q[p] ? "" : "z"}">${num(q[p] || 0)}</b></div>`).join("");
+  const rows = keys.map(p => `<div class="mk-row"><span class="t">${esc(nameOf(p))}${p === "Witr" ? `${X.witrTag ? ` <small>${esc(X.witrTag)}</small>` : ""}${glossBtn("witr")}` : ""}</span><b class="${q[p] ? "" : "z"}">${num(q[p] || 0)}</b></div>`).join("");
   const goalLine = `<div class="mk-bar" role="progressbar" aria-label="${esc(PROG.madeThisMonth(m.prayers, goal))}" aria-valuenow="${m.prayers}" aria-valuemin="0" aria-valuemax="${goal}"><i style="width:${pctG}%"></i><u style="left:${pace}%" title="${esc(X.paceFor)}"></u></div>
     <div class="mk-line"><span>${esc(PROG.madeThisMonth(m.prayers, goal))} · <b>${esc(paceWord)}</b>${m.prayers < goal ? `<small>${esc(M.moreInDays(goal - m.prayers, daysLeft, Math.ceil((goal - m.prayers) / Math.max(1, daysLeft))))}</small>` : ""}</span><button type="button" class="zt-link" data-f="mkgoal" onclick="A.goalSheet()">${esc(X.changeGoal)}</button></div>`;
   const main = `<div class="zt-card pad mk-main">

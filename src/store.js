@@ -25,7 +25,7 @@ export const DEFAULT_AMAL = [
 // Names and hints the built-ins had before v2; renamed only if the user never changed them
 const OLD_AMAL = {
   quran: { name: "Quran recitation" }, morning: { name: "Morning adhkar" },
-  evening: { name: "Evening adhkar", hint: "After Asr" }, salawat: { name: "Salawat" },
+  evening: { name: "Evening adhkar", hint: "After Asr" }, salawat: { name: "Salawat", also: ["Salawāt", "Durūd"] },
 };
 
 export function defaultState(now = new Date()) {
@@ -142,12 +142,26 @@ export function normalize(s, now = new Date()) {
   return out;
 }
 
+/**
+ * The daily good deeds (19 Nov 2026: "Good deeds · n of m" counts only these), as Good deeds sheet item ids:
+ * Read items (morning, evening, quran, durud, hizb, mulk, …), the user's own deeds (sadaqah, custom ids) and nafl
+ * keys (ishraq, duha, awwabin, tahajjud). Chosen in the sheet ("Choose daily deeds", settings.dailyDeeds); until
+ * then the deeds list itself (S.amalList; the merged salawāt deed is the Read item "durud"). Nafl only if chosen.
+ */
+export const DEED_ITEM_ID = { salawat: "durud" };
+export function dailyIds(S) {
+  const d = S.settings?.dailyDeeds;
+  if (Array.isArray(d)) return d;
+  return (S.amalList || []).map(a => DEED_ITEM_ID[a.id] || a.id);
+}
+
 /** Built-in good deeds get the new names (light transliteration) unless the user renamed them. */
 function migrateAmal(a) {
   const old = a && a.builtin && OLD_AMAL[a.id];
   if (!old) return a;
   const x = { ...a };
-  if (x.name === old.name) x.name = DEED_NAME[a.id];
+  // Salawāt: since 19 Nov 2026 the one merged item "Durūd / Salawāt" (the deed and the forty durūd reading)
+  if (x.name === old.name || old.also?.includes(x.name)) x.name = DEED_NAME[a.id];
   if (old.hint && x.hint === old.hint) x.hint = DEED_HINT[a.id];
   return x;
 }
@@ -260,6 +274,7 @@ export function applyGender(S, g, { todayKey: key, excusedPrayers = [], undoHome
  *   excused?: true                     // excused day (hayd / nifas): unlogged prayers count as excused
  *   remember?: { Fajr: true, ... }     // remembrance at prayer time, only on excused prayers (setRemember)
  *   reads?: { hizb: true, mulk: true, kahf: true, manzil: true, yasinAm: true, yasinPm: true } // readings done in Read (setRead; points.readsByDay)
+ *   quran?: { pages: ["indopak15:12"], sec: { [phone]: s }, manual: [{ id, unit, n, at, e } | { id, del }] } // Qurʾān goal reading (src/quran-goal.js, mergeQuranDay)
  *   first?: ms                        // when the user first logged anything for this day; set once (markLogged)
  *   u: ms                              // last edit, for cloud merges
  * }
@@ -641,6 +656,8 @@ function mergeCore(local, remote) {
     // day.first: the earliest stamp from either copy wins, whichever side's edit is kept
     const first = [a?.first, b?.first].filter(x => x > 0).sort((x, y) => x - y)[0];
     if (first && d.first !== first) d = { ...d, first };
+    // day.quran (the Qurʾān goal's reading): both copies' pages, each phone's minutes and the "I read…" entries stay
+    if (a?.quran && b?.quran && a !== b) d = { ...d, quran: mergeQuranDay(a.quran, b.quran) };
     out.days[k] = d;
   }
   // Levels never go down: keep the higher best level shown on either phone
@@ -654,6 +671,31 @@ function mergeCore(local, remote) {
 }
 
 const isObj = v => v && typeof v === "object" && !Array.isArray(v);
+
+/**
+ * Two copies of a day's Qurʾān reading (day.quran, src/quran-goal.js), joined: the pages read in the reader (both
+ * lists), each phone's active seconds (the higher count per phone: a phone only ever adds to its own), and the
+ * "I read…" entries by id (the later edit wins; a removed entry, { id, del }, stays removed).
+ */
+export function mergeQuranDay(a, b) {
+  if (!isObj(a)) return isObj(b) ? JSON.parse(JSON.stringify(b)) : b;
+  if (!isObj(b)) return JSON.parse(JSON.stringify(a));
+  const out = {};
+  const pages = [...new Set([...(a.pages || []), ...(b.pages || [])])];
+  if (pages.length) out.pages = pages;
+  const sec = {};
+  for (const src of [a.sec, b.sec]) if (isObj(src)) for (const [dev, v] of Object.entries(src)) if (Number.isFinite(v)) sec[dev] = Math.max(sec[dev] || 0, v);
+  if (Object.keys(sec).length) out.sec = sec;
+  const byId = new Map();
+  for (const m of [...(a.manual || []), ...(b.manual || [])]) {
+    if (!m?.id) continue;
+    const cur = byId.get(m.id);
+    if (cur?.del) continue;
+    if (!cur || m.del || (m.e || 0) > (cur.e || 0)) byId.set(m.id, { ...m });
+  }
+  if (byId.size) out.manual = [...byId.values()].sort((x, y) => (x.at || x.del || 0) - (y.at || y.del || 0));
+  return out;
+}
 
 /* ---------- cleared tool stamps (sync tombstones) ----------
  * The readers keep "done" as a time stamp in S.tools: adhkar[day][set].done, manzil[day][slot], read[day][id],

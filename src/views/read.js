@@ -5,7 +5,9 @@
  *
  * - For today: "Today's reading · n of m done", each due reading with Read / Open and a tick (rules: src/reading.js;
  *   a tick writes the same day log as the Good deeds sheet), then "This week" as one row (the weekly readings sheet).
- * - Qurʾān: continue reading, al-Kahf, al-Mulk, Manzil, all sūrahs and juzʾ.
+ *   With a Qurʾān goal (views/quran-goal.js) the recitation row shows its progress ("3 of 5 pages today" and a bar),
+ *   opens the reader when tapped, and has "I read…" for reading in your own mushaf.
+ * - Qurʾān: continue reading, the reading goal's card, al-Kahf, al-Mulk, Manzil, all sūrahs and juzʾ.
  * - Adhkār: morning, evening, after ṣalāh, Hizb al-Aʿzam, durūd, and tips.
  * Each item follows Settings → Features (tools); a chapter with nothing in it is left out.
  */
@@ -15,7 +17,7 @@ import * as store from "../store.js";
 import { makeChapters, setHTML } from "./chapters.js";
 import { readItems, setReadDone, isReadDone, isJumuah, slotOf, jumuahKey } from "../reading.js";
 import { toolVisible, isOn } from "../features.js";
-import { READ, GUIDE, PRAYER_NAME, NAV } from "../strings.js";
+import { READ, GUIDE, PRAYER_NAME, NAV, QGOAL } from "../strings.js";
 import { timesFor } from "../times.js";
 import { dkey, DOW, MON3 } from "../util.js";
 import { thisWeek, contentReady, whenContent } from "../content.js";
@@ -25,6 +27,8 @@ import { TT } from "./tools/strings-tools.js";
 import { loadQuranMeta, surahName, quranMushaf, quranPage, quranHasStarted, mushafName, pagesToday } from "./tools/quran.js";
 import { DURUD } from "../tools/data/durud.js";
 import { loadHizb, manzilToday } from "./tools/hizb.js";
+import { goalLine, goalBar, goalCard } from "./quran-goal.js";
+import { goalStatus } from "../quran-goal.js";
 
 const ic = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ICON = {
@@ -96,11 +100,13 @@ const linkRow = (id, title, sub, act, { done = false, now = false, sub2 = "" } =
 function forToday(now) {
   const items = readItems(S, now, { lastRead: lastReadText() });
   const n = items.filter(i => i.done).length;
-  const rows = items.map(it => {
-    const btn = it.done || it.id === "listen" ? "" : `<button type="button" class="rd-btn" data-f="o-${it.id}" onclick="A.readOpen('${it.id}')" aria-label="${esc(`${it.id === "quran" ? READ.open : READ.read}: ${it.title}`)}">${esc(it.id === "quran" ? READ.open : READ.read)}</button>`;
-    const s2 = extraLine(it.id, now, it.done);
-    return `<div class="rd-row tk${it.done ? " done" : ""}">${tile(it.id)}<span class="t"><b>${esc(it.title)}</b><small>${it.now ? dot : ""}${esc(it.sub)}</small>${s2 ? `<small class="rd-s2">${esc(s2)}</small>` : ""}</span>${btn}
-      <button type="button" class="rd-tick" data-f="t-${it.id}" role="checkbox" aria-checked="${it.done}" aria-label="${esc(READ.markDone(it.title))}" onclick="A.readTick('${it.id}')"><span class="rd-bx${it.done ? " on" : ""}">${it.done ? I.check : ""}</span></button></div>`;
+  const gs = goalStatus(S, now);
+  // done readings sink to the bottom (the order is otherwise the reading rules', src/reading.js)
+  const rows = [...items.filter(i => !i.done), ...items.filter(i => i.done)].map(it => {
+    if (it.id === "quran" && gs) return goalRow(it, gs);
+    const btn = it.done || it.id === "listen" ? "" : `<button type="button" class="rd-btn" data-f="o-${it.id}" onclick="A.readOpen('${it.id}')" aria-label="${esc(`${it.id === "quran" ? READ.open : READ.read}: ${it.title}`)}">${I.book}<span>${esc(it.id === "quran" ? READ.open : READ.read)}</span></button>`;
+    const s2 = it.id === "listen" && gs ? QGOAL.pausedShort : extraLine(it.id, now, it.done);
+    return `<div class="rd-row tk${it.done ? " done" : ""}">${tickBtn(it)}<span class="t"><b>${esc(it.title)}</b><small>${it.now ? dot : ""}${esc(it.sub)}</small>${s2 ? `<small class="rd-s2">${esc(s2)}</small>` : ""}</span>${btn}</div>`;
   }).join("");
   const head = `<header class="zt-chh"><h1 class="zt-title">${esc(READ.todayTitle)}</h1>${items.length ? `<p class="zt-sub"><b>${esc(READ.doneOf(n, items.length))}</b> ${esc(READ.doneWord)}</p>` : ""}</header>`;
   const excused = items.length && S.days[dkey(now)]?.excused ? `<p class="zt-note">${esc(READ.excusedNote)}</p>` : "";
@@ -109,6 +115,14 @@ function forToday(now) {
   const vol = items.length ? `<p class="zt-note rd-vol">${esc(TT.voluntary)}</p>` : "";
   return `${head}${list}${weekRow(now)}${vol}<div class="zt-fill"></div><div class="rd-choose"><button type="button" class="zt-link" onclick="A.toolsSettings()">${esc(READ.choose)}</button></div>`;
 }
+
+/** Qurʾān recitation with a goal: the text opens the reader, "I read…" adds reading done elsewhere, the tick is as before. */
+function goalRow(it, gs) {
+  const line = goalLine(gs), tick = tickBtn(it);
+  return `<div class="rd-row tk qg-row${it.done ? " done" : ""}">${tick}<button type="button" class="t rd-tt" data-f="o-quran" onclick="A.readOpen('quran')" aria-label="${esc(`${it.title}: ${line}. ${READ.open}`)}"><b>${esc(it.title)}</b><small>${it.now ? dot : ""}${esc(it.sub)}</small><small class="rd-s2 qg-l${gs.met ? " met" : ""}">${esc(line)}</small>${goalBar(gs)}</button>
+    <button type="button" class="rd-btn qg-ir" data-f="qg-ir" onclick="A.qgRead()">${esc(QGOAL.iRead)}</button></div>`;
+}
+const tickBtn = it => `<button type="button" class="rd-tick" data-f="t-${it.id}" role="checkbox" aria-checked="${it.done}" aria-label="${esc(READ.markDone(it.title))}" onclick="A.readTick('${it.id}')"><span class="rd-bx${it.done ? " on" : ""}">${it.done ? I.check : ""}</span></button>`;
 
 /** "This week · New on Sunday": one row; it opens the six weekly readings. */
 function weekRow(now) {
@@ -129,13 +143,14 @@ A.readWeek = () => {
 function quranCh(now) {
   const q = toolVisible(S, "quran"), parts = [];
   const sub = q ? mushafName(quranMushaf()) : "";
-  parts.push(`<header class="zt-chh"><h1 class="zt-title">${esc(READ.quranTitle)}</h1>${sub ? `<p class="zt-sub">${esc(sub)}</p>` : ""}</header>`);
+  // no chapter head (its name is in the band); the mushaf goes on the Continue tile's first line
   if (q) {
     const l = lastPlace();
     const name = l?.surah ? READ.surah(l.surah) : l ? TT.pageOf(l.page, IX[quranMushaf()]?.pages || 610) : READ.firstPage;
     const para = l?.para ? TT.juzN(l.para) : "";
-    parts.push(`<div class="zt-card pad rd-cont"><p class="rd-kick">${esc(l ? READ.continueReading : READ.startReading)}</p><p class="rd-big"><b>${esc(name)}</b>${para ? `<span>${esc(para)}</span>` : ""}</p>
+    parts.push(`<div class="zt-card pad rd-cont"><p class="rd-kick">${esc(l ? READ.continueReading : READ.startReading)}${sub ? ` · ${esc(sub)}` : ""}</p><p class="rd-big"><b>${esc(name)}</b>${para ? `<span>${esc(para)}</span>` : ""}</p>
       <button type="button" class="zt-btn pri" data-f="q-cont" onclick="A.readOpen('quranCont')">${I.book}${esc(l ? READ.continue : READ.openBtn)}</button></div>`);
+    parts.push(goalCard(now));
   }
   const rows = [];
   const excused = !!S.days[dkey(now)]?.excused;
@@ -163,8 +178,7 @@ function adhkarCh(now) {
   if (toolVisible(S, "afterSalah")) rows.push(linkRow("afterSalah", READ.afterSalah, READ.afterSalahSub, "A.toolsOpen('afterSalah')"));
   if (toolVisible(S, "hizb")) rows.push(linkRow("hizb", READ.item.hizb, READ.hizbRowSub(manzilToday(now)), "A.toolsOpen('hizb')", { done: isReadDone(S, "hizb", now) }));
   if (toolVisible(S, "durud")) { const dd = isReadDone(S, "durud", now); rows.push(linkRow("durud", READ.durudRow, READ.durudRowSub, "A.toolsOpen('durud')", { done: dd, sub2: extraLine("durud", now, dd) })); }
-  return `<header class="zt-chh"><h1 class="zt-title">${esc(READ.adhkarTitle)}</h1></header>
-    ${rows.length ? `<div class="zt-card list rd-list">${rows.join("")}</div>` : ""}
+  return `${rows.length ? `<div class="zt-card list rd-list">${rows.join("")}</div>` : ""}
     <div class="zt-card list rd-list"><button type="button" class="rd-row link" onclick="A.readTips()">${tile("info")}<span class="t"><b>${esc(READ.tips)}</b><small>${esc(READ.tipsSub)}</small></span>${chev}</button></div>`;
 }
 A.readTips = () => openSheet(`<h3>${esc(READ.tips)}</h3><div class="rd-tips">${[GUIDE.tipAdhkar, GUIDE.tipQuran, GUIDE.tipHizb].map(h => `<p>${h}</p>`).join("")}<p>${esc(READ.tipTicks)}</p></div><div class="cta"><button class="btn primary" onclick="A.closeSheet()">${esc(COMMON.gotIt)}</button></div>`);
@@ -182,7 +196,7 @@ const scrolls = {};
 export function renderRead(root) {
   const now = NOW(), ids = readChapters();
   const built = ch.ensure(root, ids, READ.chapters);
-  setHTML(ch.top(), `<span class="zt-pg">${esc(NAV.tools)}</span>${avatarBtn()}`);
+  setHTML(ch.top(), `<h1 class="zb-t">${esc(NAV.tools)}</h1>${avatarBtn()}`);
   for (const id of ids) setHTML(ch.panel(id), id === "today" ? forToday(now) : id === "quran" ? quranCh(now) : adhkarCh(now));
   if (built) for (const id of ids) { const p = ch.panel(id); if (p && scrolls[id]) p.scrollTop = scrolls[id]; }
   ch.land();
@@ -219,7 +233,7 @@ A.readAll = () => { A.readOpen("quranCont"); setTimeout(() => A.tlGoTo?.("surah"
 /** Tick or untick a reading for today (For today, and the bar in a reader). Undo puts back exactly what was there. */
 A.readTick = id => {
   const now = NOW(), key = todayKey();
-  const it = readItems(S, now).find(x => x.id === id); if (!it) return;
+  const it = readItems(S, now, { all: true }).find(x => x.id === id); if (!it) return; // all: also from the Good deeds sheet
   const snap = JSON.stringify({ tools: S.tools || {}, day: S.days[key] ?? null });
   setReadDone(S, id, !it.done, now);
   commit();

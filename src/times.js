@@ -41,11 +41,25 @@ function params(settings) {
   return p;
 }
 
+/*
+ * timesFor is called many times per redraw (each row, each rule), and every call runs the whole astronomy
+ * (adhan). The answer only depends on the calendar date, the place, the method and the ʿAsr rule, so the last
+ * few answers are kept. Each call returns a new object (the Dates inside are shared; nothing changes them).
+ */
+const memo = new Map();
+const MEMO_MAX = 48;
 /** Prayer start times (plus sunrise) for a local calendar date. */
 export function timesFor(date, settings) {
   const loc = settings.location || FALLBACK_LOCATION;
-  const pt = new PrayerTimes(new Coordinates(loc.lat, loc.lng), date, params(settings));
-  return { Fajr: pt.fajr, Sunrise: pt.sunrise, Dhuhr: pt.dhuhr, Asr: pt.asr, Maghrib: pt.maghrib, Isha: pt.isha };
+  const id = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}|${loc.lat}|${loc.lng}|${settings.method}|${settings.asr}|${settings.madhhab}`;
+  let t = memo.get(id);
+  if (!t) {
+    const pt = new PrayerTimes(new Coordinates(loc.lat, loc.lng), date, params(settings));
+    t = { Fajr: pt.fajr, Sunrise: pt.sunrise, Dhuhr: pt.dhuhr, Asr: pt.asr, Maghrib: pt.maghrib, Isha: pt.isha };
+    if (memo.size >= MEMO_MAX) memo.delete(memo.keys().next().value);
+    memo.set(id, t);
+  }
+  return { ...t };
 }
 
 /** True when prayer `p` on the day `date` hasn't started yet at `now` (it can't be logged until it starts). */

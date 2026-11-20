@@ -7,6 +7,8 @@ import { fmt12 } from "../../util.js";
 import { PRAYER_NAME } from "../../strings.js";
 import { TT } from "./strings-tools.js";
 import { quranBlock, quranFont, refLabel } from "./qtext.js";
+import { readerHead } from "./core.js";
+import { bandBar } from "../../band.js";
 
 /* ---------- which prayer just passed ---------- */
 /** { prayer, key, at }: the latest fard whose time has begun. Before Fajr it is last night's ʿIshāʾ (dated yesterday). */
@@ -137,15 +139,8 @@ export function afterSalahView() {
   const doneCard = pg.complete ? `<div class="tl-donec"><div class="tl-dtick">${I.check}</div><div><b>${esc(TT.asDone(pname(prayer)))}</b><span>${TT.doneMeta(pg.n, pg.total)}</span></div></div>` : "";
   const chips = PRAYERS5.map(p => `<button role="tab" aria-selected="${p === prayer}" class="${p === prayer ? "on" : ""}" onclick="A.asPick('${p}')">${esc(TT.asShort[p])}</button>`).join("");
   const first = AFTER_SALAH.indexOf(nowItem);
-  return `<div class="tl-hero tl-rd">
-      
-      <div class="tl-hrow"><button type="button" class="tl-hbtn" aria-label="${COMMON.back}" onclick="A.tlBack()">${I.back}</button>
-        <div class="tl-ht"><h1>${esc(TT.asTitle)}</h1></div>
-        <button type="button" class="tl-hbtn aa" aria-label="${TT.aa}" onclick="A.tlAa('afterSalah')">Aa</button></div>
-      <div class="tl-segw five" role="tablist" aria-label="${TT.asWhich}">${chips}</div>
-      <div class="tl-auto"><span class="tl-autob">${auto ? TT.auto : "•"}</span> ${esc(autoLine)}</div>
-      <div class="tl-prog"><div class="tl-bar"><i style="width:${Math.round(100 * pg.said / pg.total)}%"></i></div><span><b>${pg.complete ? pg.n : first + 1} of ${pg.n}</b> · ${pg.said}/${pg.total} said</span></div>
-    </div>
+  return `${readerHead({ title: TT.asTitle, aa: "afterSalah", cls: "tl-rd", lead: `${auto ? `<span class="tl-autob">${TT.auto}</span> ` : ""}${esc(autoLine)}`,
+    extra: `<div class="tl-segw zb-chips five" role="tablist" aria-label="${TT.asWhich}">${chips}</div>${bandBar(100 * pg.said / pg.total, `<b>${pg.complete ? pg.n : first + 1} of ${pg.n}</b> · ${pg.said}/${pg.total} said`)}` })}
     <div class="tl-list">${doneCard}${cards}</div>
     <p class="tl-draftline">${esc(TT.asSource)}</p><div class="space"></div>`;
 }

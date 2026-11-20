@@ -116,7 +116,9 @@ export function qiblaView(location, opts = {}) {
   const locale = opts.locale || (typeof navigator !== "undefined" && navigator.language) || "en";
   const miles = opts.miles ?? usesMiles(locale);
   const q = qiblaFor(location);
-  const top = `<div class="qb-top"><button type="button" class="qb-ib" data-qb="back" aria-label="${esc(QB.back)}">${svg(ICON.back)}</button><h1 class="qb-pg">${esc(QB.title)}</h1><span class="qb-ib" aria-hidden="true"></span></div>`;
+  // the time-of-day band (css/band.css): "‹ Today" (where it was opened: opts.backLabel), the title in Amiri
+  const back = opts.backLabel ? `<span>${esc(opts.backLabel)}</span>` : "";
+  const top = `<i class="zb-sb" aria-hidden="true"></i><header class="zb zb-pg has-back qb-top"><button type="button" class="zb-back" data-qb="back" aria-label="${esc(QB.back)}">${svg(ICON.back)}${back}</button><div class="zb-r1"><h1 class="zb-t qb-pg">${esc(QB.title)}</h1></div></header>`;
 
   if (!q) {
     return `<div class="qb" data-mode="noloc">${top}

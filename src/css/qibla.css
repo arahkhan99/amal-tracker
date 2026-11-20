@@ -15,13 +15,13 @@
 .qb-i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 
 /* ---------- top row ---------- */
-.qb-top{display:flex;align-items:center;justify-content:space-between;gap:8px;
-  padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 14px) 8px 4px;min-height:60px;flex:none}
-.qb-pg{font:600 17px/1.2 var(--sans);margin:0;color:var(--ink)}
+/* the time-of-day band (css/band.css): "‹ Today" and the title */
+.qb-top.zb{flex:none}
+.qb .zb-back{display:inline-flex}
 .qb-ib{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--ink);flex:none}
 .qb-ib .qb-i{width:22px;height:22px}
 
-.qb-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:4px 16px calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 20px)}
+.qb-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:18px 16px calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 20px)}
 
 /* location · Change */
 .qb-loc{display:flex;align-items:center;gap:6px;max-width:100%;font-size:14.5px;color:var(--mute)}
@@ -112,3 +112,6 @@
 /* the Kaʿbah marker upright on the static dial (North up); on the live dial it is upright when facing the Qibla */
 .qb-dsvg .qq-kaaba{transform-box:fill-box;transform-origin:center}
 .qb:not([data-mode=live]) .qb-dsvg .qq-kaaba{transform:rotate(var(--qb-kb,0deg))}
+/* Direction B: the distance as a thin row with hairlines, not a box */
+.qb-facts{background:transparent;border:0;border-radius:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:14px 2px;min-height:56px}
+.qb-btn{border-radius:26px}

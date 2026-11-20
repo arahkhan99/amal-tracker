@@ -37,14 +37,13 @@ describe("Now moves on to the next prayer after logging", () => {
     expect(f).toMatchObject({ kind: "next", p: "Maghrib", key: KEY, tomorrow: false, after: "Asr" });
     expect(+f.time).toBe(+timesFor(DAY, S.settings).Maghrib);
     const home = src("src/views/home.js");
-    expect(home).not.toMatch(/function loggedCard/); // the "ʿAsr ✓ … Change" card is gone from Now
+    expect(home).not.toMatch(/function (loggedCard|nowChapter|openCard|nextCard)\(/); // no Now chapter any more (merged Today)
   });
-  it("after ʿIshāʾ is logged, Now shows tomorrow's Fajr (with its sunrise wording)", () => {
+  it("after ʿIshāʾ is logged, the next prayer is tomorrow's Fajr", () => {
     const S = fresh(), now = at(S, "Isha", 30);
     store.setPrayer(S, KEY, "Isha", "congregation", now);
     const f = nowFocus(S, now);
     expect(f).toMatchObject({ kind: "next", p: "Fajr", tomorrow: true, key: dkey(addDays(DAY, 1)) });
-    expect(src("src/views/home.js")).toMatch(/f\.p === "Fajr"\) notes\.push\(TODAY\.endsAtSunrise/);
   });
   it("after midnight, a logged ʿIshāʾ (last night's) points to this morning's Fajr", () => {
     const S = fresh(), y = dkey(addDays(DAY, -1));
@@ -71,28 +70,29 @@ describe("all five prayed (M6)", () => {
   });
 });
 
-describe("Good deeds line on Today", () => {
-  it("shows whenever the feature is on, also when every deed is read in Read or the list is empty", () => {
+describe("Good deeds pill on Today (19 Nov 2026: only the daily deeds)", () => {
+  it("shows whenever the feature is on; empty when no daily deed is chosen", () => {
     const S = fresh();
-    S.settings.naflShow = [];
-    S.amalList = S.amalList.filter(a => a.id !== "sadaqah"); // only reading deeds left (all ticked in Read)
-    expect(deedsLine(S, KEY)).toMatchObject({ done: 0, of: 0, empty: true });
-    S.amalList = [];
-    expect(deedsLine(S, KEY)).toMatchObject({ empty: true });
+    S.settings.dailyDeeds = [];
+    expect(deedsLine(S, KEY, DAY)).toMatchObject({ done: 0, of: 0, empty: true });
     S.settings.features.deeds = false;
-    expect(deedsLine(S, KEY)).toBe(null);
+    expect(deedsLine(S, KEY, DAY)).toBe(null);
   });
-  it("counts the non-reading deeds and the nafl shown", () => {
+  it("counts the deeds list by default (readings in Read included, merged Durūd / Salawāt once), nafl only when chosen", () => {
     const S = fresh();
-    expect(deedsLine(S, KEY)).toMatchObject({ done: 0, of: 1 + 4 }); // sadaqah + Ishrāq, Duhā, Awwābīn, Tahajjud
-    store.setSunnah(S, KEY, "duha", true, DAY);
+    const ids = store.dailyIds(S);
+    expect(ids).toEqual(["quran", "morning", "evening", "durud", "sadaqah"]);
+    expect(deedsLine(S, KEY, DAY)).toMatchObject({ done: 0, of: 5 });
+    store.setSunnah(S, KEY, "duha", true, DAY); // shown in the sheet, not chosen: an extra
     store.setAmal(S, KEY, "sadaqah", true, "");
-    expect(deedsLine(S, KEY)).toMatchObject({ done: 2, of: 5 });
+    expect(deedsLine(S, KEY, DAY)).toMatchObject({ done: 1, of: 5 });
+    S.settings.dailyDeeds = [...ids, "duha"];
+    expect(deedsLine(S, KEY, DAY)).toMatchObject({ done: 2, of: 6 });
   });
-  it("sits above the Make-ups line, opens the deeds sheet, and the sheet offers Add a good deed", () => {
+  it("is a pill above (before) the Make-ups pill and opens the deeds sheet, which offers Add a good deed", () => {
     const home = src("src/views/home.js");
-    const body = home.slice(home.indexOf("function todayChapter("), home.indexOf("function topBar("));
-    expect(body).toMatch(/const dl = deedsLine\(S, key\);\n\s*if \(dl\) parts\.push/);
+    const body = home.slice(home.indexOf("function restHTML("), home.indexOf("/* \"Welcome, {name}\""));
+    expect(body).toMatch(/const dl = deedsLine\(S, key, now\);\n\s*if \(dl\) pills\.push/);
     expect(body.indexOf('"deeds"))')).toBeGreaterThan(-1);
     expect(body.indexOf('"deeds"))')).toBeLessThan(body.indexOf('"mkline"'));
     expect(body).toMatch(/A\.deedsSheet\('\$\{key\}'\)/);
@@ -140,7 +140,8 @@ describe("the nafl add-on (Ishrāq, Duhā, Awwābīn, Tahajjud)", () => {
     const S = fresh();
     store.setExcusedDay(S, KEY, true, DAY);
     expect(naflShown(S, KEY)).toEqual([]);
-    expect(deedsLine(S, KEY).of).toBe(store.amalForDay(S, KEY).filter(a => !["quran", "listen", "morning", "evening", "salawat"].includes(a.id)).length);
+    S.settings.dailyDeeds = ["sadaqah", "ishraq", "duha"];
+    expect(deedsLine(S, KEY, DAY).of).toBe(2); // sadaqah, and Duʿāʾ & istighfār on an excused day; no nafl
   });
   it("the user chooses which show (settings.naflShow; old saves get all four)", () => {
     const S = fresh();

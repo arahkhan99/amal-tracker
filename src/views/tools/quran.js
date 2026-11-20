@@ -1,6 +1,8 @@
 /* Qurʾān: mushaf picker (MP2) and the page reader with tap-for-bars (QR-A). Text, fonts and
    pages come from src/tools/quran-data.js (public/quran). Nothing is typed by hand here. */
-import { A, S, $, NOW, todayKey, esc, I, T, open, redraw, part, persist, prune, toast, openSheet, closeSheet, head, info, COMMON, APP, arNum } from "./core.js";
+import { A, S, $, NOW, todayKey, esc, I, T, open, redraw, part, persist, toast, openSheet, closeSheet, head, info, COMMON, APP, arNum, store } from "./core.js";
+import { createTracker } from "../../quran-track.js";
+import { addAutoPages, addAutoSec, dayReading } from "../../quran-goal.js";
 import { quranFont } from "./qtext.js";
 import { TOOLS_UI, FEEDBACK } from "../../strings.js";
 import { FLAG_SVG } from "../../feedback.js";
@@ -24,14 +26,17 @@ const NAME = { indopak15: TOOLS_UI.mushaf.indopak15, indopak13: TOOLS_UI.mushaf.
 const SUB = { indopak15: "South Asian · hafizi 15-line", indopak13: "South Asian · 13-line", madani15: "Madani mushaf" };
 export const mushafName = id => NAME[id] || id;
 
-/* ---------- saved state: S.tools.quran = { mushaf, pages:{id:n}, bookmarks:[{m,n}], night, trans, read:{day:[n]} } ---------- */
+/* ---------- saved state: S.tools.quran = { mushaf, pages:{id:n}, bookmarks:[{m,n}], night, trans, read:{day:[n]} } ----------
+   read: the pages read each day before the Qurʾān goal (older saves, still counted); pages and minutes are now kept
+   in the day log (day.quran, src/quran-goal.js), counted by the tracker below. */
 const q = () => part("quran", { mushaf: DEFAULT_MUSHAF, pages: {}, bookmarks: [], night: false, trans: false, read: {} });
 export const quranMushaf = () => S.tools?.quran?.mushaf || DEFAULT_MUSHAF;
 export const quranPage = (id = quranMushaf()) => S.tools?.quran?.pages?.[id] || 1;
 /** The page numbers on screen in the reader now: [n], or [right, left] in a tablet's landscape spread (feedback reports one of them). */
 export const quranShown = (id = quranMushaf()) => shown(id, T.page || quranPage(id));
 export const quranHasStarted = () => !!S.tools?.quran?.pages && Object.keys(S.tools.quran.pages).length > 0;
-export const pagesToday = () => (S.tools?.quran?.read?.[todayKey()] || []).length;
+/** Pages read today: in the reader and with "I read…" (rounded). */
+export const pagesToday = () => Math.round(dayReading(S, todayKey()).pages);
 
 /* ---------- loaded data (sync caches that trigger a redraw when ready) ---------- */
 const C = { mushafs: null, index: {}, surahs: null, pages: new Map(), font: {}, sample: {} };
@@ -86,7 +91,37 @@ export function pickerView() {
 A.tlPickMushaf = id => { const s = q(); s.mushaf = id; persist(); open("quran", { page: quranPage(id), bars: false }); };
 
 /* ---------- reader ---------- */
-let touchX = null, dwell = 0;
+let touchX = null;
+
+/* ---------- automatic reading for the Qurʾān goal (src/quran-track.js): only while the reader is open ----------
+   One 5 s interval while the reader is on screen and the app visible; nothing runs once the reader closes.
+   Excused days record nothing (the goal pauses). */
+let TR = null, beat = 0;
+const ACT = ["pointerdown", "keydown", "wheel", "touchstart"];
+const devId = () => {
+  try { let d = localStorage.getItem("zad-dev"); if (!d) { d = Math.random().toString(36).slice(2, 8); localStorage.setItem("zad-dev", d); } return d; } catch { return "d"; }
+};
+const counting = () => !store.isExcusedDay(S, todayKey());
+const onAct = () => TR?.interact();
+const beatOn = () => { if (!beat && !document.hidden) beat = setInterval(() => TR?.tick(), 5000); };
+const beatOff = () => { clearInterval(beat); beat = 0; };
+function trackStart() {
+  if (TR) return;
+  TR = createTracker({
+    onPages: keys => { if (counting() && addAutoPages(S, todayKey(), keys)) persist(); },
+    onSec: sec => { if (counting()) { addAutoSec(S, todayKey(), devId(), sec); persist(); } },
+  });
+  for (const ev of ACT) document.addEventListener(ev, onAct, { passive: true, capture: true });
+  $("#screen")?.addEventListener("scroll", onAct, { passive: true });
+  beatOn();
+}
+function trackStop() {
+  if (!TR) return;
+  TR.stop(); TR = null; beatOff();
+  for (const ev of ACT) document.removeEventListener(ev, onAct, { capture: true });
+  $("#screen")?.removeEventListener("scroll", onAct);
+}
+if (typeof document !== "undefined" && document.addEventListener) document.addEventListener("visibilitychange", () => { if (!TR) return; TR.hidden(document.hidden); if (document.hidden) beatOff(); else beatOn(); });
 
 export function quranView() {
   loadQuranMeta();
@@ -151,9 +186,9 @@ export function quranAfter() {
   const st = q();
   if (el) {
     st.pages[id] = n;
-    clearTimeout(dwell);
-    // "read today": a spread counts both of its pages
-    dwell = setTimeout(() => { const r = (st.read[todayKey()] ||= []); let add = false; for (const p of ns) { const k = id + ":" + p; if (!r.includes(k)) { r.push(k); add = true; } } if (add) { prune(st.read, 14); persist(); } }, 9000);
+    // read today (the Qurʾān goal): a page counts after 20 s on screen, or on turning on after 10 s; a spread counts both
+    trackStart();
+    TR.show(ns.map(p => id + ":" + p));
     persist();
   }
   if (!sessionStorage.getItem("tlQHint")) setTimeout(() => { try { sessionStorage.setItem("tlQHint", "1"); } catch { /* ignore */ } $("#qhint")?.classList.add("gone"); }, 3500);
@@ -162,7 +197,7 @@ export function quranAfter() {
     box.innerHTML = lists.flat().map(x => `<p><b>${x.s}:${x.a}</b> ${esc(x.text || "")}</p>`).join("");
   }).catch(() => { const box = $("#qtransBody"); if (box) box.textContent = TT.pageFail; });
 }
-export function quranLeave() { clearTimeout(dwell); }
+export function quranLeave() { trackStop(); }
 
 /** Phones: fit the page to the width, as before. Tablets: one size for all pages on screen, up to a larger cap,
  *  fitted to both the width and the screen height, then each page box hugs its widest line (text stays justified). */
@@ -262,12 +297,12 @@ A.tlQPage = d => {
   const id = quranMushaf(), ix = C.index[id], total = ix?.pages || 610;
   // in a spread, move a whole spread (two pages) at a time
   const n = isSpread() ? stepSpread(T.page || 1, d, total, spreadFirst(id, ix)) : Math.min(total, Math.max(1, (T.page || 1) + d));
-  if (n !== T.page) { T.page = n; redraw(); $("#screen").scrollTop = 0; }
+  if (n !== T.page) { TR?.turn(d > 0); T.page = n; redraw(); $("#screen").scrollTop = 0; }
 };
 A.tlQSlide = (v, live) => {
   const id = quranMushaf(), total = C.index[id]?.pages || 610, ps = shown(id, +v);
   if (live) { const b = document.querySelector("#v-tools .tl-qmeta b"); if (b) b.textContent = ps.length > 1 ? TT.pagesOf(ps[0], ps[1], total) : TT.pageOf(ps[0], total); return; }
-  T.page = Math.min(total, Math.max(1, +v || 1)); redraw(); // the page picked, even the left page of a spread
+  TR?.turn(false); T.page = Math.min(total, Math.max(1, +v || 1)); redraw(); // the page picked, even the left page of a spread
 };
 A.tlQMushaf = () => open("picker");
 A.tlQNight = () => { const s = q(); s.night = !s.night; persist(); redraw(); };
@@ -283,7 +318,7 @@ A.tlBookmarks = () => {
   openSheet(`<h3>${TT.bookmarks}</h3>${list.length ? `<div class="tl-bms">${list.map((b, i) => `<div class="tl-bm"><button type="button" onclick="A.tlJump(${b.n})"><b>${TT.pageOf(b.n, C.index[b.m]?.pages || 610)}</b></button><button type="button" class="x" aria-label="${COMMON.clear}" onclick="A.tlBmDel(${i})">✕</button></div>`).join("")}</div>` : `<p>${TT.noBookmarks}</p>`}<div class="cta"><button class="btn primary" onclick="A.closeSheet()">${COMMON.done}</button></div>`);
 };
 A.tlBmDel = i => { const s = q(); const own = s.bookmarks.filter(b => b.m === quranMushaf()); const b = own[i]; s.bookmarks = s.bookmarks.filter(x => x !== b); persist(); A.tlBookmarks(); redraw(); };
-A.tlJump = n => { closeSheet(); T.page = n; redraw(); $("#screen").scrollTop = 0; };
+A.tlJump = n => { closeSheet(); TR?.turn(false); T.page = n; redraw(); $("#screen").scrollTop = 0; };
 
 let goTab = "surah";
 A.tlGoTo = (tab = goTab) => {

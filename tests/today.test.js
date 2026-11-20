@@ -6,7 +6,7 @@ import * as F from "../src/features.js";
 import { timesFor, windowEnd } from "../src/times.js";
 import { dkey } from "../src/util.js";
 import { madeUpAllowed } from "../src/logging.js";
-import { logButtons, otherOptions, logPrayer, restoreSnapshot, todayChapters, guideLineDue } from "../src/today.js";
+import { logButtons, otherOptions, logPrayer, restoreSnapshot, guideLineDue } from "../src/today.js";
 import { resolveView, routeName, tabFor } from "../src/routes.js";
 import { NAV, TODAY } from "../src/strings.js";
 
@@ -134,12 +134,10 @@ describe("tabs follow the chosen features", () => {
   it("everything on: Today · Read · Progress", () => {
     const S = fresh();
     expect(F.navTabs(S).map(t => t.label)).toEqual(["Today", "Read", "Progress"]);
-    expect(todayChapters(S)).toEqual(["now", "today"]);
   });
-  it("prayers only: one tab (no tab bar) and one chapter (no chapter bar)", () => {
+  it("prayers only: one tab (no tab bar; Today is the same one page)", () => {
     const S = fresh(); F.applyPreset(S, "prayers");
     expect(F.navTabs(S).map(t => t.id)).toEqual(["home"]);
-    expect(todayChapters(S)).toEqual(["today"]);
   });
   it("Read shows for a tool or the weekly readings; Progress for Progress or Make-ups", () => {
     const S = fresh(); F.applyPreset(S, "prayers");

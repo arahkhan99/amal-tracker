@@ -1083,3 +1083,54 @@ If they stopped at the usage limit, resume them with SendMessage if their ids ar
   - Screenshots: build4/a.
   - Open questions: nafl defaults (all 4 or 2?); is moving nafl from sunnah to good deeds in provisions a weights change for the scholar to sign off?; 'Duhā' spelling; review of the nafl timing wording.
   - **PLAN:** wait for B, then verify, commit, push and build (approved), then launch the merged Today and then the Qurʾān goal.
+- 19 Nov (evening): ✅ **Round committed as 3236aac and pushed to `redesign`** (user approved). Tests: 621 passed; vite build, cap sync and assembleDebug all OK. Android CI run 44636403568 → App Distribution to the user's phone.
+  - Agent B is done: Progress sub-tabs, restored numbers, legend fix, Yā-Sīn morning/evening (morning window Fajr–ʿAsr), Read sub-lines, set-up privacy note, GPS-only button, presets. Screenshots in build4/b.
+  - **Launched:** the merged-Today agent (screenshots to build5/, port 5199). Next is the Qurʾān goal.
+  - **Open questions for the user:**
+    - nafl defaults (all 4?)
+    - nafl as good deeds in provisions (weights sign-off)
+    - Duhā spelling
+    - nafl wording review
+    - Yā-Sīn morning window and name ('Sūrat Yā-Sīn'?)
+    - congregation chart period mix
+- 19 Nov: ✅ Android CI run 44636403568 (3236aac) succeeded; the test build was sent to the user's phone.
+- 19 Nov: Invited GitHub user **heemai** as a collaborator with **write** access (user's request); the invitation is pending acceptance.
+- 19 Nov (night): ✅ **Merged Today page built**, uncommitted. Tests: 649 passed. Screenshots in build5/: https://claude.ai/artifact/7q2rmtTPyBwgDKdw6HorFr
+  - Open questions for the user:
+    1. A tap on a Missed/Made up/Excused prayer opens the sheet.
+    2. "Not now" sits inside ⋯.
+    3. "Make up now" logs straight away, with Undo.
+    4. The "This week" line was dropped from Today.
+    5. "Make up now" shows on every eligible row.
+  - Awaiting the user's OK on the look before pushing.
+  - Launched the Qurʾān goal agent (screenshots to build6/, port 5200).
+- 19 Nov (9:30pm): the Qurʾān goal agent stopped at the usage limit and was resumed after the reset. Merged Today still awaits the user's review (https://claude.ai/artifact/7q2rmtTPyBwgDKdw6HorFr).
+- 19 Nov: User found the merged Today crowded; declutter mockup agent launched (design-review/mockups2/redesign/declutter/). The Qurʾān goal agent is still running. Calendar future times + Hijri, and the reading items in the Good deeds sheet, are queued.
+- 19 Nov: User's answers 1–5 saved; the Sunnah line comes off Today (mockup agent told).
+- 19 Nov (night): ✅ **Qurʾān goal built**, uncommitted.
+  - New files: quran-goal.js, quran-track.js, views/quran-goal.js. Tests: 692 passed.
+  - Screenshots in build6/: https://claude.ai/artifact/8W9t1zuwG3w1zQrjghvjGH
+  - Open questions for the user:
+    1. Should "I read…" tick recitation by default?
+    2. Minutes don't convert to pages.
+    3. The 1.25× catch-up cap.
+    4. Add a 'start on 1 Ramaḍān' option to the planner?
+    5. Should Settings show the finish date?
+  - The declutter mockup agent is still running.
+- 19 Nov: Qurʾān goal answers saved (add the 1 Ramaḍān start; show the finish date in Settings). ✅ Declutter mockups published: https://claude.ai/artifact/3eiSi3Y5JyEis5RE8NpvHG (A recommended). Content questions: durūd vs salawāt overlap; what the Good deeds 'n of m' counts. Awaiting the user's pick.
+- 19 Nov: B chosen (with A's pills); durūd and salawāt merged; count only chosen daily deeds. Build agent launched (screenshots to build7/, port 5201): Today B, calendar future times + Hijri, deeds sheet with reading, merged durūd, Ramadan planner, Settings finish date. After it: verify, commit, push and build (the user approved test-branch pushes).
+- 19 Nov: The no-'wājib'-label request was sent to the build agent.
+- 19 Nov: The user asked to see ALL other screens in theme B. The declutter mockup agent was resumed to mock Read, Progress, Settings, set-up, Qibla and sheets (page: declutter/b-everything.html).
+- 19 Nov: ✅ Everything-in-B mockups (25 screens, light+dark) published: https://claude.ai/artifact/B5hjfj8aUKrka41C3ZVUG4. Extras: Appearance has a 'Follow the time of day' switch; set-up times has before/after states. The Today B build agent is still running. Next: after the user's OK on this page, restyle Read, Progress, Settings and set-up to B.
+- 19 Nov: Welcome variants (logo), gender on the name screen, and Appearance without the switch were sent to the mockup agent.
+- 19 Nov: ✅ Welcome variants A (night horizon, recommended), B (dawn arch) and C (full-bleed girih), plus the name screen with Brother/Sister and Appearance without the switch, republished at https://claude.ai/artifact/B5hjfj8aUKrka41C3ZVUG4 (v2). Awaiting the Welcome pick and the OK to restyle all screens to B.
+- 19 Nov: Welcome D (B's arch on C's background) was requested from the mockup agent.
+- 19 Nov: ✅ Welcome D published (v3, https://claude.ai/artifact/B5hjfj8aUKrka41C3ZVUG4). Next, after the user's OK: restyle Read, Progress, Settings, set-up and Welcome D to B in the real app (after the Today B build agent finishes), then push the test build.
+- 19 Nov: **The user approved the whole B look and Welcome D.** Plan: when the Today B build agent finishes, launch a restyle agent for Read, Progress, Settings, set-up, Welcome D, Qibla and sheets, reusing the Today agent's band/arch CSS. Then verify, commit, push and build (approved).
+- 19 Nov (late): ✅ **Today B built.**
+  - Also built: calendar Hijri + future-day times, the deeds sheet with reading and merged Durūd/Salawāt (settings.dailyDeeds), the Ramaḍān planner, the Settings finish date, and 'wājib' removed.
+  - Tests: 733 passed. Screenshots in build7/.
+  - Open questions: the ʿIshāʾ 'best before' line; Sunday week start; no mark on later rows; old durūd days gain +1 provision.
+  - **Launched the restyle agent** for all other screens in B, including Welcome D (screenshots to build8/, port 5202). Then verify, commit, push and build.
+- 19 Nov: User confirmed the Today B open points (no changes). The restyle agent is running.
+- 20 Nov: The restyle agent stalled (watchdog) while building screenshots; resumed it.

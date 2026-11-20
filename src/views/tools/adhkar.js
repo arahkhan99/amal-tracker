@@ -8,6 +8,8 @@ import { TT } from "./strings-tools.js";
 import { toolTip } from "./tips.js";
 import { quranBlock, quranFont, refLabel } from "./qtext.js";
 import { doneBar } from "./donebar.js";
+import { readerHead } from "./core.js";
+import { bandBar } from "../../band.js";
 
 /* ---------- which set is open ---------- */
 export function autoSet(now = NOW()) {
@@ -138,15 +140,9 @@ export function adhkarView() {
   const doneCard = pg.complete ? `<div class="tl-donec"><div class="tl-dtick">${I.check}</div><div><b>${TT.doneCard(title)}</b><span>${TT.doneMeta(pg.n, pg.total)}</span></div></div>
     ${bar ? "" : `<div class="tl-dnote">${amalIs(amalId(set)) ? `<span>${TT.ticked(title)}</span><button type="button" onclick="A.tlUntick('${set}')">${COMMON.undo}</button>` : `<span>${TT.eveningOpensAt(fmt12(t.Asr))}</span>`}</div>`}` : "";
   const evHint = set === "morning" && !pg.complete ? "" : "";
-  return `<div class="tl-hero tl-rd">
-      
-      <div class="tl-hrow"><button type="button" class="tl-hbtn" aria-label="${COMMON.back}" onclick="A.tlBack()">${I.back}</button>
-        <div class="tl-ht"><h1>${esc(title)}</h1></div>
-        <button type="button" class="tl-hbtn aa" aria-label="${TT.aa}" onclick="A.tlAa('adhkar')">Aa</button></div>
-      <div class="tl-segw" role="tablist"><button role="tab" aria-selected="${set === "morning"}" class="${set === "morning" ? "on" : ""}" onclick="A.tlSet('morning')">${I.sun} ${TT.morning}</button><button role="tab" aria-selected="${set === "evening"}" class="${set === "evening" ? "on" : ""}" onclick="A.tlSet('evening')">${I.moon} ${TT.evening}</button></div>
-      <div class="tl-auto"><span class="tl-autob">${isAuto ? TT.auto : "•"}</span> ${isAuto ? esc(auto) : esc(auto)}</div>
-      <div class="tl-prog"><div class="tl-bar"><i style="width:${Math.round(100 * pg.said / pg.total)}%"></i></div><span><b>${pg.complete ? pg.n : first + 1} of ${pg.n}</b> · ${pg.said}/${pg.total} said</span></div>
-    </div>
+  // the band (band.js): "‹ Read", the title and Aa; the set (Morning · Evening) as chips; the time line; the progress
+  return `${readerHead({ title, aa: "adhkar", cls: "tl-rd", lead: `${isAuto ? `<span class="tl-autob">${TT.auto}</span> ` : ""}${esc(auto)}`,
+    extra: `<div class="tl-segw zb-chips" role="tablist"><button role="tab" aria-selected="${set === "morning"}" class="${set === "morning" ? "on" : ""}" onclick="A.tlSet('morning')">${I.sun} ${TT.morning}</button><button role="tab" aria-selected="${set === "evening"}" class="${set === "evening" ? "on" : ""}" onclick="A.tlSet('evening')">${I.moon} ${TT.evening}</button></div>${bandBar(100 * pg.said / pg.total, `<b>${pg.complete ? pg.n : first + 1} of ${pg.n}</b> · ${pg.said}/${pg.total} said`)}` })}
     <div class="tl-list">${toolTip("adhkar")}${doneCard}${cards}</div>${bar ? `<div class="rd-gap"></div>${bar}` : `<div class="space"></div>`}`;
 }
 

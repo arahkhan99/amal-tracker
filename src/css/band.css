@@ -1,0 +1,84 @@
+/* The time-of-day band (Direction B "Time of day", 19 Nov 2026): every page opens in it. src/band.js sets
+   <html data-band="dawn|day|afternoon|dusk|night"> at the prayer boundaries; these static tokens tint every `.zb`.
+   Colours and their contrast checks: design-review/mockups2/redesign/declutter (build.mjs BANDS, NOTES.md).
+   Kept cheap: one two-stop gradient, no shadows, no filters, no animation, no parent selectors, nothing on scroll.
+   Sizes in px: Settings → Text size zooms each view (theme.css). */
+
+/* ---------- tokens: light (day is the default), then dark ---------- */
+.zb{--ba:#F2EAD2;--bb:#F6F0E0;--bink:#17231E;--bmute:#525E57;--bdot:#8C6A12;--barch:#1B5A43;--bbtn:#0F3D2E;--bbtnink:#E5C55C;--bchip:#E9DFC3}
+:root[data-band=dawn] .zb{--ba:#E4EBE2;--bb:#EEF0E6;--bmute:#4C5A52;--bdot:#8C6A12;--barch:#1B5A43;--bchip:#D6E2D6}
+:root[data-band=afternoon] .zb{--ba:#EEDDB4;--bb:#F4E9CD;--bmute:#4E5A53;--bdot:#82610F;--barch:#1B5A43;--bchip:#E6D3A6}
+:root[data-band=dusk] .zb{--ba:#E6CFB0;--bb:#F0E2CC;--bmute:#4E5650;--bdot:#7A5A0E;--barch:#5A3E22;--bchip:#DEC4A0}
+:root[data-band=night] .zb{--ba:#0F3D2E;--bb:#174734;--bink:#F8F4EA;--bmute:#C3D0C7;--bdot:#E5C55C;--barch:#E5C55C;--bbtn:#E5C55C;--bbtnink:#0F3D2E;--bchip:#1E5440}
+:root[data-theme=dark] .zb{--ba:#21302A;--bb:#19261F;--bink:#EEE8D8;--bmute:#B3BDB2;--bdot:#E0BE62;--barch:#8FB39C;--bbtn:#D6B868;--bbtnink:#13281F;--bchip:#2A3A31}
+:root[data-theme=dark][data-band=dawn] .zb{--ba:#1B2C29;--bb:#18251F;--bchip:#25392F}
+:root[data-theme=dark][data-band=afternoon] .zb{--ba:#2C2F21;--bb:#1B2620;--bmute:#BDC2B2;--barch:#D6B868;--bchip:#363A2A}
+:root[data-theme=dark][data-band=dusk] .zb{--ba:#30281F;--bb:#1C241E;--bmute:#C2BDAE;--barch:#D9A877;--bchip:#3B3226}
+:root[data-theme=dark][data-band=night] .zb{--ba:#0C1612;--bb:#111D17;--barch:#D6B868;--bchip:#1C2A23}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]):not([data-theme=dark]) .zb{--ba:#21302A;--bb:#19261F;--bink:#EEE8D8;--bmute:#B3BDB2;--bdot:#E0BE62;--barch:#8FB39C;--bbtn:#D6B868;--bbtnink:#13281F;--bchip:#2A3A31}
+  :root:not([data-theme=light]):not([data-theme=dark])[data-band=dawn] .zb{--ba:#1B2C29;--bb:#18251F;--bchip:#25392F}
+  :root:not([data-theme=light]):not([data-theme=dark])[data-band=afternoon] .zb{--ba:#2C2F21;--bb:#1B2620;--bmute:#BDC2B2;--barch:#D6B868;--bchip:#363A2A}
+  :root:not([data-theme=light]):not([data-theme=dark])[data-band=dusk] .zb{--ba:#30281F;--bb:#1C241E;--bmute:#C2BDAE;--barch:#D9A877;--bchip:#3B3226}
+  :root:not([data-theme=light]):not([data-theme=dark])[data-band=night] .zb{--ba:#0C1612;--bb:#111D17;--barch:#D6B868;--bchip:#1C2A23}
+}
+.zb{background:linear-gradient(var(--ba),var(--bb));color:var(--bink);border-radius:0 0 28px 28px;position:relative;z-index:4;flex:none}
+
+/* ---------- behind the status bar: the band covers it; pages that scroll in #screen keep a cover in the page
+   colour (sticky, under the band, over the content) instead of the frame's own one ---------- */
+.phone:is([data-view=tools],[data-view=progress],[data-view=qada],[data-view=settings],[data-view=qibla],[data-view=onboard],[data-view=calendar])::before{display:none}
+.zb-sb{position:sticky;top:0;z-index:3;display:block;height:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 12px);margin-bottom:calc(-12px - var(--safe-area-inset-top,env(safe-area-inset-top,0px)));background:linear-gradient(to bottom,var(--bg) calc(100% - 12px),transparent);pointer-events:none}
+
+/* ---------- a page band: ‹ back, the title (Amiri) with the initial / Done / an icon, a lead, extras ---------- */
+.zb-pg{padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 14px) 14px 20px 24px}
+.zb-pg.has-back{padding-top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 8px)}
+.zb button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:inherit;padding:0}
+.zb-back{display:inline-flex;align-items:center;gap:2px;min-height:44px;margin:0 0 0 -8px;padding:0 8px 0 0!important;font-size:15px!important;font-weight:500;color:var(--bink)!important}
+.zb-back svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.zb-r1{display:flex;align-items:center;gap:8px;min-height:48px}
+.zb-t{flex:1;min-width:0;margin:0;font:400 34px/1.12 var(--serif);color:var(--bink);overflow-wrap:anywhere}
+.zb-pg.has-back .zb-t{font-size:32px;line-height:1.15}
+.zb-lead{margin:2px 10px 0 0;font-size:14.5px;line-height:1.45;color:var(--bmute)}
+.zb-lead b{color:var(--bink);font-weight:600}
+.zb-done{min-height:44px;padding:0 10px!important;font-size:16px!important;font-weight:650!important;color:var(--bink)!important;flex:none}
+.zb-ib{width:44px;height:44px;border-radius:22px;display:grid!important;place-items:center;color:var(--bink)!important;flex:none}
+.zb-ib svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.zb-ib.aa{font:700 17px/1 var(--serif)!important}
+.zb .zt-av{background:var(--bchip)!important;color:var(--bink)!important}
+.zb .zt-ib{color:var(--bink)}
+.zb .zt-tr{flex:none}
+/* a thin progress bar in the band (readers' "7 of 20 done", set-up steps) */
+.zb-bar{height:4px;border-radius:2px;background:color-mix(in srgb,var(--bink) 16%,transparent);margin:12px 10px 0 0;overflow:hidden}
+.zb-bar i{display:block;height:100%;background:var(--bbtn)}
+.zb-bline{display:flex;justify-content:space-between;gap:12px;margin:6px 10px 0 0;font-size:13px;color:var(--bmute);font-variant-numeric:tabular-nums}
+.zb-bline b{color:var(--bink);font-weight:600}
+/* chips in a band (reader sets: Morning · Evening; the five prayers after ṣalāh) */
+.zb-chips{display:flex;gap:6px;margin:12px 10px 0 0;flex-wrap:wrap}
+.zb-chips button{min-height:36px;padding:0 14px!important;border-radius:18px;font-size:14px!important;font-weight:550;color:var(--bmute)!important;display:inline-flex;align-items:center;gap:6px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--bink) 18%,transparent)}
+.zb-chips button.on{background:var(--bchip)!important;color:var(--bink)!important;font-weight:650;box-shadow:none}
+.zb-chips button svg{width:16px;height:16px}
+
+/* ---------- the chapters inside the band (Read, Progress): names stay tappable, the active one underlined ---------- */
+.zb-ch{padding:0 0 4px}
+.zb-ch .zt-top{padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 14px) 14px 0 24px;min-height:0;gap:8px}
+.zb-ch .zt-top .zb-t{min-height:48px;display:flex;align-items:center}
+.zb .zt-cb,.zb .zt-cb.ch-scroll{border-bottom:0;box-shadow:none;gap:14px;padding:0 14px 0 24px;margin:2px 0 0}
+.zb .zt-cb button{font-size:15px;font-weight:500;color:var(--bmute);padding:9px 0 13px;min-height:44px}
+.zb .zt-cb button.on{color:var(--bink);font-weight:650}
+.zb .zt-cb button.on::after{bottom:6px;height:2.5px;border-radius:2px;background:var(--bink)}
+.zb .zt-cb.ch-scroll button.on::after{bottom:6px}
+.zb .zt-cb.ch-scroll.fr{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+.zb .zt-cb.ch-scroll.fl{-webkit-mask-image:linear-gradient(90deg,transparent,#000 28px);mask-image:linear-gradient(90deg,transparent,#000 28px)}
+.zb .zt-cb.ch-scroll.fl.fr{-webkit-mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,transparent,#000 28px,#000 calc(100% - 28px),transparent)}
+
+/* ---------- below the band: no cards. Thin rows with hairlines, small-caps section heads ---------- */
+.zr-sum{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;margin:2px 8px 4px}
+.zr-sum b{font-size:17px;font-weight:650;color:var(--ink)}
+.zr-sum span{font-size:14px;color:var(--mute);font-variant-numeric:tabular-nums}
+.zr-h{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:22px 8px 4px;min-height:20px}
+.zr-h:first-child{margin-top:4px}
+.zr-h > span{flex:1}
+.zr-h button,.zr-h .zr-hl{letter-spacing:0;text-transform:none;font-size:13px;font-weight:600;color:var(--acc)}
+:root[data-theme=dark] .zr-h button{color:var(--acc)}
+.zr-list{display:flex;flex-direction:column}
+.zr-note{font-size:13px;color:var(--faint);line-height:1.5;margin:14px 8px 0}

@@ -1,5 +1,6 @@
 /* The calendar (#v-calendar), opened from the calendar icon on Today. It does the old Tracker tab's job:
-   - a month view: five small bars per day (prayed / missed / not logged), future days faint;
+   - a month view: the Hijri day under each day, five small bars per day (congregation / on time / made up / missed);
+     a day ahead opens its prayer times only (A.dayTimes), up to MAX_AHEAD_MONTHS ahead;
    - tap a day: its sheet, with a picker for each prayer, good deeds, sunnah and Witr, the note, and provisions;
    - the "Excused days" range sheet (A.excusedCal, also opened from Settings).
    Every write uses the same rules as Today (src/today.js logPrayer: no logging before a prayer begins,
@@ -7,30 +8,49 @@
 import { S, UI, A, $, NOW, onRender, commit, toast, openSheet, closeSheet, todayKey } from "../app.js";
 import * as store from "../store.js";
 import { PRAYERS, DOW, MON, fmt12, dkey, parseKey, addDays, daysBetween, esc } from "../util.js";
-import { timesFor, weekIndex } from "../times.js";
+import { timesFor, weekIndex, FALLBACK_LOCATION } from "../times.js";
 import { canLog, madeUpAllowed } from "../logging.js";
-import { isOn } from "../features.js";
+import { isOn, toolVisible } from "../features.js";
+import { dayReading } from "../quran-goal.js";
+import { QGOAL } from "../strings.js";
 import { COMMON, STATUS, STATUS_SHORT, LOG, EXCUSED, TODAY, CALENDAR, WEEK_LETTERS_SUN, TRACKER } from "../strings.js";
 import { trackerChip as pvTrackerChip } from "./provisions.js";
 import { zz, ic, X, pName, chipsFor, chipLegend, chipHTML, snapshot, restore, showSheet, marker, deedsCount } from "./home.js";
 import { logPrayer, logButtons, sunnahLine, naflShown } from "../today.js";
-import { hijriLabel } from "../hijri.js";
+import { hijriLabel, hijriParts, HIJRI_MONTHS } from "../hijri.js";
 import { dayPct } from "../stats.js";
 
 export const MAX_BACK = 365; // how far back the calendar goes
 const shortDate = d => `${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()].slice(0, 3)}`;
 const isPrayed = s => s === "congregation" || s === "ontime" || s === "madeup";
 
-/* ---------- month view ---------- */
+/* ---------- month view ----------
+   Each day: the Gregorian number, the Hijri day under it (hijri.hijriParts, so the user's Hijri method, committee
+   and adjustment apply; the 1st of a Hijri month reads "1 Jum II"), and on past days five bars, one per prayer
+   (congregation, on time, made up; missed is a hollow outline, so it reads without colour). The Hijri month(s) sit
+   under the title. A day ahead opens its prayer times only (A.dayTimes); today and past days the edit sheet. */
+export const MAX_AHEAD_MONTHS = 12; // how far ahead the month view goes (prayer times only)
 let month = null; // the first day of the month shown
 const firstOf = d => new Date(d.getFullYear(), d.getMonth(), 1);
 const earliest = () => firstOf(addDays(NOW(), -MAX_BACK));
+const latest = () => { const n = NOW(); return new Date(n.getFullYear(), n.getMonth() + MAX_AHEAD_MONTHS, 1); };
 A.calOpen = () => { month = firstOf(NOW()); A.go("calendar"); };
 A.calStep = n => {
   const to = new Date(month.getFullYear(), month.getMonth() + n, 1);
-  if (to > firstOf(NOW()) || to < earliest()) return;
+  if (to > latest() || to < earliest()) return;
   month = to; renderCalendar();
 };
+const BAR = { congregation: "c", ontime: "o", madeup: "u", missed: "x" };
+
+/** "Jumada al-Ula – Jumada al-Akhirah 1448" (both years when they differ) for the Hijri dates `a` and `b`. */
+export function hijriMonths(a, b) {
+  if (!a || !b) return "";
+  const name = p => HIJRI_MONTHS[p.m - 1];
+  if (a.y === b.y && a.m === b.m) return `${name(a)} ${a.y}`;
+  return a.y === b.y ? `${name(a)} – ${name(b)} ${b.y}` : `${name(a)} ${a.y} – ${name(b)} ${b.y}`;
+}
+/** The small Hijri line under a day: its day number, or "1 Jum II" on the first of a month. */
+export const hijriCell = p => (!p ? "" : p.d === 1 ? CALENDAR.hijriFirst(CALENDAR.hijriShort[p.m - 1]) : String(p.d));
 
 function monthGrid(now) {
   const y = month.getFullYear(), m = month.getMonth(), tk = todayKey();
@@ -38,18 +58,21 @@ function monthGrid(now) {
   const cells = [];
   for (let i = 0; i < lead; i++) cells.push(`<span class="zc-dc empty" aria-hidden="true"></span>`);
   let prayed = 0, due = 0;
+  const oldest = dkey(addDays(now, -MAX_BACK)), hj = [];
   for (let n = 1; n <= dim; n++) {
     const d = new Date(y, m, n), k = dkey(d), day = store.getDay(S, k), fut = k > tk, isT = k === tk;
+    const h = hijriParts(k); hj.push(h);
     const sts = PRAYERS.map(p => store.statusOf(day, p)), got = sts.filter(isPrayed).length;
     if (!fut && !isT && k >= S.createdKey && !day.excused) { prayed += got; due += 5; }
-    const old = k < dkey(addDays(now, -MAX_BACK));
     let marks = "", label = CALENDAR.dayLabel(n, MON[m], fut ? null : got);
     if (!fut && day.excused) { marks = `<span class="ex">${ic("moon", "i")}</span>`; label = CALENDAR.excusedDay(n, MON[m]); }
-    else if (!fut) marks = `<span class="pp">${sts.map(s => `<i class="${isPrayed(s) ? "on" : s === "missed" ? "ms" : ""}"></i>`).join("")}</span>`;
-    const off = fut || old;
-    cells.push(`<button type="button" class="zc-dc ${fut ? "fut" : ""} ${isT ? "today" : ""}" ${off ? "disabled" : ""} ${isT ? 'aria-current="date"' : ""} aria-label="${esc(label)}" onclick="A.daySheet('${k}')"><b>${n}</b>${marks}</button>`);
+    else if (!fut) marks = `<span class="pp">${sts.map(s => `<i class="${BAR[s] || ""}"></i>`).join("")}</span>`;
+    const hl = hijriCell(h), first = h?.d === 1;
+    const aria = CALENDAR.dayAria(label, h ? `${h.d} ${HIJRI_MONTHS[h.m - 1]} ${h.y}` : "");
+    const act = fut ? `A.dayTimes('${k}')` : `A.daySheet('${k}')`;
+    cells.push(`<button type="button" class="zc-dc${fut ? " fut" : ""}${isT ? " today" : ""}" ${k < oldest ? "disabled" : ""} ${isT ? 'aria-current="date"' : ""} aria-label="${esc(aria)}" data-k="${k}" onclick="${act}"><span class="g">${n}</span>${hl ? `<span class="h${first ? " m" : ""}">${esc(hl)}</span>` : ""}${marks}</button>`);
   }
-  return { html: cells.join(""), prayed, due };
+  return { html: cells.join(""), prayed, due, hijri: hijriMonths(hj[0], hj[hj.length - 1]) };
 }
 
 function renderCalendar() {
@@ -58,16 +81,36 @@ function renderCalendar() {
   const now = NOW();
   if (!month) month = firstOf(now);
   const g = monthGrid(now), y = month.getFullYear(), m = month.getMonth();
-  const canPrev = new Date(y, m - 1, 1) >= earliest(), canNext = new Date(y, m + 1, 1) <= firstOf(now);
+  const canPrev = new Date(y, m - 1, 1) >= earliest(), canNext = new Date(y, m + 1, 1) <= latest();
   const anyEx = Object.keys(S.days).some(k => k.startsWith(`${y}-${String(m + 1).padStart(2, "0")}`) && S.days[k]?.excused);
-  el.innerHTML = `<div class="zc">
-    <div class="zc-top"><button type="button" class="zt-link back" onclick="A.go('home')">${ic("chevL", "i")}${esc(CALENDAR.back)}</button></div>
-    <div class="zc-mhead"><header class="zt-chh"><h1 class="zt-title">${esc(MON[m])}</h1><p class="zt-sub">${CALENDAR.monthSub(y, g.prayed, g.due)}</p></header>
-      <div class="zc-mnav"><button type="button" class="zt-ib" aria-label="${esc(CALENDAR.prevMonth)}" ${canPrev ? "" : "disabled"} onclick="A.calStep(-1)">${ic("chevL", "i")}</button><button type="button" class="zt-ib" aria-label="${esc(CALENDAR.nextMonth)}" ${canNext ? "" : "disabled"} onclick="A.calStep(1)">${ic("chev", "i")}</button></div></div>
-    <div class="zt-card zc-cal"><div class="zc-wd" aria-hidden="true">${WEEK_LETTERS_SUN.map(l => `<span>${l}</span>`).join("")}</div><div class="zc-grid">${g.html}</div></div>
-    <div class="zc-legend"><span><i class="lp on"></i>${esc(CALENDAR.legend.prayed)}</span><span><i class="lp ms"></i>${esc(CALENDAR.legend.missed)}</span><span><i class="lp"></i>${esc(CALENDAR.legend.none)}</span>${anyEx ? `<span>${ic("moon", "i xs")}${esc(CALENDAR.legend.excused)}</span>` : ""}</div>
-    <p class="zc-foot">${esc(CALENDAR.tapDay)}</p></div>`;
+  const L = CALENDAR.legendBars;
+  // the header sits in the time-of-day band (css/band.css): "‹ Today", then the month with its arrows
+  el.innerHTML = `<i class="zb-sb" aria-hidden="true"></i><header class="zb zb-pg has-back zc-band"><button type="button" class="zb-back" onclick="A.go('home')">${ic("chevL", "i")}<span>${esc(CALENDAR.back)}</span></button>
+    <div class="zc-bar"><button type="button" class="zt-ib" aria-label="${esc(CALENDAR.prevMonth)}" ${canPrev ? "" : "disabled"} onclick="A.calStep(-1)">${ic("chevL", "i")}</button>
+      <header class="t"><h1 class="zc-title">${esc(CALENDAR.monthTitle(MON[m], y))}</h1>${g.hijri ? `<p class="zc-hj">${esc(g.hijri)}</p>` : ""}</header>
+      <button type="button" class="zt-ib" aria-label="${esc(CALENDAR.nextMonth)}" ${canNext ? "" : "disabled"} onclick="A.calStep(1)">${ic("chev", "i")}</button></div></header><div class="zc">
+    <div class="zc-wd" aria-hidden="true">${WEEK_LETTERS_SUN.map(l => `<span>${l}</span>`).join("")}</div><div class="zc-grid">${g.html}</div>
+    <div class="zc-legend"><span><i class="lp c"></i>${esc(L.congregation)}</span><span><i class="lp o"></i>${esc(L.ontime)}</span><span><i class="lp u"></i>${esc(L.madeup)}</span><span><i class="lp x"></i>${esc(L.missed)}</span>${anyEx ? `<span>${ic("moon", "i xs")}${esc(CALENDAR.legend.excused)}</span>` : ""}</div>
+    <p class="zc-foot">${g.due ? `${CALENDAR.monthPrayed(g.prayed, g.due)} · ` : ""}${esc(CALENDAR.tapDayAll)}</p></div>`;
 }
+
+/* ---------- a day ahead: its prayer times only (no marks, nothing to log) ---------- */
+const longDay = d => new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long" }).format(d);
+/** "5:56<small>AM</small>": tabular figures with a small AM/PM. */
+const tmHTML = d => esc(fmt12(d)).replace(/ (AM|PM)$/, "<small>$1</small>");
+const TIMES_ROWS = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+function dayTimesHTML(key) {
+  const d = parseKey(key), t = timesFor(d, S.settings), loc = S.settings.location || FALLBACK_LOCATION;
+  const sub = [hijriLabel(d), loc.label].filter(Boolean).join(" · ");
+  const rows = TIMES_ROWS.map(p => p === "Sunrise"
+    ? `<div class="tr sr"><span class="nm">${ic("sun", "i")}${esc(TODAY.sunrise)}</span><span class="tm">${tmHTML(t.Sunrise)}</span></div>`
+    : `<div class="tr"><span class="nm">${esc(pName(p, key))}</span><span class="tm">${tmHTML(t[p])}</span></div>`).join("");
+  return `<div class="sh ro"><div class="lhd"><div><h3 class="sht">${esc(longDay(d))}</h3><p class="sub">${esc(sub)}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
+    <div class="trs">${rows}</div><p class="ronote">${esc(CALENDAR.futureNote)}</p>
+    <div class="shfoot"><button class="pbtn" onclick="A.closeSheet()">${COMMON.done}</button></div></div>`;
+}
+/** A day ahead in the month view: the read-only sheet with its prayer times and Hijri date. */
+A.dayTimes = key => { if (!key) return; showSheet(() => dayTimesHTML(key)); };
 
 /* ---------- a day's sheet ---------- */
 const COLS = () => logButtons(S)[0] === "congregation" ? ["congregation", "ontime", "madeup", "missed"] : ["ontime", "congregation", "madeup", "missed"];
@@ -124,6 +167,11 @@ function dayHTML(key) {
     lines.push(`<button type="button" class="dline" onclick="A.daySunnah('${key}')">${ic("check", "i lc")}<span class="l">${esc(CALENDAR.sunnah)}</span>${v ? `<span class="v">${esc(v)}</span>` : ""}${ic("chev", "i cv")}</button>`);
   }
   if (isOn(S, "deeds")) { const c0 = deedsCount(key), nf = naflShown(S, key), c = { done: c0.done + nf.filter(x => store.sunnahDone(S, key, x.id)).length, of: c0.of + nf.length }; lines.push(`<button type="button" class="dline" onclick="A.deedsSheet('${key}','day')">${ic("hand", "i lc")}<span class="l">${esc(TODAY.goodDeeds)}</span><span class="v"><b>${esc(COMMON.nOfM(c.done, c.of))}</b></span>${ic("chev", "i cv")}</button>`); }
+  // the Qurʾān read that day (the reading goal: in the reader and with "I read…"); tap to add or edit
+  if (toolVisible(S, "quran") && !day.excused && A.qgRead) {
+    const r = dayReading(S, key), v = [r.pages ? QGOAL.unitN("pages", Math.round(r.pages)) : "", r.min ? QGOAL.unitN("min", r.min) : ""].filter(Boolean).join(" · ");
+    lines.push(`<button type="button" class="dline" onclick="A.qgRead('${key}')">${ic("note", "i lc")}<span class="l">${esc(QGOAL.chartTab)}</span><span class="v">${esc(v || QGOAL.iRead)}</span>${ic("chev", "i cv")}</button>`);
+  }
   lines.push(`<button type="button" class="dline" onclick="A.noteSheet('${key}')">${ic("note", "i lc")}<span class="l">${esc(CALENDAR.note)}</span><span class="v">${esc(day.note ? CALENDAR.editNote : CALENDAR.addNote)}</span>${ic("chev", "i cv")}</button>`);
   const pv = pvTrackerChip(key); // "+N provisions", only with Settings → Provisions → Provisions in the calendar
   return `<div class="sh">${head}${body}<div class="dlines">${lines.join("")}</div>${pv ? `<div class="dpv">${pv}</div>` : ""}

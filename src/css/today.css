@@ -34,9 +34,7 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 
 /* ---------- chapter heads ---------- */
 .zt-chh{margin:0 0 16px}
-.zt-kick{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--mute);margin:0 0 4px}
 .zt-title{font:400 36px/1.1 var(--serif);margin:0;color:var(--ink);overflow-wrap:anywhere}
-.zt-title.xl{font-size:56px;line-height:1.05}
 .zt-sub{font-size:15px;color:var(--mute);margin:6px 0 0}
 .zt-sub b{color:var(--ink);font-weight:600}
 .zt-dot{width:8px;height:8px;border-radius:50%;background:var(--gold-dot);display:inline-block;flex:none}
@@ -55,39 +53,16 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .zt-btn.soft{background:var(--neutral);color:var(--ink)}
 .zt-btn.sm{width:auto;min-height:40px;padding:0 16px;border-radius:12px;font-size:15px;flex:none}
 .zt-btn.sm svg{width:17px;height:17px}
-.zt-btns{display:flex;flex-direction:column;gap:10px}
 .zt-link{color:var(--acc);font-weight:600;min-height:44px;display:inline-flex;align-items:center;gap:4px}
 .zt-link.in{min-height:0;display:inline;font-size:inherit}
 .zt-link.back{font-size:16px;font-weight:500;margin-left:-6px}
 .zt-link.back svg{width:20px;height:20px}
 :root[data-theme=dark] .zt-link{color:var(--acc)}
-.zt-other{display:flex;justify-content:center;margin-top:4px}
-.zt-other .zt-link{font-size:15px;padding:0 16px}
 .zt-note{font-size:13px;color:var(--mute);margin:12px 0 0;line-height:1.45}
 .zt-note.c{text-align:center}
 .zt-guide{display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;color:var(--mute);margin:4px 0 0;padding:9px 12px;background:var(--neutral);border-radius:12px}
 .zt-guide svg{width:18px;height:18px;color:var(--acc2)}
 
-/* Now chapter */
-.zt-left{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;margin-bottom:18px}
-.zt-left b{font-size:28px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
-.zt-left span{font-size:15px;color:var(--mute)}
-.zt-left.cmp{margin-bottom:14px}
-.zt-left.cmp .nm{font:400 26px/1.1 var(--serif);letter-spacing:0}
-.zt-next{display:flex;align-items:center;gap:12px;padding:14px 0 2px;border-top:1px solid var(--line);margin-top:14px;font-size:15px}
-.zt-next span{color:var(--mute)}
-.zt-next b{flex:1;font-weight:600;color:var(--ink)}
-.zt-next em{font-style:normal;color:var(--mute)}
-.zt-sun{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
-.zt-sun .l{display:flex;align-items:baseline;gap:8px;font-size:15px;color:var(--ink)}
-.zt-sun .l small{font-size:13px;color:var(--mute)}
-.zt-sun .z-scs{margin-top:8px}
-.zt-done{display:flex;align-items:center;gap:14px;padding:2px 0 14px}
-.zt-done .z-mk{width:36px;height:36px}
-.zt-done .z-mk svg{width:18px;height:18px}
-.zt-done .t{flex:1;min-width:0}
-.zt-done .t b{display:block;font-size:17px;font-weight:600}
-.zt-done .t small{font-size:13px;color:var(--mute)}
 .zt-band{display:flex;align-items:center;gap:10px;background:var(--neutral);border-radius:12px;padding:9px 12px;font-size:14px;margin:0 0 16px;color:var(--ink)}
 .zt-band b{font-weight:600}
 .zt-band svg{width:18px;height:18px}
@@ -103,35 +78,10 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .zt-line .v b{color:var(--ink);font-weight:600}
 .zt-cv{width:18px!important;height:18px!important;color:var(--faint)}
 
-/* Today chapter: the five prayers */
-.zt-card.list{padding:4px 16px}
-.zt-row{display:flex;align-items:center;gap:14px;min-height:64px;padding:8px 0;border-top:1px solid var(--line);width:100%;text-align:left;color:var(--ink)}
-.zt-row:first-child{border-top:0}
-.zt-row > .z-mk{width:32px;height:32px}
-.zt-row > .z-mk svg{width:16px;height:16px}
-.zt-row .t{flex:1;min-width:0;align-self:stretch;display:flex;flex-direction:column;justify-content:center;text-align:left}
-.zt-row .t b{display:block;font-size:16px;font-weight:600;color:var(--ink)}
-.zt-row .t small{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute);margin-top:2px;flex-wrap:wrap}
-.zt-row .tm{font-size:14px;color:var(--mute);white-space:nowrap}
-.zt-row.up .t b{color:var(--mute);font-weight:500}
-.zt-row.cur .t b{font-size:17px}
-.zt-row.tap{border-top:1px solid var(--line)}
-/* sunrise: a quiet marker between Fajr and Zuhr (not a prayer) */
-.zt-row.sun{min-height:48px}
-.zt-row.sun .zt-sunic{width:32px;height:32px;display:grid;place-items:center;color:var(--faint);flex:none}
-.zt-row.sun .zt-sunic svg{width:18px;height:18px}
-.zt-row.sun .t b{font-size:14.5px;font-weight:500;color:var(--mute)}
-.zt-row.sun .t small{font-size:12.5px}
 .zt-attn{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:12px}
 .zt-attn .t{flex:1;min-width:0}
 .zt-attn .t b{display:block;font-size:15px}
 .zt-attn .t small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px;line-height:1.35}
-/* "Make up Zuhr now?" under the Now card */
-.zt-mknow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:14px 16px;margin-top:12px}
-.zt-mknow .t{flex:1;min-width:0}
-.zt-mknow .t b{display:block;font-size:15px;font-weight:600}
-.zt-mknow .t small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px;line-height:1.35}
-.zt-mknow .zt-mkb{display:flex;align-items:center;gap:16px;width:100%;padding-left:46px;flex-wrap:wrap}
 .zt-nafl{margin-top:12px;padding:12px 16px}
 .zt-nafl b{font-size:14px;font-weight:600}
 .zt-pv{margin:12px -20px 0}
@@ -141,6 +91,117 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .zt-more b{display:block;font-size:14.5px;font-weight:600}
 .zt-more small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px;line-height:1.4}
 
+/* ---------- Today: one page, Direction B "Time of day" (19 Nov 2026; design-review/mockups2/redesign/declutter) ----------
+   The header sits in a band tinted by the time of day (dawn, day, afternoon, dusk, night: views/home.js sets
+   .b-<band> from today.bandAt), with a slim mihrab arch framing the current prayer. Then the thin list and two pills.
+   Kept cheap: static colours and one gradient (no animation, no shadows, no parent selectors, no scroll work);
+   the current row is a class on its row. Sizes in px: Settings → Text size zooms the whole view (theme.css). */
+.zt-page{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;padding:0 0 16px;scrollbar-width:none;outline:none;overscroll-behavior-y:contain}
+.zt-page::-webkit-scrollbar{display:none}
+/* behind the status bar: the band covers it at the top; once the page scrolls, a cover in the page colour stays
+   (sticky, under the band, over the list), so no scroll listener is needed. The frame's own cover is off here. */
+.phone[data-view=home]::before{display:none}
+.zt-sb{position:sticky;top:0;z-index:3;flex:none;display:block;height:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 12px);margin-bottom:calc(-12px - var(--safe-area-inset-top,env(safe-area-inset-top,0px)));background:linear-gradient(to bottom,var(--bg) calc(100% - 12px),transparent);pointer-events:none}
+
+/* the band: its colour tokens per time of day (dawn, day, afternoon, dusk, night; light and dark) are css/band.css (.zb),
+   shared by every page header; Today adds its own padding */
+.zt-head{padding:0 0 12px}
+
+/* the top row inside the band: greeting, date · Hijri; calendar, provisions chip, the initial */
+.zt-head .zt-top{flex-wrap:wrap;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 16px) 16px 0 24px;gap:0 6px;min-height:0}
+.zt-head b.zt-hi{flex:1;min-width:0;font-size:15.5px;font-weight:600;color:var(--bink);margin:0;line-height:1.3;white-space:normal;overflow:visible;overflow-wrap:anywhere}
+.zt-head .zt-date{flex-basis:100%;font-size:13px;color:var(--bmute);margin-top:4px;padding-right:8px}
+.zt-head .zt-ib{color:var(--bink)}
+.zt-head .zt-av{background:var(--bchip)!important;color:var(--bink)!important}
+
+/* the hero: the arch with Now / Next, the name and the time left; Qibla, Prayed, ⋯; the sunnah toggles */
+.zt-stage{position:relative;width:232px;min-height:152px;margin:12px auto 0;text-align:center;display:flex;flex-direction:column}
+.zt-arch{position:absolute;inset:0;width:100%;height:100%;fill:none;stroke-linecap:round;pointer-events:none}
+.zt-arch path{stroke:var(--barch);vector-effect:non-scaling-stroke}
+.zt-arch .o{stroke-opacity:.55;stroke-width:1.4}
+.zt-arch .n{stroke-opacity:.25;stroke-width:1}
+.zt-in{position:relative;padding:36px 22px 14px}
+.zt-lbl{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--bmute)}
+.zt-lbl i{width:7px;height:7px;border-radius:4px;background:var(--bdot);display:block}
+.zt-lbl.next i{background:transparent;box-shadow:inset 0 0 0 1.5px var(--bmute)}
+.zt-pn{font:400 44px/1.05 var(--serif);margin:4px 0 0;color:var(--bink);overflow-wrap:anywhere}
+.zt-cd{font-size:16px;color:var(--bmute);margin:2px 0 0;font-variant-numeric:tabular-nums}
+.zt-cd2{font-size:13px;color:var(--bmute);margin:1px 0 0}
+.zt-acts{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:2px;padding:0 16px}
+.zt-rb{width:48px;height:48px;border-radius:24px;display:grid;place-items:center;flex:none;background:var(--bchip)!important;color:var(--bink)!important;touch-action:manipulation}
+.zt-rb.ghost{background:transparent!important;color:var(--bmute)!important}
+.zt-rb svg{width:22px;height:22px}
+.zt-rb.ghost svg{stroke-width:3.2}
+.zt-pray{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;flex:0 1 160px;min-width:120px;padding:0 20px;border-radius:24px;background:var(--bbtn)!important;color:var(--bbtnink)!important;font-size:16px!important;font-weight:650!important;text-align:center!important;touch-action:manipulation;white-space:nowrap}
+.zt-pray svg{width:19px;height:19px;stroke-width:2.2}
+.zt-pray.done{background:var(--bchip)!important;color:var(--bink)!important;flex-basis:auto}
+.zt-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:0 16px;margin-top:4px;padding:0 16px}
+.zt-chip{display:inline-flex;align-items:center;gap:7px;min-height:36px;font-size:13px;color:var(--bmute)!important;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.zt-chip .rg{width:15px;height:15px;border-radius:8px;box-shadow:inset 0 0 0 1.6px currentColor;display:grid;place-items:center;flex:none}
+.zt-chip b{font-weight:600;color:var(--bink)}
+.zt-chip.d .rg{background:var(--bbtn);color:var(--bbtnink);box-shadow:none}
+.zt-chip.d .rg svg{width:11px;height:11px;stroke:currentColor;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.zt-qc{text-align:center;margin-top:4px}
+.zt-qb{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:0 14px 0 10px;border-radius:17px;background:var(--bchip)!important;color:var(--bink)!important;font-size:14px;font-weight:600;white-space:nowrap;position:relative}
+.zt-qb::before{content:"";position:absolute;inset:-6px 0}
+.zt-qb svg{width:19px;height:19px}
+.zt-hnote{font-size:13px;color:var(--bmute);text-align:center;margin:8px 24px 0;line-height:1.4}
+
+/* above the list: all five, the guide line, the excused band, yesterday */
+.zt-lead{display:flex;flex-direction:column;gap:8px;padding:0 16px}
+.zt-lead:not(:empty){padding-top:12px}
+.zt-lead > *{margin:0}
+.zt-rest{display:flex;flex-direction:column;flex:1 0 auto;padding:0 16px}
+.zt-five{display:flex;align-items:flex-start;gap:8px;font-size:14px;color:var(--mute);line-height:1.4;padding:0 8px}
+.zt-five svg{width:18px;height:18px;color:var(--acc2);margin-top:1px}
+.zt-five b{color:var(--ink);font-weight:600}
+.zt-yu{width:100%;text-align:left!important;color:var(--mute)!important}
+.zt-yu b{color:var(--acc2);font-weight:600}
+
+/* the thin list: one line per prayer (name · time · mark); hairlines between rows; the current row has the gold dot */
+.zt-list{position:relative}
+.zt-row{position:relative;display:flex;align-items:center;min-height:52px;padding:6px 18px 6px 24px;color:var(--ink)}
+.zt-slot + .zt-slot > .zt-row::before{content:"";position:absolute;left:24px;right:18px;top:0;border-top:1px solid var(--line)}
+.zt-tap{position:absolute;inset:0;width:100%;border-radius:0;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.zt-tap:focus-visible{outline-offset:-2px;border-radius:12px}
+.zt-nm{flex:1;min-width:0;display:flex;align-items:center;gap:10px;font-size:17px;font-weight:500;pointer-events:none;overflow-wrap:anywhere}
+.zt-nm small{font-size:13px;font-weight:500;color:var(--mute)}
+.zt-row.cur .zt-nm{font-weight:650}
+.zt-tm{font-size:15px;color:var(--mute);text-align:right;min-width:74px;white-space:nowrap;font-variant-numeric:tabular-nums;pointer-events:none}
+.zt-tm small{font-size:.72em;letter-spacing:.04em;margin-left:2px}
+.zt-row.cur .zt-tm{color:var(--ink)}
+.zt-mkw{width:44px;display:flex;justify-content:flex-end;margin-left:6px;flex:none;pointer-events:none}
+.zt-cdot{position:absolute;left:10px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:4px;background:var(--gold-dot)}
+.zt-row .z-mk{width:28px;height:28px}
+.zt-row .z-mk svg{width:17px;height:17px;stroke-width:2.2}
+.zt-row .z-mk.z-m{color:var(--miss)}
+.zt-row .z-mk.z-m svg{stroke-width:2.6}
+.zt-row .z-mk.z-now{box-shadow:inset 0 0 0 2px var(--acc)}
+:root[data-theme=dark] .zt-row .z-mk.z-now{box-shadow:inset 0 0 0 2px var(--gold-dot)}
+.zt-row .z-mk.z-open{box-shadow:inset 0 0 0 1.6px var(--faint)}
+.zt-row .z-mk.z-later{box-shadow:none}
+.zt-mkn{position:relative;z-index:1;display:inline-flex;align-items:center;gap:5px;min-height:30px;padding:0 11px;margin-right:8px;border-radius:15px;background:var(--soft)!important;color:var(--on-soft)!important;font-size:13px;font-weight:600;white-space:nowrap;touch-action:manipulation}
+.zt-mkn svg{width:15px;height:15px;stroke-width:2}
+.zt-mkn::before{content:"";position:absolute;inset:-8px -2px}
+/* ⋯ for keyboards and screen readers: out of sight until focused (touch uses long press) */
+.zt-srm{position:absolute;right:62px;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:20px;display:grid;place-items:center;background:var(--card)!important;color:var(--mute);opacity:0;pointer-events:none;z-index:1}
+.zt-srm:focus-visible{opacity:1;pointer-events:auto}
+.zt-srm svg{width:20px;height:20px;stroke-width:3.2}
+/* sunrise: a quiet row between Fajr and Zuhr (not a prayer) */
+.zt-row.sun{min-height:40px;color:var(--mute)}
+.zt-row.sun .zt-nm{font-size:14px;font-weight:400;gap:8px}
+.zt-row.sun .zt-nm svg{width:17px;height:17px}
+.zt-row.sun .zt-tm{font-size:13px}
+
+/* the two pills below the list: Good deeds · Make-ups */
+.zt-pills{display:flex;gap:10px;margin:18px 2px 0}
+.zt-pill{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:10px;min-height:52px;padding:11px 12px 11px 14px;border-radius:16px;background:var(--neutral)!important;color:var(--ink)!important;text-align:left}
+.zt-pill .zt-pi{width:19px;height:19px;color:var(--acc2)}
+.zt-pill .l{flex:1;min-width:0;font-size:14px;font-weight:600;line-height:1.2}
+.zt-pill em{display:block;font-style:normal;font-size:13px;font-weight:400;color:var(--mute);margin-top:1px;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zt-pill .zt-cv{width:16px!important;height:16px!important;color:var(--faint)}
+.zt-pills.one .zt-pill{flex:0 1 calc(50% - 5px)}
+.zt-rest > .zt-card,.zt-rest > .zt-more,.zt-rest > .zt-pv{margin-top:12px}
 /* status marks in sheets: the mock's ghost marks for unpicked statuses */
 .z-mk.z-ghost{box-shadow:inset 0 0 0 1.5px var(--line);color:var(--line);background:transparent}
 :root[data-theme=dark] .z-mk.z-ghost{color:#3E5447}
@@ -224,28 +285,7 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .zc{padding:0 16px 24px}
 .zc-top{display:flex;align-items:center;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 14px) 0 4px;min-height:60px}
 #v-community .zc .zt-top{padding-left:0;padding-right:0}
-.zc-mhead{display:flex;align-items:flex-start;justify-content:space-between;margin-top:12px}
-.zc-mnav{display:flex;gap:2px;margin:-4px -8px 0 0}
-.zc-cal{padding:10px 8px 8px}
-.zc-wd,.zc-grid{display:grid;grid-template-columns:repeat(7,1fr)}
-.zc-wd span{text-align:center;font-size:12px;color:var(--mute);font-weight:600;padding:2px 0 8px}
-.zc-dc{display:flex;flex-direction:column;align-items:center;gap:5px;min-height:56px;padding:6px 0 4px;border-radius:12px;text-align:center;color:var(--ink)}
-.zc-dc b{font-size:15px;font-weight:500;width:30px;height:24px;line-height:24px;border-radius:12px}
-.zc-dc.fut b{color:var(--faint);font-weight:400}
-.zc-dc.fut,.zc-dc:disabled{cursor:default}
-.zc-dc:disabled:not(.fut){opacity:.5}
-.zc-dc.today b{background:var(--ink);color:var(--bg);font-weight:600}
-.zc-dc .pp{display:flex;gap:2px}
-.zc-dc .pp i,.zc-legend .lp{width:4px;height:12px;border-radius:2px;background:var(--track);display:block}
-.zc-dc .pp i.on,.zc-legend .lp.on{background:var(--acc2)}
-.zc-dc .pp i.ms,.zc-legend .lp.ms{background:var(--c3)}
-.zc-dc .ex{color:var(--mute);height:12px;display:grid;place-items:center}
-.zc-dc .ex svg{width:13px;height:13px}
-.zc-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--mute);margin:14px 4px 0}
-.zc-legend span{display:inline-flex;align-items:center;gap:6px}
-.zc-legend .lp{width:5px}
-.zc-legend svg.xs{width:13px;height:13px}
-.zc-foot{font-size:13px;color:var(--faint);margin:10px 4px 0}
+/* the month view itself (title, Hijri, grid, bars, legend) and the day-ahead sheet: css/calendar.css */
 
 /* ---------- Read, Progress and Make-ups: the initial at the top right ---------- */
 .tl-ph.hub{align-items:center;padding-top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 30px)}
@@ -259,20 +299,8 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 /* Settings → Widgets: the Quick Settings button row (Android) */
 .settings .tileadd{flex:none;min-height:40px;padding:0 16px;border-radius:12px;background:var(--soft);color:var(--on-soft);font-weight:600;font-size:14px}
 
-/* ---------- 19 Nov 2026 round: greeting, Qibla button, next prayer, all five, the Today lines, deeds sheet ---------- */
+/* ---------- 19 Nov 2026 round: greeting, Qibla button, the Today lines, deeds sheet ---------- */
 .zt-hi{display:block;font-size:13px;color:var(--mute);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.zt-khr{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:32px;margin-bottom:4px}
-.zt-khr .zt-kick{margin:0}
-.zt-qb{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:16px;border:1px solid var(--card-line)!important;background:var(--card)!important;color:var(--ink2,var(--ink));font-size:13px;font-weight:600;white-space:nowrap;flex:none;position:relative}
-.zt-qb::before{content:"";position:absolute;inset:-6px 0}
-.zt-qb svg{width:16px;height:16px;color:var(--acc2)}
-.zt-nextc .zt-left{margin-bottom:6px}
-.zt-nextc .zt-note{margin-top:0}
-.zt-five{display:flex;align-items:center;gap:12px;padding:12px 16px;margin-top:12px}
-.zt-five p{margin:0;font-size:15px;color:var(--mute);line-height:1.4}
-.zt-five b{color:var(--ink);font-weight:600}
-.zt-exnote{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mute);margin:-6px 0 14px}
-.zt-exnote svg{width:16px;height:16px;color:var(--mute)}
 .zt-line .l{flex:1 1 auto}
 .zt-line .v{min-width:0;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto}
 .z-addd{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;border-top:1px solid var(--line)!important;color:var(--acc2)!important;font-weight:600;font-size:15px;text-align:left}
@@ -284,3 +312,27 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .z-nsw.z-on{background:var(--leaf,var(--acc))!important}
 .z-nsw.z-on::after{left:21px}
 @media (prefers-reduced-motion:reduce){.z-nsw,.z-nsw::after{transition:none}}
+
+/* ---------- the Good deeds sheet (19 Nov 2026): Reading · Deeds · Nafl prayers; tick on the left, Read on the right ---------- */
+.z-gd h3{font:400 30px/1.1 var(--serif)}
+.z-gbar{display:block;height:4px;border-radius:2px;background:var(--track);margin:4px 0 2px;overflow:hidden}
+.z-gbar i{display:block;height:100%;background:var(--acc2)}
+.z-gd .z-lsec{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:20px 0 2px;display:flex;align-items:center;gap:6px}
+.z-gd .z-drow{gap:12px;min-height:56px;padding:4px 0}
+.z-gd .z-drow > .z-t{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.z-gd .z-drow > .z-t b{font-size:16px;font-weight:500;color:var(--ink)}
+.z-gd .z-drow > .z-t small{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;font-size:13px;color:var(--mute);margin-top:1px}
+.z-gd .z-drow.z-dn > .z-t b{color:var(--mute)}
+.z-gd .z-tick{margin-left:-8px}
+.z-gd .z-bx{width:26px;height:26px;border-radius:8px;box-shadow:inset 0 0 0 1.8px var(--mute)}
+.z-gd .z-bx.z-part{box-shadow:inset 0 0 0 1.8px var(--acc2);background:linear-gradient(to top,var(--soft) 55%,transparent 55%)}
+.z-rdb,.z-cnt{display:inline-flex;align-items:center;gap:6px;flex:none;min-height:34px;padding:0 12px;border-radius:17px;background:var(--soft)!important;color:var(--on-soft)!important;font-size:13px;font-weight:650;white-space:nowrap;position:relative}
+.z-rdb::before{content:"";position:absolute;inset:-5px 0}
+.z-rdb svg,.z-cnt svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.z-cnt{min-height:28px;padding:0 10px;font-size:12.5px}
+.z-gd .z-addd{border-top:0!important;min-height:48px}
+.z-gd .z-bx.z-on{box-shadow:none}
+/* a toast with a second line (Today's first tap: "Tap the tick again for congregation") */
+.toast-t{flex:1;min-width:0;display:flex;flex-direction:column}
+.toast-t small{font-size:12.5px;opacity:.85;margin-top:2px}
+.zt-pray.rem{flex:0 1 auto;white-space:normal;height:auto;min-height:48px;padding:6px 18px;line-height:1.2;font-size:15px!important}

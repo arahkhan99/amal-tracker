@@ -6,6 +6,9 @@ import { gloss } from "../../glossary.js";
 import { APP, COMMON } from "../../strings.js";
 import { weekKey } from "../../times.js";
 import { PREF_DEFAULTS } from "../../guide.js";
+import { NAV } from "../../strings.js";
+import { TT } from "./strings-tools.js";
+import { bandHead, bandCover } from "../../band.js";
 
 export { esc, A, $, S, NOW, todayKey, openSheet, closeSheet, toast, APP, COMMON };
 
@@ -36,7 +39,8 @@ export function prune(obj, n = 40) {
 /* ---------- amal ticks (a finished reader ticks its good deed once) ---------- */
 export function amalIs(id, key = todayKey()) { return !!store.getDay(S, key).amal[id]?.done; }
 export function tickAmal(id, key = todayKey(), detail = "") {
-  if (!S.amalList.some(a => a.id === id)) return false;
+  // salawat: the merged Durūd / Salawāt item is always kept in day.amal.salawat (reading.js deedOf)
+  if (id !== "salawat" && !S.amalList.some(a => a.id === id)) return false;
   const day = store.ensureDay(S, key);
   if (day.amal[id]?.done) return false;
   day.amal[id] = { done: true, detail, auto: true };
@@ -107,10 +111,24 @@ export const dayName = d => ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 export function minutesFor(words, wpm = 95) { return Math.max(1, Math.round(words / wpm)); }
 export const wordCount = s => (s || "").split(/\s+/).filter(Boolean).length;
 
-/** Page header used by the light sub-screens (back button, title, optional Arabic, sub line, right action). */
+/* ---------- the readers' header: the time-of-day band (band.js) with "‹ Read", the title, Aa, and extras ---------- */
+/** Where Back goes from this screen (as tools/index.js A.tlBack): its name for the "‹ …" link. */
+const UP = { adhkar: "hub", durud: "hub", hizb: "hub", quran: "hub", durudRead: "durud", hizbRead: "hizb", picker: "quran", manzil: "hub", afterSalah: "hub" };
+export function backName() {
+  const up = T.entry === T.screen ? "hub" : UP[T.screen];
+  return up === "durud" ? TT.durudTitle : up === "hizb" ? (TT.toolName?.hizb || "Hizb al-Aʿzam") : up === "quran" ? TT.mushafTitle : up === "hub" ? NAV.tools : NAV.home;
+}
+/**
+ * A reader's band: "‹ Read" (or its parent), the title in Amiri, Aa at the right (aa: the tool id), a quiet lead line
+ * and extras (chips for the set, the progress bar and "n of m"). cls: extra classes (the readers' own hooks).
+ */
+export function readerHead({ title, aa = "", lead = "", extra = "", right = "", back = "A.tlBack()", cls = "" }) {
+  const r = right || (aa ? `<button type="button" class="zb-ib aa tl-aab" aria-label="${TT.aa}" onclick="A.tlAa('${aa}')">Aa</button>` : "");
+  return bandCover() + bandHead({ title, back, backLabel: backName(), right: r, lead, extra, cls: "tl-band" + (cls ? " " + cls : "") });
+}
+/** Page header used by the light sub-screens (back, title, sub line, right action): the same band. */
 export function head({ title, ar = "", sub = "", right = "", back = "A.tlBack()" }) {
-  return `<div class="tl-ph"><button type="button" class="tl-back" aria-label="${COMMON.back}" onclick="${back}">${I.back}</button>
-    <div class="tl-pt"><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ""}</div>${right}</div>`;
+  return readerHead({ title, lead: sub ? esc(sub) : "", right: right.replace("tl-hbtn lite aa", "zb-ib aa tl-aab"), back });
 }
 
 export { dkey, addDays, weekKey, store, topIn, zoomOf };

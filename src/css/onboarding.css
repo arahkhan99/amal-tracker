@@ -196,3 +196,89 @@
 @media (min-width:768px) and (min-height:540px){
   .onb .ob-top,.onb .ob-body,.onb .ob-btns{width:100%;max-width:600px;margin-inline:auto}
 }
+
+/* =====================================================================================================
+   Direction B "Time of day" (19 Nov 2026; declutter bx-welcome-d, bx-setup-*): every set-up screen opens in the
+   time-of-day band (css/band.css) with the back arrow, the step bar and the heading; below it thin rows, no cards.
+   Welcome (variant D): the arch framing the logo on the full-screen time-of-day gradient with a faint girih.
+   ===================================================================================================== */
+.onb{padding-top:0}
+.ob-band{padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 8px) 14px 22px 24px}
+.ob-band .ob-top{padding:0;margin:0 0 0 -12px;min-height:48px;gap:12px}
+.ob-band .ob-back{color:var(--bink)}
+.ob-band .ob-bar{background:color-mix(in srgb,var(--bink) 16%,transparent)}
+.ob-band .ob-bar i{background:var(--bbtn)}
+.ob-band .ob-count{color:var(--bmute);margin-right:10px}
+.ob-band .ob-head{margin:10px 10px 0 0}
+.ob-band .ob-head h1{color:var(--bink);font-size:32px}
+.ob-band .ob-sub,.ob-band .ob-kick{color:var(--bmute)}
+.ob-band .ob-readyhead{margin:8px 0 0}
+.ob-band .ob-readyhead .logo{margin:0}
+.ob-band .ob-top + .ob-head{margin-top:14px}
+.ob-body{padding:18px 16px 8px 24px}
+.ob-btns{padding-left:16px;padding-right:16px}
+.ob-btn{border-radius:28px;min-height:52px}
+.ob-btn.txt{color:var(--acc)}
+.ob-card{background:transparent;border:0;border-radius:0;padding:0 0 0 0}
+.ob-card.pad{padding:4px 0}
+.ob-note{color:var(--faint)}
+.ob-field{background:transparent;border:0;border-bottom:2px solid var(--acc);border-radius:0;padding:6px 0 8px}
+.ob-field:focus-within{border-color:var(--acc);box-shadow:none}
+.ob-field input{font-size:22px;padding-top:6px}
+.ob-flab{font-size:16px;font-weight:600;color:var(--ink);margin:30px 0 12px}
+.ob-flab.first{font-size:13px;color:var(--mute)}
+.ob-seg{background:transparent;padding:0;gap:12px;border-radius:0}
+.ob-seg button{min-height:52px;border-radius:16px;box-shadow:inset 0 0 0 1.5px var(--mute);color:var(--ink);font-weight:600;font-size:16px}
+.ob-seg button.on{background:var(--acc);color:var(--on-acc);box-shadow:none}
+.ob-link{align-self:center;color:var(--acc)}
+.ob-locline{margin:0 0 8px}
+.ob-times>div{min-height:48px}
+.ob-feat{min-height:60px}
+.ob-feat .t b,.ob-opt .t b,.ob-row .t b{font-weight:500}
+.ob-bx{width:26px;height:26px;border-radius:8px;box-shadow:inset 0 0 0 1.8px var(--mute)}
+.ob-prev{border-top:1px solid var(--line)!important;padding:12px 0 0;margin-top:16px}
+.ob-mk,.ob-ico{background:transparent}
+.ob-chips{margin-bottom:6px}
+
+/* Welcome D */
+.onb.ob-wd{border-radius:0;z-index:auto;position:relative;background:linear-gradient(var(--ba) 0%,var(--bb) 45%,var(--bg) 100%);color:var(--bink);overflow:hidden}
+.onb.ob-wd::before{content:"";position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%230F3D2E%22%20stroke-opacity%3D%220.07%22%20stroke-width%3D%221%22%3E%3Cpath%20d%3D%22M19%2019H45V45H19Z%22%2F%3E%3Cpath%20d%3D%22M32%2013.62L50.38%2032L32%2050.38L13.62%2032Z%22%2F%3E%3Cpath%20d%3D%22M32%2013.62V0M50.38%2032H64M32%2050.38V64M13.62%2032H0M19%2019L0%200M45%2019L64%200M45%2045L64%2064M19%2045L0%2064%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%225.5%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");-webkit-mask-image:radial-gradient(ellipse 80% 55% at 50% 26%,#000 35%,transparent 82%);mask-image:radial-gradient(ellipse 80% 55% at 50% 26%,#000 35%,transparent 82%);pointer-events:none}
+:root[data-theme=dark] .onb.ob-wd::before{background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23D6B868%22%20stroke-opacity%3D%220.08%22%20stroke-width%3D%221%22%3E%3Cpath%20d%3D%22M19%2019H45V45H19Z%22%2F%3E%3Cpath%20d%3D%22M32%2013.62L50.38%2032L32%2050.38L13.62%2032Z%22%2F%3E%3Cpath%20d%3D%22M32%2013.62V0M50.38%2032H64M32%2050.38V64M13.62%2032H0M19%2019L0%200M45%2019L64%200M45%2045L64%2064M19%2045L0%2064%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%225.5%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E")}
+.onb.ob-wd > *{position:relative}
+.onb.ob-wd .ob-body{justify-content:flex-start;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 46px) 24px 8px}
+.onb.ob-wd .ob-btns{background:transparent;position:relative}
+.ob-welcome{padding:0}
+.ob-stage{position:relative;width:212px;height:262px;margin:0 auto}
+.onb .ob-arch{position:absolute;inset:0;width:212px;height:262px;stroke:none;stroke-linecap:round}
+.ob-arch .o{stroke:var(--barch);stroke-opacity:.6;stroke-width:1.4}
+.ob-arch .n{stroke:var(--barch);stroke-opacity:.28;stroke-width:1}
+.ob-arch stop.w0{stop-color:#FFFDF8;stop-opacity:.82}
+.ob-arch stop.w1{stop-color:#FFFDF8;stop-opacity:0}
+:root[data-theme=dark] .ob-arch stop.w0{stop-color:#16221C;stop-opacity:.78}
+:root[data-theme=dark] .ob-arch stop.w1{stop-color:#16221C;stop-opacity:0}
+.ob-lgw{position:absolute;left:0;right:0;top:80px;display:flex;justify-content:center}
+.ob-lg{width:104px;height:auto}
+.ob-lg.d{display:none}
+:root[data-theme=dark] .ob-lg.l{display:none}
+:root[data-theme=dark] .ob-lg.d{display:block}
+.ob-wd .ob-brand{font-size:46px;margin:18px 0 0;color:var(--bink)}
+.ob-wd .ob-ayah{margin-top:20px;padding-top:0;border-top:0}
+.ob-wd .ob-ayah .ar{font-size:28px;line-height:1.9}
+.ob-wd .ob-ayah .en{font-size:16px;line-height:1.5;margin-top:2px;color:var(--bink)}
+.ob-wd .ob-ayah .src{color:var(--bmute)}
+.ob-wd .ob-btn.txt{color:var(--bmute);font-weight:550}
+/* log in: the consent text on a soft panel (no frame); the sign-in buttons as pills */
+.onb .ocs{background:var(--neutral);border:0;border-radius:18px}
+.onb .btn.ob-out,.ob-btns .btn{border-radius:28px}
+.ob-btns .btn.ob-out{background:transparent;box-shadow:inset 0 0 0 1.5px var(--line);border:0}
+/* Welcome at night in light mode: the night band is deep forest, so the screen stays forest top to bottom (light text
+   never lands on the pale page colour), the āyah is honey on forest, and Get started takes the band's honey button */
+:root[data-band=night]:not([data-theme=dark]) .onb.ob-wd{background:linear-gradient(var(--ba),var(--bb))}
+:root[data-band=night]:not([data-theme=dark]) .onb.ob-wd::before{background-image:none}
+:root[data-band=night]:not([data-theme=dark]) .ob-wd .ob-ayah .ar{color:var(--bdot)}
+:root[data-band=night]:not([data-theme=dark]) .ob-wd .ob-btn.pri{background:var(--bbtn);color:var(--bbtnink)}
+:root[data-band=night]:not([data-theme=dark]) .ob-wd .ob-btns{background:transparent}
+:root[data-band=night]:not([data-theme=dark]) .ob-lg.l{display:none}
+:root[data-band=night]:not([data-theme=dark]) .ob-lg.d{display:block}
+:root[data-band=night]:not([data-theme=dark]) .ob-arch stop.w0{stop-color:#0C2A20;stop-opacity:.7}
+:root[data-band=night]:not([data-theme=dark]) .ob-arch stop.w1{stop-color:#0C2A20;stop-opacity:0}

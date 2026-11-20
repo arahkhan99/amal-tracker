@@ -119,7 +119,7 @@ A.toolsSettings = () => { if (A.settingsTools) A.settingsTools(); else A.go("set
 A.readNextCard = sel => {
   const sc = $("#screen"), top = sc.getBoundingClientRect().top;
   const head = document.querySelector("#v-tools .tl-rhead, #v-tools .tl-rdhead");
-  const off = (head ? head.getBoundingClientRect().bottom - top : 0) + 12;
+  const off = (head ? Math.max(0, head.getBoundingClientRect().bottom - top) : 0) + 12; // the band scrolls away
   const els = [...document.querySelectorAll(`#v-tools ${sel}`)];
   const next = els.find(e => e.getBoundingClientRect().top - top > off + 8);
   if (next) sc.scrollTo({ top: sc.scrollTop + next.getBoundingClientRect().top - top - off, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });

@@ -3,7 +3,8 @@
  * values and the contrast table: design-review/mockups2/redesign/final/og/NOTES.md.
  * app.js sets <html data-theme="light|dark"> from Settings → Appearance → Mode (System / Light / Dark).
  *
- * Rules: flat colours, no gradients, no background pattern on the main screens; cards have a hairline only.
+ * Rules: flat colours, no background pattern on the main screens; cards have a hairline only. One exception
+ * (19 Nov 2026, Direction B): the Today header's time-of-day band is a soft two-stop gradient (css/today.css).
  * Gold is never text on a light background: in light mode it is only a fill (provisions bar), a mark
  * (the "now" dot, in the deeper #A9821A) or the honey label / tick on forest.
  *
@@ -11,7 +12,7 @@
  *   --bg page · --card card · --sheet sheet · --ink text · --mute secondary · --faint footers · --line / --card-line
  *   --acc primary button and filled ticks · --on-acc its label · --soft secondary button · --on-soft its label
  *   --acc2 icons and bars · --gold-dot the "now" dot · --gold-fill the provisions bar · --arabic Arabic text
- *   --neutral icon tiles and chips · --track tracks and empty bars · --thumb · --underline chapter underline
+ *   --neutral icon tiles and chips · --hl the highlighted prayer row on Today · --track tracks and empty bars · --thumb · --underline chapter underline
  *   --c1..--c4 chart series (congregation, on time, made up, missed) · --mk-r made-up mark · --toast-* · --scrim
  * The older names (--ivory, --paper, --forest, --link, --btn-bg …) used by Settings, Read, Progress and Make-ups
  * are kept and point at the same palette, so every screen follows the one theme.
@@ -21,7 +22,7 @@
   --ink:#17231E; --mute:#56625B; --faint:#5F6A63; --line:#EAE1CC; --card-line:#E7DDC6;
   --acc:#0F3D2E; --on-acc:#E5C55C; --soft:#E3EBE0; --on-soft:#0F3D2E;
   --acc2:#1B5A43; --gold-dot:#A9821A; --gold-fill:#C9A227; --arabic:#0F3D2E;
-  --neutral:#F2EAD3; --track:#E9E0CA; --thumb:#FFFDF8; --underline:#0F3D2E;
+  --neutral:#F2EAD3; --track:#E9E0CA; --thumb:#FFFDF8; --underline:#0F3D2E; --hl:#F6F0E1;
   --c1:#0F3D2E; --c2:#5F9C80; --c3:#C9A227; --c4:#D2CAB8; --mk-r:#7A6426;
   --toast-bg:#17231E; --toast-ink:#F8F4EA; --toast-acc:#E5C55C; --scrim:rgba(23,35,30,.36);
   --focus:#1B5A43;
@@ -42,7 +43,7 @@
   --ink:#EEE8D8; --mute:#B3BDB2; --faint:#98A398; --line:#2F4036; --card-line:#2C3D34;
   --acc:#D6B868; --on-acc:#13281F; --soft:#2B3A2C; --on-soft:#D6B868;
   --acc2:#8FB39C; --gold-dot:#E0BE62; --gold-fill:#D6B868; --arabic:#DCC27E;
-  --neutral:#28382F; --track:#2C3D33; --thumb:#3B5045; --underline:#D6B868;
+  --neutral:#28382F; --track:#2C3D33; --thumb:#3B5045; --underline:#D6B868; --hl:#26372E;
   --c1:#D6B868; --c2:#6F9A80; --c3:#8F7D52; --c4:#46574D; --mk-r:#D9C38A;
   --toast-bg:#EEE8D8; --toast-ink:#16221C; --toast-acc:#0F3D2E; --scrim:rgba(0,0,0,.45);
   --focus:#D6B868;
@@ -60,7 +61,7 @@
   :root:not([data-theme=light]):not([data-theme=dark]){
     --bg:#16221C; --card:#1F2D26; --sheet:#23332B; --ink:#EEE8D8; --mute:#B3BDB2; --faint:#98A398; --line:#2F4036; --card-line:#2C3D34;
     --acc:#D6B868; --on-acc:#13281F; --soft:#2B3A2C; --on-soft:#D6B868; --acc2:#8FB39C; --gold-dot:#E0BE62; --gold-fill:#D6B868; --arabic:#DCC27E;
-    --neutral:#28382F; --track:#2C3D33; --thumb:#3B5045; --underline:#D6B868; --mk-r:#D9C38A;
+    --neutral:#28382F; --track:#2C3D33; --thumb:#3B5045; --underline:#D6B868; --hl:#26372E; --mk-r:#D9C38A;
     --toast-bg:#EEE8D8; --toast-ink:#16221C; --toast-acc:#0F3D2E; --scrim:rgba(0,0,0,.45); --focus:#D6B868;
     --forest:#1F4535; --leaf:#8FB39C; --mint:#2B3A2C; --gold:#D6B868; --honey:#D6B868; --parchment:#F3EEE0;
     --surface2:#23332B; --inset:#2C3D33; --miss:#E8A08C; --miss-bg:#3B2A24; --ok-bg:#2B3A2C; --ok-fg:#A9CBB4; --gold-bg:#2F3A2C; --gold-fg:#E0BE62;

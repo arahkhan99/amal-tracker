@@ -68,8 +68,8 @@ export function markHelpOpened(S) { helpState(S).opened = true; }
 /**
  * The tour's steps for this user, in order (Settings → Help & tour → Replay; a new user gets one guide line on
  * Today instead, see today.js guideLineDue). Steps whose tab or feature is hidden are left out.
- * env.hasDots: whether the Now card with its one-tap buttons and "Other" is showing right now (a prayer is open and
- * not logged). Without it the "Every choice" step is dropped and step 1 points at the Today chapter instead.
+ * env.hasDots: whether the highlighted prayer on Today can be tapped right now (its time has begun). Without it the
+ * "Every choice" step is dropped and step 1 points at the whole list instead.
  * Each step: { id, target: "now" | "today" | "dots" | "deeds" | "cal" | "tab", tabs?: [view ids], variant? }
  */
 export function tourSteps(S, env = {}) {

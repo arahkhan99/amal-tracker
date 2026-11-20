@@ -36,10 +36,10 @@ function clampHole(r, W, H) {
 function holesFor(step) {
   const q = s => $(s);
   const box = (e, pad = 6, rad = 18) => e && [{ ...rel(e.getBoundingClientRect(), pad), rad }];
-  if (step.target === "now") return box(q("#v-home .zt-other")?.closest(".zt-card"));
-  if (step.target === "dots") return box(q("#v-home .zt-other .zt-link"), 4, 14);
-  if (step.target === "today") return box(q("#zt-ch-today .zt-card.list"));
-  if (step.target === "deeds") return box(q('#zt-ch-today [data-f="deeds"]'));
+  if (step.target === "now") return box(q("#v-home .zt-row.cur"), 4, 18);
+  if (step.target === "dots") return box(q('#v-home .zt-hero [data-f="hmore"]'), 2, 26);
+  if (step.target === "today") return box(q("#v-home .zt-list"));
+  if (step.target === "deeds") return box(q('#v-home [data-f="deeds"]'));
   if (step.target === "cal") return box(q("#v-home .zt-top .zt-ib"), 4, 24);
   if (step.target === "tab") {
     const out = step.tabs.map(t => q(`#nav [data-v="${t}"]`)).filter(Boolean).map(e => { const r = rel(e.getBoundingClientRect(), 3); r.y -= 3; r.h += 6; return { ...r, rad: 16 }; });
@@ -53,13 +53,10 @@ const rrect = ({ x, y, w, h, rad }) => {
 };
 
 /* ---------- drawing ---------- */
-/** Show the chapter a step points at (Today has chapters Now · Today), scrolled so the target is in view. */
+/** Scroll Today (one page) so the step's target is in view. */
 function scrollFor(step) {
-  const chs = [...document.querySelectorAll("#v-home .zt-ch")].map(e => e.id.replace("zt-ch-", ""));
-  const want = step.target === "today" || step.target === "deeds" ? "today" : step.target === "now" || step.target === "dots" ? "now" : null;
-  if (want && chs.includes(want)) A.todayChapter(chs.indexOf(want), { instant: true });
-  const sel = { now: ".zt-other", dots: ".zt-other", today: "#zt-ch-today .zt-card.list", deeds: '#zt-ch-today [data-f="deeds"]' }[step.target];
-  const el = sel && $("#v-home " + sel.replace(/^#v-home /, ""));
+  const sel = { now: ".zt-row.cur", dots: ".zt-hero", today: ".zt-list", deeds: '[data-f="deeds"]' }[step.target];
+  const el = sel && $("#v-home " + sel);
   el?.scrollIntoView?.({ block: "center", behavior: "auto" });
 }
 
@@ -116,7 +113,7 @@ function place() {
 function start() {
   starting = false;
   if (steps || UI.view !== "home" || !tourDue(S) || $("#scrim").classList.contains("on") || !$("#lock").hidden) return;
-  const hasDots = !!$("#v-home .zt-other");
+  const hasDots = !!$("#v-home .zt-row.cur [data-tap]"); // the current prayer can be tapped (it has begun): the hero has ⋯
   steps = tourSteps(S, { hasDots }); idx = 0;
   returnFocus = document.activeElement;
   el = document.createElement("div");

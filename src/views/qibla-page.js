@@ -5,6 +5,10 @@
 import { S, UI, A, onRender, go } from "../app.js";
 import { qiblaView, mountQibla, unmountQibla } from "./qibla.js";
 import { qiblaFor } from "../qibla.js";
+import { NAV } from "../strings.js";
+
+/** The name of the page the Qibla page goes back to ("‹ Today", "‹ Settings"). */
+const backLabel = () => { const v = UI.qiblaFrom && UI.qiblaFrom !== "qibla" ? UI.qiblaFrom : "home"; return NAV[v] || NAV.home; };
 
 let mounted = "";
 
@@ -32,10 +36,10 @@ function renderQibla() {
   }
   // Redraw only when the location changed (the 20 s tick and other redraws leave the live dial alone)
   const loc = S.settings.location;
-  const sig = loc ? `${loc.lat},${loc.lng},${loc.label || ""}` : "none";
+  const sig = (loc ? `${loc.lat},${loc.lng},${loc.label || ""}` : "none") + "|" + backLabel();
   if (sig === mounted) return;
   if (mounted) unmountQibla();
-  el.innerHTML = qiblaView(loc);
+  el.innerHTML = qiblaView(loc, { backLabel: backLabel() });
   mountQibla(el, { onBack: A.closeQibla });
   mounted = sig;
 }

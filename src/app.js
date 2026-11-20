@@ -8,6 +8,7 @@ import { resolveView, routeName, tabFor, landing, tabOf, tabToReset, viewsOfTab,
 import { resetChapters } from "./views/chapters.js";
 import { NAV } from "./strings.js";
 import { applyScales } from "./appearance.js";
+import { syncBand } from "./band.js";
 
 export const S = store.load();
 export const UI = { view: "home", range: "day", selDay: 0, trkDay: 0, lastView: "home", lastTab: "", todayCh: 0, progressCh: "" };
@@ -115,7 +116,8 @@ function renderNav() {
   navSig = sig;
   $("#nav").innerHTML = tabs.map(t => `<button type="button" data-v="${t.id}" class="${t.id === on ? "on" : ""}"${t.id === on ? ' aria-current="page"' : ""} onclick="A.tab('${t.id}')"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_ICON[t.id]}</svg>${NAV[t.id] || t.label}</button>`).join("");
 }
-onRender(() => { applyTheme(); syncStatusBar(); renderNav(); });
+// the time-of-day band of every page header (band.js): <html data-band>, rewritten only when it changes
+onRender(() => { applyTheme(); syncBand(S.settings, now); syncStatusBar(); renderNav(); });
 A.syncNav = renderNav;
 
 /** Every chapters frame of a tab back to its first chapter, scrolled to the top (views/chapters.js). */
@@ -123,7 +125,7 @@ function resetTab(tab, now = false) { for (const v of viewsOfTab(tab)) resetChap
 
 /**
  * A bottom-bar tab. Progress opens Make-ups when Progress itself is off.
- * Tapping the tab you are already on goes back to its first chapter, at the top (Today → Now, Read → For today,
+ * Tapping the tab you are already on goes back to its first chapter, at the top (Today → its top, Read → For today,
  * Progress → Reflections); from the calendar, the Today icon goes back to Today and does the same.
  */
 A.tab = id => {
@@ -176,9 +178,11 @@ export function avatarBtn(extra = "") {
  * Show a short message. Pass { undo: fn } to add an Undo button (shown longer, 5 s);
  * tapping it runs fn once and hides the toast.
  */
-export function toast(m, { undo } = {}) {
+export function toast(m, { undo, sub } = {}) {
   const t = $("#toast");
   t.textContent = m;
+  // a second, smaller line (Today's first tap: "Tap the tick again for congregation")
+  if (sub) { const w = document.createElement("span"); w.className = "toast-t"; w.append(m); const s = document.createElement("small"); s.textContent = sub; w.append(s); t.textContent = ""; t.append(w); }
   if (undo) {
     const b = document.createElement("button");
     b.className = "toast-undo"; b.type = "button"; b.textContent = "Undo";
@@ -216,6 +220,7 @@ export function closeSheet() {
 }
 A.closeSheet = closeSheet;
 applyTheme();
+syncBand(S.settings, now);
 
 /* ---------- glossary explainers ("?" / ⓘ next to an Arabic term) ---------- */
 import { gloss } from "./glossary.js";

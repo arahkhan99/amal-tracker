@@ -3,8 +3,12 @@
  *
  * "For today" lists what is due today from the reading the user has switched on (Settings → Features → tools):
  * morning and evening adhkār, today's manzil of the Hizb al-Aʿzam, Qurʾān recitation (on an excused day:
- * listening), the Manzil, Sūrat al-Mulk before sleep, al-Kahf on Jumuʿah, and durūd (daily when Salawāt is on
- * the good-deeds list, otherwise on Jumuʿah). Each has a tick.
+ * listening), the Manzil, Sūrat al-Mulk before sleep, al-Kahf on Jumuʿah, and Durūd / Salawāt (daily when it is a
+ * daily deed, otherwise on Jumuʿah). Each has a tick. The Good deeds sheet on Today lists them all (readItems all).
+ *
+ * Durūd / Salawāt (merged 19 Nov 2026): ONE item. Its tick is always kept in day.amal.salawat (the salawāt deed's
+ * day log, with the salawāt count as its detail) plus the reader's stamp, so it is one good deed a day; a durūd
+ * reader stamp from before the merge without the deed counts once too (points.readsByDay / countedReads).
  *
  * Ticks and the good-deeds log:
  * - Reading deeds (Qurʾān, adhkār, salawāt) live in Read when Read shows them, and the Good deeds sheet on Today
@@ -132,6 +136,8 @@ function setNative(S, id, on, now) {
 /** The good deed item `id` ticks today, when it is on the day's list ("" otherwise). */
 function deedOf(S, id, key) {
   const d = ITEM[id]?.deed;
+  // Durūd / Salawāt (19 Nov 2026): one item, always kept in day.amal.salawat (1 good deed a day, never two)
+  if (id === "durud") return d;
   return d && store.amalForDay(S, key).some(a => a.id === d) ? d : "";
 }
 
@@ -185,6 +191,7 @@ const eveningSub = (now, t) => (now >= t.Asr && now < t.Maghrib ? READ.nowUntil(
  * extra: { lastRead } (the Qurʾān's "Last read: …" text, from the view, which knows the sūrah names).
  */
 export function readItems(S, now = new Date(), extra = {}) {
+  const all = !!extra.all; // the Good deeds sheet: Durūd / Salawāt every day, and in READ_ORDER (done items not moved)
   const key = dkey(now), set = S.settings, t = timesFor(now, set), excused = store.isExcusedDay(S, key);
   const list = store.amalForDay(S, key), has = id => list.some(a => a.id === id);
   const vis = tool => toolVisible(S, tool);
@@ -209,10 +216,12 @@ export function readItems(S, now = new Date(), extra = {}) {
   if (vis("manzil") && !excused) add("manzil", slotOf(now, set) === "morning" ? READ.manzilMorning : READ.manzilEvening);
   if (vis("quran") && !excused) add("mulk", READ.beforeSleep);
   if (vis("quran") && !excused && isJumuah(now, set)) add("kahf", now.getDay() === 4 ? READ.jumuahNight : READ.kahfSub(P("Maghrib")));
-  if (vis("durud") && (has("salawat") || isJumuah(now, set))) add("durud", isJumuah(now, set) ? READ.durudFriday : READ.durudDaily);
+  // Durūd / Salawāt (the merged item): daily when chosen as a daily deed, else on Jumuʿah (and always in the sheet)
+  if (vis("durud") && (all || store.dailyIds(S).includes("durud") || isJumuah(now, set))) add("durud", isJumuah(now, set) ? READ.durudFriday : READ.durudDaily);
   // one gold "now" dot per screen: only the first item due now keeps it
   let dot = false;
   for (const it of out) { it.now = it.due && !dot; if (it.now) dot = true; delete it.due; }
+  if (all) return out;
   const rank = it => (it.done ? 2 : it.now ? 0 : 1);
   return out.map((it, i) => [it, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
 }

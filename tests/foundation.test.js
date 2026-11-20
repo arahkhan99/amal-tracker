@@ -76,7 +76,7 @@ describe("madhhab rules", () => {
   });
 
   it("summaries match docs/madhhab-rules.md", () => {
-    expect(M.summary("hanafi")).toBe("Later ʿAsr · 12 emphasised sunnahs · Witr is wājib");
+    expect(M.summary("hanafi")).toBe("Later ʿAsr · 12 emphasised sunnahs · Witr made up if missed"); // 19 Nov 2026: no "wājib" in the UI
     expect(M.summary("maliki")).toBe(MADHHAB_SUMMARY.maliki);
     expect(M.madhhabOptions().map(o => o.id)).toEqual(["hanafi", "shafii", "maliki", "hanbali"]);
     expect(M.madhhabOptions()[0].isDefault).toBe(true);
@@ -200,9 +200,9 @@ describe("sunnah logging", () => {
     expect(store.sunnahChips(S, K, "day").map(c => c.id)).toEqual(["ishraq", "duha", "tahajjud"]);
   });
 
-  it("Witr chip carries the madhhab's tag", () => {
+  it("Witr chip carries the madhhab's tag (Hanafī: none, the word wājib is never shown; still owed in make-ups)", () => {
     const S = fresh();
-    expect(store.witrChip(S, K)).toMatchObject({ chip: "Witr 3", tag: "wājib", inQada: true, status: null, allowed: true });
+    expect(store.witrChip(S, K)).toMatchObject({ chip: "Witr 3", tag: "", inQada: true, status: null, allowed: true, tier: "wajib" });
     store.setWitr(S, K, "done", NOW);
     expect(store.witrChip(S, K).done).toBe(true);
   });

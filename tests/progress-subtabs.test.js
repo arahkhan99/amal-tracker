@@ -60,9 +60,9 @@ describe("sub-tabs: one section at a time", () => {
     expect(h).not.toContain('class="pr-days"');
     expect(panels(h)).toBe(1);
   });
-  it("Charts: Prayers · Each prayer · Congregation · Sunnah · Good deeds; the 30 days / Year switch is inside", () => {
+  it("Charts: Prayers · Each prayer · Congregation · Sunnah · Good deeds · Qurʾān; the 30 days / Year switch is inside", () => {
     const h = C.charts();
-    expect(tabsOf(h)).toEqual(["prayers", "each", "cong", "sunnah", "deeds"]);
+    expect(tabsOf(h)).toEqual(["prayers", "each", "cong", "sunnah", "deeds", "quran"]);
     expect(selected(h)).toBe("prayers");
     expect(h).toContain("A.prRange('year')");
     A.subTab("charts", "each");

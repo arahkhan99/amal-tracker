@@ -65,6 +65,10 @@ export function readsByDay(S) {
   const t = S.tools || {};
   for (const [k, r] of Object.entries(t.read || {})) for (const id of ["mulk", "kahf", "yasinAm", "yasinPm"]) if (r?.[id]) add(k, id);
   for (const [k, m] of Object.entries(t.manzil || {})) if (m?.morning || m?.evening) add(k, "manzil");
+  // Durūd / Salawāt (merged 19 Nov 2026): a durūd tick or a finished forty durūd counts on its day, as the
+  // salawāt deed (countedReads drops it when day.amal.salawat is ticked too, so it is one good deed a day)
+  for (const [k, r] of Object.entries(t.read || {})) if (r?.durud) add(k, "durud");
+  for (const [k, d] of Object.entries(t.durud || {})) if (d?.done) add(k, "durud");
   for (const [wk, w] of Object.entries(t.hizb?.weeks || {})) {
     if (!isKey(wk)) continue;
     for (const [m, at] of Object.entries(w?.read || {})) {
@@ -75,7 +79,7 @@ export function readsByDay(S) {
   return out;
 }
 /** The readings that count on a day record: QURAN_READS not on an excused day. */
-export const countedReads = (day, reads) => (reads || []).filter(id => READ_IDS.includes(id) && !(day?.excused && QURAN_READS.has(id)));
+export const countedReads = (day, reads) => (reads || []).filter(id => (READ_IDS.includes(id) && !(day?.excused && QURAN_READS.has(id))) || (id === "durud" && !day?.amal?.salawat?.done));
 
 /** Provisions needed to reach level n: 100·n·(n−1). L1 0, L2 200, L3 600, L4 1,200, L5 2,000, L10 9,000. */
 export const needFor = n => 100 * n * (n - 1);

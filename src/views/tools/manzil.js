@@ -7,6 +7,7 @@ import { fmt12 } from "../../util.js";
 import { TT } from "./strings-tools.js";
 import { quranBlock, quranFont } from "./qtext.js";
 import { doneBar } from "./donebar.js";
+import { readerHead } from "./core.js";
 import { markRead } from "../../reading.js";
 import { commit } from "../../app.js";
 
@@ -49,15 +50,9 @@ export function manzilView() {
   const doneOther = manzilDone(slot === "morning" ? "evening" : "morning");
   const status = done ? TT.mzReadAt(slot === "morning" ? TT.morning : TT.evening, fmt12(new Date(done)))
     : slot === "morning" ? TT.autoMorning(fmt12(t.Fajr), fmt12(t.Asr)) : TT.autoEvening(fmt12(t.Asr));
-  return `<div class="tl-hero tl-rd">
-      
-      <div class="tl-hrow"><button type="button" class="tl-hbtn" aria-label="${COMMON.back}" onclick="A.tlBack()">${I.back}</button>
-        <div class="tl-ht"><h1>${esc(MANZIL_META.title)}</h1></div>
-        <button type="button" class="tl-hbtn aa" aria-label="${TT.aa}" onclick="A.tlAa('manzil')">Aa</button></div>
-      <div class="tl-segw" role="tablist" aria-label="${TT.translationBtn}"><button role="tab" aria-selected="${!tr}" class="${tr ? "" : "on"}" onclick="A.mzTr(false)">${TT.mzArabic}</button><button role="tab" aria-selected="${tr}" class="${tr ? "on" : ""}" onclick="A.mzTr(true)">${I.translate} ${TT.mzWithPickthall}</button></div>
-      <div class="tl-auto"><span class="tl-autob">${done ? "✓" : TT.auto}</span> ${esc(status)}</div>
-      <div class="tl-auto tl-mzsub">${esc(TT.mzSub(MANZIL.length, manzilAyahCount()))}${doneOther ? ` · ${esc(TT.mzOtherDone(slot === "morning" ? TT.evening : TT.morning))}` : ""}</div>
-    </div>
+  return `${readerHead({ title: MANZIL_META.title, aa: "manzil", cls: "tl-rd", lead: `${done ? `<span class="tl-autob">✓</span> ` : `<span class="tl-autob">${TT.auto}</span> `}${esc(status)}`,
+    extra: `<div class="tl-segw zb-chips" role="tablist" aria-label="${TT.translationBtn}"><button role="tab" aria-selected="${!tr}" class="${tr ? "" : "on"}" onclick="A.mzTr(false)">${TT.mzArabic}</button><button role="tab" aria-selected="${tr}" class="${tr ? "on" : ""}" onclick="A.mzTr(true)">${I.translate} ${TT.mzWithPickthall}</button></div>
+      <p class="zb-bline tl-mzsub"><span>${esc(TT.mzSub(MANZIL.length, manzilAyahCount()))}${doneOther ? ` · ${esc(TT.mzOtherDone(slot === "morning" ? TT.evening : TT.morning))}` : ""}</span></p>` })}
     <div class="tl-list">${MANZIL.map(p => blockHtml(p, tr)).join("")}
       ${bar ? "" : `<button type="button" class="tl-cta${done ? " ghost" : ""}" onclick="A.mzDone()">${done ? `${I.check} ${esc(TT.mzMarkUnread)}` : `${I.check} ${esc(TT.mzMarkRead(slot === "morning" ? TT.morning : TT.evening))}`}</button>`}</div>
     <p class="tl-draftline">${esc(TT.mzCredit)}</p>${bar ? `<div class="rd-gap"></div>${bar}` : `<div class="space"></div>`}`;

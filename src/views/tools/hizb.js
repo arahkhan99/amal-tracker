@@ -6,6 +6,7 @@ import { TT } from "./strings-tools.js";
 import { toolTip } from "./tips.js";
 import { getTranslation } from "../../tools/quran-data.js";
 import { doneBar } from "./donebar.js";
+import { readerHead } from "./core.js";
 
 /* ---------- data (loaded on demand: it is large) ---------- */
 let DATA = null, loading = null;
@@ -103,10 +104,8 @@ export function hizbReadView() {
   const total = list.length, left = Math.max(1, Math.round(mins(m) * (1 - startI / total)));
   const day = DAYS[m - 1];
   const showPick = !T.resumed && pos && pos.i > 0;
-  return `<div class="tl-rhead"><div class="tl-ph tight"><button type="button" class="tl-back" aria-label="${COMMON.back}" onclick="A.tlBack()">${I.back}</button>
-      <div class="tl-pt"><h1>${TT.manzil(m)}</h1><p id="hzSub">${esc(TT.readerSub(day, startI + 1, total, left))}</p></div>
-      <button type="button" class="tl-hbtn lite aa" aria-label="${TT.aa}" onclick="A.tlAa('hizb')">Aa</button></div>
-      <div class="tl-bar g tl-thin"><i id="hzBar" style="width:${Math.round(100 * (startI + 1) / total)}%"></i></div></div>
+  // the band (band.js): "‹ Hizb al-Aʿzam", the manzil, Aa; the place (updated as you scroll) and a thin bar
+  return `${readerHead({ title: TT.manzil(m), aa: "hizb", cls: "tl-rd tl-rhead", lead: `<span id="hzSub">${esc(TT.readerSub(day, startI + 1, total, left))}</span>`, extra: `<div class="zb-bar"><i id="hzBar" style="width:${Math.round(100 * (startI + 1) / total)}%"></i></div>` })}
     ${showPick ? `<div class="tl-pick-b" id="hzPicked"><span>${I.bookmark}<b>${TT.pickedUp}</b></span><button type="button" onclick="A.tlHizbStart()">${TT.startOfManzil}</button></div>` : ""}
     <div class="tl-hzwrap">${toolTip("hizb", "hz")}${body}</div>
     ${(m === manzilToday() && doneBar("hizb", { next: "A.readNextCard('.tl-hz')" })) || `<div class="tl-dock hz"><div><b id="hzCount">${TT.duaOf(startI + 1, total)}</b><span>${TT.savedScroll}</span></div>

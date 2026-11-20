@@ -76,7 +76,7 @@ export const WITR_STATUS = { done: "Prayed", madeup: "Made up", missed: "Missed"
 export const MADHHAB_NAME = { hanafi: "Hanafī", shafii: "Shāfiʿī", maliki: "Mālikī", hanbali: "Hanbalī" };
 /** One-line summaries for setup and Settings (docs/madhhab-rules.md). */
 export const MADHHAB_SUMMARY = {
-  hanafi: "Later ʿAsr · 12 emphasised sunnahs · Witr is wājib",
+  hanafi: "Later ʿAsr · 12 emphasised sunnahs · Witr made up if missed",
   shafii: "Earlier ʿAsr · 10 emphasised sunnahs · Witr is sunnah",
   hanbali: "Earlier ʿAsr · 10 emphasised sunnahs · Witr is sunnah",
   maliki: "Earlier ʿAsr · Witr is sunnah · 2 before Fajr are raghībah",
@@ -108,7 +108,8 @@ export const ASR_UI = {
 /** Tier names. Maliki uses its own taxonomy (raghibah / nafilahMuakkadah) — never "sunnah muʾakkadah". */
 export const TIER = {
   fard: { name: "Fard", gloss: "Obligatory", line: "The five prayers · your headline measure" },
-  wajib: { name: "Wājib", gloss: "Necessary (Hanafī)", line: "Witr · tracked on its own" },
+  // Witr's tier (19 Nov 2026: the word wājib is never shown; Witr is tracked and made up exactly as before)
+  wajib: { name: "Witr", gloss: "", line: "Tracked on its own" },
   muakkadah: { name: "Sunnah muʾakkadah", short: "Muʾakkadah", gloss: "Emphasised", line: "The daily 12, plus 4 before and 4 after Jumuʿah" },
   ghayr: { name: "Sunnah ghayr muʾakkadah", short: "Ghayr muʾakkadah", gloss: "Non-emphasised", line: "4 before ʿAsr, 4 before ʿIshāʾ" },
   nafl: { name: "Nafl", short: "Nafl", gloss: "Optional extras", line: "Off by default · Duhā, Tahajjud, Awwābīn…" },
@@ -118,23 +119,24 @@ export const TIER = {
   sunnahMuakkadah: { name: "Sunnah muʾakkadah", short: "Muʾakkadah", gloss: "Emphasised", line: "Witr" },
 };
 /** The small tag on a Witr chip, by madhhab (Hanafī: wājib; Mālikī: Sunnah; others: sunnah). */
-export const WITR_TAG = { hanafi: "wājib", shafii: "sunnah", hanbali: "sunnah", maliki: "Sunnah" };
+export const WITR_TAG = { hanafi: "", shafii: "sunnah", hanbali: "sunnah", maliki: "Sunnah" };
 export const WITR_UI = {
+  name: "Witr",
   chip: n => `Witr ${n}`,
   title: n => `Witr · ${plural(n, "rakʿah")}`,
   line: {
-    hanafi: "Wājib in the Hanafī school, after ʿIshāʾ",
+    hanafi: "After ʿIshāʾ, before Fajr",
     shafii: "Sunnah muʾakkadah, after ʿIshāʾ",
     hanbali: "Sunnah muʾakkadah, after ʿIshāʾ",
     maliki: "The one daily prayer counted as Sunnah, after ʿIshāʾ",
   },
   settingsLine: {
-    hanafi: "Wājib in the Hanafī madhhab · shown on ʿIshāʾ, counted in make-ups",
+    hanafi: "Shown on ʿIshāʾ, counted in make-ups",
     shafii: "Sunnah muʾakkadah · shown on ʿIshāʾ, not owed if missed",
     hanbali: "Sunnah muʾakkadah · shown on ʿIshāʾ, not owed if missed",
     maliki: "Sunnah · shown on ʿIshāʾ, not owed if missed",
   },
-  rowLabel: { hanafi: "Witr · wājib (Hanafī)", shafii: "Witr · sunnah", hanbali: "Witr · sunnah", maliki: "Witr · Sunnah" },
+  rowLabel: { hanafi: "Witr", shafii: "Witr · sunnah", hanbali: "Witr · sunnah", maliki: "Witr · Sunnah" },
   missedToast: "Witr missed · 1 added to Make-ups",
 };
 /** Named voluntary prayers (madhhab item.name). */
@@ -230,7 +232,7 @@ export const TODAY = {
   loggedAt: t => `Logged at ${t}`,
   change: "Change",
   prayedAs: { congregation: "Prayed in congregation", ontime: "Prayed on time", madeup: "Made up later", missed: "Missed", excused: "Excused" },
-  guide: "Tap when you've prayed",
+  guide: "Tap a prayer when you've prayed it",
   sunnahBefore: p => `Sunnah with ${p}`, optional: "optional",
   afterSalah: "Adhkār after ṣalāh", afterSalahSub: "In Read",
   thisWeek: "This week", prayedOfDue: (n, m) => `${n} of ${m}`, prayedWord: "prayed",
@@ -249,18 +251,18 @@ export const TODAY = {
     return prayers ? `${n(prayers)} ${prayers === 1 ? "prayer" : "prayers"} · ${f}` : f;
   },
   makeupsClear: "all caught up",
-  // "Make up Zuhr now?" on the Now chapter (today.makeUpNowFor)
+  // "Make up now" on a missed prayer's row (today.makeUpNowOn)
   mkNowTitle: p => `Make up ${p} now?`,
   mkNowSub: "Its time has passed; you can still pray it",
   yesterday: n => `Yesterday: ${n} not logged`,
   calendar: "Past days", settings: "Settings",
-  // the Other sheet
+  // a prayer's options sheet (long press or ⋯ on Today)
   otherTitleSub: (day, a, b) => `${day} · ${a} – ${b}`,
   otherLabel: { congregation: "In congregation", ontime: "On time", madeup: "Made up later", missed: "Missed", excused: "Excused" },
   otherSub: { congregation: "Prayed with the congregation", ontime: "Prayed within its time", madeup: "Prayed after its time, before the next Fajr", missed: "Adds one to your make-ups", missedNoMakeups: "Its time passed and it wasn't prayed", excused: "Hayḍ or nifās · nothing is owed" },
   otherNote: "One tap logs it. You can change it later.",
   madeUpEarly: p => `${p} can be marked made up once its time has ended.`,
-  // excused days on the Now chapter
+  // excused days on Today
   excusedDays: "Excused days", excusedToday: "Excused today", dayN: n => `day ${n}`,
   rememberNote: p => `A few minutes of dhikr and duʿāʾ at ${p} time. Nothing is owed.`,
   onlyYou: "Only you can see this.", endExcused: "End excused days", notExcused: "Not excused",
@@ -277,7 +279,43 @@ export const TODAY = {
   witrDone: "Witr ✓", witrMissed: "Witr missed", witrToDo: "Witr to do",
   qibla: deg => (deg == null ? "Qibla" : `Qibla ${deg}°`), qiblaAria: deg => (deg == null ? "Qibla finder" : `Qibla finder, ${deg} degrees from North`),
   welcome: name => (name ? `Welcome, ${name}` : "Welcome"),
-  // community placeholder (Zad Plus only)
+  // the merged Today page (views/home.js, today.js rowState): tap a prayer to log it, tap again for congregation
+  tapHint: "Tap again for congregation",
+  beginsIn: (left, t) => `Begins in ${left} · ${t}`,
+  mkNow: "Make up now", mkNowAria: p => `Log ${p} as made up now`,
+  mkNowHide: p => `Not now · hide “Make up now” for ${p} today`,
+  more: p => `More for ${p}`,
+  lastNightRow: "last night",
+  // a row is a button: what it is now, and what a tap does
+  rowAria: (p, status, next, extra = "") => {
+    const now = status ? { congregation: "prayed in congregation", ontime: "prayed on time", madeup: "made up", missed: "missed", excused: "excused" }[status] : "not logged";
+    const does = next === "ontime" ? "Tap to log it as prayed on time" : next === "congregation" ? "Tap again for in congregation" : next === null ? "Tap to clear it" : "Tap for options";
+    return `${p}, ${now}${extra ? `, ${extra}` : ""}. ${does}.`;
+  },
+  rowAriaUp: (p, t) => `${p}, begins at ${t}. It can be logged once it begins.`,
+  current: "current prayer", nextPrayer: "next prayer",
+  optsClear: "Clear", optsNow: "Now",
+  // Direction B "Time of day" (19 Nov 2026): the hero in the arch, the thin list and the two pills
+  leftShort: left => `${left} left`,
+  bestBeforeSub: t => `best before ${t}`,
+  leftFajr: left => `${left} left · until Fajr`,
+  beginsInShort: left => `Begins in ${left}`,
+  prayed: "Prayed", prayedAria: p => `Prayed ${p}: log it as prayed on time`,
+  heroAs: { congregation: "In congregation", ontime: "On time", madeup: "Made up", missed: "Missed", excused: "Excused" },
+  prayedAgainAria: (p, s) => `${p}, ${s}. Tap to change it.`,
+  sunnahWord: "Sunnah",
+  bandName: { dawn: "Dawn", day: "Day", afternoon: "Afternoon", dusk: "Dusk", night: "Night" },
+  tapHintToast: "Tap the tick again for congregation",
+  deedsChoose: "choose",
+  // the Good deeds sheet (Reading · Deeds · Nafl prayers)
+  deedsDaily: (day, n, m) => `${day} · ${n} of ${m} daily goals`,
+  deedsNoDaily: day => `${day} · no daily goals chosen yet`,
+  groupReading: "Reading", groupDeeds: "Deeds",
+  readBtn: "Read", readBtnAria: t => `Read: ${t}`, countBtn: "Count", countAria: t => `Count ${t}`,
+  chooseDaily: "Choose daily deeds",
+  chooseDailyLead: "Your daily goals: “Good deeds · n of m” on Today counts these. Everything else is a welcome extra.",
+  dailyOn: t => `${t}: a daily goal`,
+  // the community placeholder (Zad Plus only)
   communityLead: "Leaderboards, Circles, Family and mentoring will live here.",
   communitySoon: "Coming with Zad Plus.",
 };
@@ -313,6 +351,16 @@ export const CALENDAR = {
   provisions: "Provisions",
   excused: "Excused day",
   before: "Before you started tracking",
+  // the month view (19 Nov 2026): the Hijri month(s) under the title, the Hijri day under each day, status bars
+  monthTitle: (mon, y) => `${mon} ${y}`,
+  monthPrayed: (n, m) => `<b>${n} of ${m}</b> prayed this month`, // HTML
+  hijriShort: ["Muh", "Saf", "Rab I", "Rab II", "Jum I", "Jum II", "Raj", "Shaʿ", "Ram", "Shaw", "Dhul Q", "Dhul H"],
+  hijriFirst: (mon) => `1 ${mon}`,
+  legendBars: { congregation: "Congregation", ontime: "On time", madeup: "Made up", missed: "Missed" },
+  tapDayAll: "Tap a day to log or change it, or a day ahead for its prayer times.",
+  // a future day: its prayer times only
+  futureNote: "Prayer times only. You can log this day when it comes.",
+  dayAria: (label, hijri) => (hijri ? `${label}, ${hijri}` : label),
 };
 
 /* ---------- excused days (hayd / nifas) ---------- */
@@ -375,11 +423,11 @@ export const DEEDS = {
   listEmpty: "Your list is empty.", addNew: "+ Add new", listSaved: "Good deeds list saved",
   listCount: n => `${plural(n, "item")} · edit or reorder`,
   moveUp: "Move up", moveDown: "Move down", remove: "Remove",
-  noTarget: "Salawāt and sadaqah have no daily target; every one is counted.",
+  noTarget: "Durūd / Salawāt and sadaqah have no daily target; every one is counted.",
 };
 /** Names of the built-in good deeds (store.DEFAULT_AMAL uses these). */
 export const DEED_NAME = {
-  quran: "Qurʾān recitation", morning: "Morning adhkār", evening: "Evening adhkār", salawat: "Salawāt", sadaqah: "Sadaqah",
+  quran: "Qurʾān recitation", morning: "Morning adhkār", evening: "Evening adhkār", salawat: "Durūd / Salawāt", sadaqah: "Sadaqah",
   // excused days: recitation becomes listening, alongside duʿāʾ and istighfār
   listen: "Listen to Qurʾān", dua: "Duʿāʾ & istighfār",
 };
@@ -447,7 +495,7 @@ export const MAKEUPS = {
   prayersOwed: "prayers still owed", fastsOwed: "fasts still owed",
   prayersHead: "Make-up prayers", prayersHeadSub: "logging one counts toward the goal",
   fastsHead: "Make-up fasts",
-  witrRow: "Witr", witrRowSub: "Wājib in the Hanafī school",
+  witrRow: "Witr", witrRowSub: "Made up if missed",
   restored: n => `${n} restored`,
   toGo: (fard, witr) => `${fard} fard${witr ? ` + ${witr} Witr` : ""} to go`,
   goalSetting: "Make-up monthly goal",
@@ -517,7 +565,7 @@ export const INSIGHT = {
   unloggedTitle: n => `${plural(n, "prayer")} left unlogged this week`,
   unloggedSub: "Fill them in from the calendar so your progress stays accurate.",
   witrTitle: n => `Witr on ${n} of the last 7 nights`,
-  witrSub: "Wājib in the Hanafī school, and you've kept it.",
+  witrSub: "You've kept it every night.",
 };
 
 /* ---------- features ---------- */
@@ -849,7 +897,7 @@ export const MAKEUPS_X = {
   monthGoal: m => `${m}’s goal`, prayersUnit: "prayers", paceFor: "pace for today",
   ahead: "Ahead of pace", onPace: "On pace", behind: "Behind pace", changeGoal: "Change goal",
   seeAll: "See all make-ups", aFast: "A fast",
-  askHead: "Prayed a make-up prayer?", witrTag: "wājib · Hanafī", left: n => `${n.toLocaleString("en")} left`,
+  askHead: "Prayed a make-up prayer?", witrTag: "", left: n => `${n.toLocaleString("en")} left`,
   witrSub: n => `${n.toLocaleString("en")} left · made up with ʿIshāʾ's make-ups`,
   fastsSub: (n, done, goal) => `${n} left · ${done} of ${goal} this month`,
   sameDay: "Prayers made up the same day never land here. Mark a missed prayer “I made it up” before the next Fajr and its +1 is removed.",
@@ -889,7 +937,7 @@ export const SETUP_X = {
   continueN: n => `Continue · ${n} chosen`,
   oweEyebrow: "Last one · optional", oweTitle: "Do you have missed prayers to make up?", yes: "Yes", no: "No", notSure: "Not sure",
   howLong: "Roughly how long?", none: "None", underYear: "Under a year", oneTwo: "1–2 years", threeFive: "3–5 years", exact: "Enter exact numbers",
-  about: "about", prayersWord: "prayers", fastsWord: "fasts", includesWitr: "Includes Witr", witrWajib: "wājib in the Hanafī madhhab",
+  about: "about", prayersWord: "prayers", fastsWord: "fasts", includesWitr: "Includes Witr", witrWajib: "",
   perDay: "How many a day?", yourGoal: "your goal", aMonth: n => `${n} a month`,
   fine: "That’s completely fine", fineBody: "You can add an estimate any time from Make-ups. Zad will start counting from today: missed prayers add, made-up ones subtract.",
   start: "Start tracking",
@@ -1018,10 +1066,10 @@ export const GUIDE = {
   tourLabel: (n, of) => `Tour, step ${n} of ${of}`, stepOf: (n, of) => `Step ${n} of ${of}`,
   skip: "Skip tour", next: "Next", start: "Start",
   prayerT: "Log a prayer",
-  prayerP: "Tap <b>Prayed on time</b> once you have prayed. One tap logs it, and Undo is right there.", // HTML
-  prayerAltP: "Tap a prayer in <b>Today</b> to log it or change it.", // HTML
+  prayerP: "Tap a prayer once you have prayed it: once for <b>on time</b>, again for <b>congregation</b>. Undo is right there.", // HTML
+  prayerAltP: "Tap a prayer once you have prayed it: once for <b>on time</b>, again for <b>congregation</b>. Prayers that haven't begun show when they begin.", // HTML
   statusT: "Every choice",
-  statusP: ({ excused, sunnah }) => `<b>Other</b> has the rest: in congregation, missed${excused ? ", excused" : ""}, and made up once its time has ended.${sunnah ? " Tap a prayer in Today for its sunnah prayers." : ""}`, // HTML
+  statusP: ({ excused, sunnah }) => `<b>⋯</b> on the current prayer (or a long press on any prayer) has the rest: missed${excused ? ", excused" : ""}, and made up once its time has ended.${sunnah ? " The current prayer shows its sunnah prayers." : ""}`, // HTML
   deedsT: "Your good deeds", deedsP: "Tick off the good deeds you choose each day, under Good deeds in Today.",
   progressT: "Progress", progressP: "See where you're steady and where to grow.",
   calendarT: "Every day", calendarP: "The <b>calendar</b> shows every day, so you can fill in or fix a past prayer.", // HTML
@@ -1046,7 +1094,7 @@ export const GUIDE = {
   contact: "Contact us", email: "zadapp.team@gmail.com", contactFoot: "We read every message and reply as soon as we can.",
 
   // How statuses work
-  stLead: "Each prayer gets one status. On Today, tap Prayed in congregation or Prayed on time, or Other for every choice.",
+  stLead: "Each prayer gets one status. On Today, tap a prayer once for on time and again for congregation (a third tap clears it). Press and hold it, or tap ⋯, for every choice.",
   stItems: {
     congregation: "You prayed it with the congregation. It also counts as on time.",
     ontime: "You prayed it within its time.",
@@ -1070,7 +1118,7 @@ export const GUIDE = {
   mkLead: "Make-ups are the fard prayers you owe and are praying back.",
   mkAddsH: "What is added",
   mkAdds: "Marking a prayer Missed adds one to its make-ups.",
-  mkWitr: "In the Hanafī madhhab Witr is wājib, so a missed Witr is added too.",
+  mkWitr: "A missed Witr is added too.",
   mkExcused: "Excused days (hayd or nifās) are never added.",
   mkSameH: "Made up the same day",
   mkSame: "Prayed it late? Once its time has ended, mark it Made up later, or tap “I made it up” on Today. Its +1 comes off, so it never reaches your make-ups list.",
@@ -1150,8 +1198,8 @@ export const GENDER = {
   remember: "Remembrance at prayer time",
   rememberSub: "Make wuḍūʾ and sit in your prayer place for dhikr, for about the length of the prayer.",
   rememberNote: "Not a prayer and never counted as one. Only you see it.",
-  // tour: brothers see In congregation first on the Now card
-  prayerPBrother: "Tap <b>Prayed in congregation</b> when you prayed with the congregation, or <b>Prayed on time</b> if you prayed alone.", // HTML
+  // tour: brothers (the same tap cycle as everyone: once on time, again congregation)
+  prayerPBrother: "Tap a prayer once you have prayed it: once for <b>on time</b> if you prayed alone, again for <b>congregation</b>. Undo is right there.", // HTML
 };
 
 /* ---------- PROVISIONS: provisions & levels (views/provisions.js, points.js) ----------
@@ -1308,7 +1356,7 @@ export const READ = {
   doneWord: "done", doneOf: (n, m) => `${n} of ${m}`,
   item: {
     morning: "Morning adhkār", evening: "Evening adhkār", hizb: "Hizb al-Aʿzam", quran: "Qurʾān recitation",
-    listen: "Listen to Qurʾān", manzil: "Manzil", mulk: "Sūrat al-Mulk", kahf: "Sūrat al-Kahf", durud: "Durūd",
+    listen: "Listen to Qurʾān", manzil: "Manzil", mulk: "Sūrat al-Mulk", kahf: "Sūrat al-Kahf", durud: "Durūd / Salawāt",
     yasinAm: "Yā-Sīn · morning", yasinPm: "Yā-Sīn · evening",
   },
   nowUntil: p => `Now · until ${p}`,
@@ -1367,4 +1415,115 @@ export const READ = {
   barDone: "Ticked off for today · tap to undo",
   // the Good deeds sheet on Today
   deedsInRead: "Qurʾān and adhkār are ticked in Read, next to their text.",
+};
+
+/* ---------- the Qurʾān reading goal (src/quran-goal.js, views/quran-goal.js; approved 19 Nov 2026) ----------
+   Gentle words only: no "behind", no "missed", no streaks. */
+const unitN = (unit, n) => {
+  const v = Number.isInteger(n) ? String(n) : n.toFixed(1);
+  return unit === "min" ? `${v} min` : unit === "juz" ? `${v} juzʾ` : `${v} ${n === 1 ? "page" : "pages"}`;
+};
+export const QGOAL = {
+  unitN,
+  unit: { pages: "Pages", juz: "Juzʾ", min: "Minutes" },
+  unitWord: { pages: "pages", juz: "juzʾ", min: "min" },
+  per: { day: "Daily", week: "Weekly", plan: "Finish the Qurʾān" },
+  // the line on For today and the card: "3 of 5 pages today", "18 of 35 pages this week"
+  of: (done, target, unit, per) => {
+    const d = Number.isInteger(done) ? String(done) : done.toFixed(1);
+    return `${d} of ${unitN(unit, target)} ${per === "week" ? "this week" : "today"}`;
+  },
+  metToday: "Today's goal is met",
+  metWeek: "This week's goal is met",
+  planDone: "Khatm complete · Alhamdulillah",
+  paused: "Your goal is paused on excused days",
+  pausedShort: "Goal paused today",
+  listenCounts: "Listening to the Qurʾān still counts for the day.",
+  weekPausedNote: n => `${n} excused ${n === 1 ? "day" : "days"} this week: the goal is lower to match.`,
+  // the goal itself: "5 pages a day", "2 juzʾ a week", "Finish by Tue 9 Mar"
+  goalName: g => (g.type === "khatm" ? "Finish the Qurʾān" : `${unitN(g.type, g.n)} a ${g.per === "week" ? "week" : "day"}`),
+  finishBy: d => `Finish by ${d}`,
+  expected: d => `Expected finish ${d}`,
+  newPace: d => `At a gentle pace you'll finish ${d}`,
+  pagesLeft: n => `${n} ${n === 1 ? "page" : "pages"} to go`,
+  planToday: n => `${n} ${n === 1 ? "page" : "pages"} today`,
+  // the card in the Qurʾān chapter
+  cardKick: "Reading goal",
+  cardNone: "Set a daily or weekly goal in pages, juzʾ or minutes, or plan to finish the Qurʾān.",
+  setGoal: "Set a goal",
+  edit: "Edit goal",
+  iRead: "I read…",
+  inApp: (p, m) => `In the app: ${[p ? unitN("pages", p) : "", m ? unitN("min", m) : ""].filter(Boolean).join(" · ") || "nothing yet"}`,
+  added: list => `Added: ${list}`,
+  weekSoFar: "This week",
+  // the set-goal sheet
+  setTitle: "Qurʾān goal",
+  setSub: "Read in the app or in your own mushaf: both count.",
+  kind: "Kind of goal",
+  howMuch: "How much",
+  unitLabel: "Count in",
+  clearGoal: "Clear goal",
+  saved: "Goal saved",
+  cleared: "Goal cleared",
+  voluntary: "A goal is only a help. Missing a day changes nothing, and a weekly goal can be caught up any day.",
+  // the planner
+  planTitle: "Finish the Qurʾān",
+  planSub: m => `Pages of your mushaf: ${m}`,
+  inDays: "In a number of days",
+  byDate: "By a date",
+  daysN: n => `${n} days`,
+  custom: "Custom",
+  customDays: "Days",
+  date: "Last day",
+  eid: d => `Before Eid al-Fiṭr · ${d}`,
+  from: "Start from",
+  fromHere: p => `Where I am · page ${p}`,
+  fromStart: "The beginning",
+  planSum: (p, d) => `About ${p} ${p === 1 ? "page" : "pages"} a day · finish ${d}`,
+  planNote: "Excused days pause the plan. If a day is light, the pages are spread gently over the days left.",
+  // "Start on 1 Ramaḍān, finish by Eid" (the planner's third choice; a scheduled plan until 1 Ramaḍān)
+  ramadan: "Ramaḍān",
+  ramadanTitle: "Start on 1 Ramaḍān, finish by Eid",
+  ramadanStart: d => `Starts 1 Ramaḍān · ${d}`,
+  ramadanEnd: d => `Finish by Eid · ${d}`,
+  ramadanNone: "The Hijri calendar isn't available on this phone, so Ramaḍān can't be worked out. Choose a date instead.",
+  // a plan that hasn't started yet (Read → For today, the goal card)
+  starts: (ramadan, d) => (ramadan ? `Starts on 1 Ramaḍān · ${d}` : `Starts ${d}`),
+  // Settings → Qurʾān goal: a plan's finish date ("Finish by 9 Mar"; before it starts, "Starts 17 Feb · finish by 18 Mar")
+  finishShort: d => `Finish by ${d}`,
+  startsFinish: (a, b) => `Starts ${a} · finish by ${b}`,
+  savePlan: "Save plan",
+  // "I read…"
+  readTitle: "I read…",
+  readSub: d => `In your own mushaf or anywhere else · ${d}`,
+  amount: "Amount",
+  alsoTick: "Mark Qurʾān recitation done for today",
+  addBtn: "Add",
+  saveEdit: "Save",
+  added1: a => `Added ${a}`,
+  removed: "Removed",
+  entries: "Added today",
+  entriesDay: "Added that day",
+  remove: a => `Remove ${a}`,
+  editEntry: a => `Edit ${a}`,
+  minNote: "Minutes count towards a minutes goal; pages and juzʾ count towards a pages, juzʾ or finish goal.",
+  excusedRead: "On an excused day the goal is paused, so there is nothing to add. Listening to the Qurʾān counts for the day.",
+  // Settings → Read
+  settingsRow: "Qurʾān goal",
+  notSet: "Not set",
+  // Progress → Charts → Qurʾān
+  chartTab: "Qurʾān",
+  perDay: "Reading each day",
+  perDaySubP: "Pages · last 30 days",
+  perDaySubM: "Minutes · last 30 days",
+  perMonth: "Reading each month",
+  seg: { pages: "Pages", min: "Minutes" },
+  segLabel: "Show",
+  totals: (p, m, d) => [[String(p), "pages"], [String(m), "minutes"], [String(d), d === 1 ? "day with reading" : "days with reading"]],
+  chartAria: (unit, a, b, total, days) => `${unit === "min" ? "Minutes" : "Pages"} of Qurʾān read each day, ${a} to ${b}: ${total} in all, on ${days} ${days === 1 ? "day" : "days"}.`,
+  barTitle: (d, v, unit) => `${d}: ${unitN(unit, v)}`,
+  barExcused: d => `${d}: excused`,
+  none: "No reading counted yet. Pages turned in the reader and anything you add with “I read…” show here.",
+  chartCap: "Reading in the app and in your own mushaf, together. There is no target line: every page is good.",
+  goalLine: g => `Goal: ${g}`,
 };

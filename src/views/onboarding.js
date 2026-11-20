@@ -27,6 +27,7 @@ import { REFLECTIONS } from "../reflections.js";
 import { whatsNewBody, markWhatsNewSeen, whatsNewDue } from "./whatsnew.js";
 import { pvOn, turnOn, turnOff } from "../provisions.js";
 import "../css/onboarding.css";
+import { bandCover } from "../band.js";
 
 /* Set-up labels (strings.js SETUP_X). */
 const X = SETUP_X;
@@ -58,9 +59,16 @@ const SPANS = { none: 0, under: 177, oneTwo: 531, threeFive: 1416 }; // days (a 
 const num = n => n.toLocaleString("en");
 
 /* ---------- frame ---------- */
-/** One full screen: optional top row, the body, and the buttons kept at the bottom. */
+/**
+ * One full screen: optional top row, the body, and the buttons kept at the bottom.
+ * Direction B (19 Nov 2026): every screen but Welcome opens in the time-of-day band (css/band.css): the top row
+ * (back, the step bar, "2 of 7") and the screen's heading (logo, title, lead) move into it.
+ */
 function frame(body, { top = "", btns = "", cls = "" } = {}) {
-  return `<div class="onb ${cls}">${top}<div class="ob-body">${body}</div><div class="ob-btns">${btns}</div></div>`;
+  const m = /^\s*((?:<div class="ob-readyhead">[\s\S]*?<\/div>)?\s*<header class="ob-head">[\s\S]*?<\/header>)/.exec(body);
+  const band = m || top ? `${bandCover()}<div class="zb ob-band">${top}${m ? m[1] : ""}</div>` : "";
+  if (m) body = body.slice(m[0].length);
+  return `<div class="onb ${cls}">${band}<div class="ob-body">${body}</div><div class="ob-btns">${btns}</div></div>`;
 }
 const backBtn = fn => `<button class="ob-back" onclick="${fn}" aria-label="${esc(X.back)}">${svg("back")}</button>`;
 function stepTop(id) {
@@ -75,10 +83,19 @@ const seg = (items, label) => `<div class="ob-seg" role="radiogroup" aria-label=
 const checkRow = (t, s = "", icon = "check") => `<div class="ob-row"><span class="ob-mk${icon === "check" ? "" : " soft"}">${svg(icon)}</span><span class="t"><b>${esc(t)}</b>${s ? `<small>${esc(s)}</small>` : ""}</span></div>`;
 
 /* ---------- welcome, log in ---------- */
+/*
+ * Welcome, variant D (chosen 19 Nov 2026; declutter bx-welcome-d): the slim double-line mihrab arch framing the logo,
+ * washed softly inside so the pattern never runs behind it, on the full-screen time-of-day gradient (the band of
+ * this moment, css/band.css) with a faint girih. "Zad" in Amiri, 2:197 in Arabic with its full translation.
+ * The logo is the vector symbol (scripts/icons/geometry.mjs): the light colourway on light, the app-icon one on dark.
+ */
+const AW = 212, AH = 262, AIN = `M16 ${AH}V89C16 51 62 27 ${AW / 2} 14 ${AW - 62} 27 ${AW - 16} 51 ${AW - 16} 89V${AH}`;
+const ARCH = `<svg class="ob-arch" viewBox="0 0 ${AW} ${AH}" aria-hidden="true"><defs><linearGradient id="obWash" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="w0"/><stop offset=".72" class="w0"/><stop offset="1" class="w1"/></linearGradient></defs><path d="${AIN}Z" fill="url(#obWash)"/><path class="o" d="M8 ${AH}V86C8 44 58 18 ${AW / 2} 4 ${AW - 58} 18 ${AW - 8} 44 ${AW - 8} 86V${AH}"/><path class="n" d="${AIN}"/></svg>`;
+const bigLogo = w => `<img class="logo ob-lg l" src="logo/zad-symbol-light.svg" width="${w}" height="${Math.round(w * 1.303)}" alt=""><img class="logo ob-lg d" src="logo/zad-symbol-dark.svg" width="${w}" height="${Math.round(w * 1.303)}" alt="">`;
 function sWelcome() {
-  return frame(`<div class="ob-welcome">${logo(76)}<h1 class="ob-brand">${esc(APP.name)}</h1>
+  return frame(`<div class="ob-welcome"><div class="ob-stage">${ARCH}<div class="ob-lgw">${bigLogo(104)}</div></div><h1 class="ob-brand">${esc(APP.name)}</h1>
     <div class="ob-ayah"><p class="ar ob-ayah-ar" lang="ar" dir="rtl">${esc(AYAH_2_197)}</p><p class="en">“${esc(X.ayahEn)}”</p><p class="src">${esc(X.quoteSrc)}</p></div></div>`,
-    { cls: "welcome", btns: `${btn(esc(X.getStarted), "A.obStart()")}${cloud.available ? btn(esc(X.alreadyUse), "A.obGo('login')", "txt") : ""}` });
+    { cls: "welcome zb ob-wd", btns: `${btn(esc(X.getStarted), "A.obStart()")}${cloud.available ? btn(esc(X.alreadyUse), "A.obGo('login')", "txt") : ""}` });
 }
 /* c2: the consent card, an unticked box, Google (disabled until ticked) and an equal "Not now" (views/consent.js) */
 function sLogin() {
@@ -427,10 +444,12 @@ export function showWhatsNew(next = "home") {
 }
 onRender(() => { if (UI.view === "onboard") draw(); });
 
-/* ---------- lock screen (LK2) ---------- */
-function renderLock() {
+/* ---------- lock screen (LK2) ----------
+   Drawn only while it shows (main.js lockIfNeeded draws it as it appears): every redraw used to rebuild it, hidden,
+   which cost each tap on Today about 3 ms (4x CPU: 11 ms). */
+function renderLock(force = false) {
   const el = $("#lock");
-  if (!el) return;
+  if (!el || (el.hidden && !force)) return;
   const now = NOW(), nx = nextPrayer(now, S.settings);
   const mins = Math.max(0, Math.round((nx.time - now) / 60000));
   const longDay = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][now.getDay()];
@@ -443,4 +462,5 @@ function renderLock() {
     <button class="fp" onclick="A.unlock()" aria-label="${esc(X.unlock)}"><span>${svg("finger")}</span></button>
     <p class="touch">${esc(X.lockTouch)}</p><p class="pin">${esc(X.lockOr)} <button onclick="A.unlock()">${esc(X.lockPin)}</button></p></div>`;
 }
-onRender(renderLock);
+onRender(() => renderLock());
+A.drawLock = () => renderLock(true);

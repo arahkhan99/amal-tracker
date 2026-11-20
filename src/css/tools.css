@@ -482,3 +482,132 @@
 }
 /* a toast in a reader sits above the done bar, not over it */
 .phone[data-nav=off] .toast.lift{bottom:calc(96px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)))}
+
+/* ---------- the Qurʾān reading goal (views/quran-goal.js; approved 19 Nov 2026) ----------
+   Flat colours from theme.css; the numbers are always in text, the bars only repeat them. No :has(). */
+.qg-bar{display:block;width:100%;height:6px;border-radius:3px;background:var(--track);overflow:hidden;margin-top:8px}
+.qg-bar i{display:block;height:100%;background:var(--acc2);border-radius:3px}
+.qg-bar.met i{background:var(--acc)}
+.qg-bar.lg{height:10px;border-radius:5px;margin-top:12px}
+.qg-bar.lg i{border-radius:5px}
+/* For today: the recitation row with a goal (the text opens the reader) */
+.rd-row .rd-tt{display:flex!important;flex-direction:column;justify-content:center;align-self:stretch;min-height:48px}
+.rd-row .t small.qg-l{color:var(--ink);font-weight:500}
+.rd-row .t small.qg-l.met{color:var(--acc2)}
+:root[data-theme=dark] .rd-row .t small.qg-l.met{color:var(--acc)}
+.rd-row .qg-ir{min-width:0;padding:0 12px!important;font-size:14px!important}
+/* the card in the Qurʾān chapter */
+.qg-card .rd-kick{font-size:13px;font-weight:600;color:var(--mute);margin:0}
+.qg-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:-10px}
+.qg-hd .rd-kick{flex:1;min-width:0}
+.qg-edit{font-size:15px;flex:none}
+.qg-big{font-size:21px;font-weight:600;color:var(--ink);margin:2px 0 0;line-height:1.3}
+.qg-big.pz{font-size:17px;font-weight:500}
+.qg-none{font-size:15px;line-height:1.45;color:var(--ink);margin:6px 0 0}
+.qg-sub{font-size:14px;color:var(--ink);margin:10px 0 0;line-height:1.45}
+.qg-src{font-size:13px;color:var(--mute);margin:6px 0 0;line-height:1.45}
+.qg-acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.qg-acts .zt-btn{flex:1 1 140px;min-height:48px;font-size:16px}
+.rd-cont + .qg-card{margin-top:12px}
+/* sheets */
+.qg-sh button{font:inherit;cursor:pointer;border:0}
+.qg-lab{font-size:13px;font-weight:600;color:var(--mute);margin:18px 2px 8px}
+.qg-lab label{font:inherit;color:inherit}
+.z-shfoot + .qg-lab{margin-top:24px}
+.qg-seg{display:flex;gap:4px;padding:3px;border-radius:12px;background:var(--neutral);margin-top:14px}
+.qg-lab + .qg-seg{margin-top:0}
+.qg-seg button{flex:1 1 0;min-width:0;min-height:44px;padding:4px 8px;text-align:center;border-radius:9px;background:none;color:var(--mute);font-size:14.5px;font-weight:500;line-height:1.2}
+.qg-seg button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 0 0 1px var(--card-line)}
+.qg-sh .z-stp.qg-stp{margin-top:0;gap:10px}
+.qg-sh .qg-stp input{width:96px;flex:none}
+.qg-uw{flex:1;min-width:0;font-size:15px;color:var(--mute);padding-left:4px}
+.qg-sh .z-stp button{flex:none;color:var(--ink)}
+.qg-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.qg-chips button{min-height:40px;padding:0 14px;border-radius:999px;background:none;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font-size:14.5px}
+.qg-chips button.on{background:var(--soft);color:var(--on-soft);box-shadow:inset 0 0 0 1.5px var(--acc2);font-weight:600}
+.qg-opts{display:flex;flex-direction:column;gap:8px}
+.qg-opt{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:8px 14px;border-radius:14px;background:none;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);text-align:left;font-size:15px}
+.qg-opt.on{box-shadow:inset 0 0 0 1.5px var(--acc2);background:var(--soft);color:var(--on-soft);font-weight:600}
+.qg-rd{width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--faint);flex:none;display:grid;place-items:center}
+.qg-opt.on .qg-rd{box-shadow:inset 0 0 0 6px var(--acc)}
+.qg-sum{margin-top:16px;padding:14px 16px;border-radius:14px;background:var(--neutral)}
+/* the planner's Ramaḍān choice: when it starts and ends (from the Hijri calendar) */
+.qg-ram{display:flex;flex-direction:column;gap:3px;margin-top:14px;padding:12px 14px;border-radius:14px;box-shadow:inset 0 0 0 1px var(--line);font-size:14.5px;color:var(--mute);line-height:1.35}
+.qg-ram b{font-size:15.5px;font-weight:600;color:var(--ink)}
+.qg-sum b{display:block;font-size:16px;font-weight:600;color:var(--ink);line-height:1.35}
+.qg-sum small{display:block;font-size:13px;color:var(--mute);margin-top:2px}
+.qg-sh .z-field input[type=date]{min-height:48px}
+.qg-chk{display:flex;align-items:center;gap:12px;margin-top:16px;font-size:15px;color:var(--ink);min-height:44px;cursor:pointer}
+.qg-chk input{width:22px;height:22px;accent-color:var(--acc);flex:none}
+.qg-ents{border-top:1px solid var(--line)}
+.qg-ent{display:flex;align-items:center;gap:8px;min-height:52px;border-bottom:1px solid var(--line)}
+.qg-ent .t{flex:1;min-width:0}
+.qg-ent .t b{display:block;font-size:15px;font-weight:600;color:var(--ink)}
+.qg-ent .t small{display:block;font-size:12.5px;color:var(--mute)}
+.qg-ent.on .t b{color:var(--acc2)}
+.qg-ent .zt-link{background:none;padding:0 8px;font-size:14.5px}
+.qg-x{width:44px;height:44px;display:grid;place-items:center;border-radius:12px;background:none;color:var(--mute)}
+.qg-x svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
+/* Progress → Charts → Qurʾān */
+.pr-qseg{display:flex;justify-content:flex-end;margin:-4px 0 12px}
+
+/* =====================================================================================================
+   Direction B "Time of day" (19 Nov 2026; declutter bx-read-*): "Read" and the chapter names are in the band
+   (css/band.css); below it no cards. For today: tick on the left, Read on the right; quiet icons, hairlines.
+   The Qurʾān chapter keeps one soft tile (Continue reading).
+   ===================================================================================================== */
+#v-tools .zt-ch{padding:18px 16px 16px}
+#v-tools .zt-ch .zt-card{background:transparent;border:0;border-radius:0;padding:0 0 0 8px}
+#v-tools .zt-ch .zt-chh{margin:0 8px 6px;display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 10px}
+#v-tools .zt-ch .zt-title{font:650 17px/1.3 var(--sans);color:var(--ink)}
+#v-tools .zt-ch .zt-sub{font-size:14px;margin:0;color:var(--mute)}
+#v-tools .zt-ch .zt-sub b{color:var(--mute);font-weight:400}
+.rd-list + .rd-list{margin-top:16px;border-top:1px solid var(--line)}
+.rd-row{min-height:56px;padding:8px 0;gap:14px}
+.rd-row .zt-ico{background:transparent;width:24px;height:24px;border-radius:0;color:var(--acc2)}
+.rd-row .zt-ico svg{width:22px;height:22px}
+.rd-row .t b{font-weight:500}
+.rd-row.done .t b{color:var(--mute)}
+.rd-tick{margin:0 -4px 0 -9px}
+.rd-bx{width:26px;height:26px;border-radius:8px;box-shadow:inset 0 0 0 1.8px var(--mute)}
+.rd-btn{position:relative;display:inline-flex!important;align-items:center;gap:5px;min-height:34px;min-width:0;padding:0 13px!important;border-radius:17px;font-size:13px!important;font-weight:650!important}
+.rd-btn::before{content:"";position:absolute;inset:-5px 0}
+.rd-btn svg{width:15px;height:15px}
+.rd-tag{font-size:14px}
+.rd-week{padding:4px 0 0 8px;border-top:1px solid var(--line)!important;margin-top:16px}
+.rd-week .rd-row{min-height:56px}
+.rd-cont{background:var(--neutral)!important;border-radius:20px!important;padding:16px 18px!important}
+.rd-cont .rd-big{margin:2px 0 14px}
+.rd-cont .rd-big b{font-size:20px;font-weight:650}
+.rd-cont .rd-big span{font-size:14px}
+.rd-cont .zt-btn{border-radius:24px;min-height:48px}
+.rd-cont .rd-kick{font-weight:400}
+.rd-vol{margin:14px 8px 0;color:var(--faint)}
+
+/* ---------- the readers' header in the band (core.js readerHead / head): "‹ Read", the title, Aa; chips; the bar ---------- */
+#v-tools .zb.tl-band{position:relative;top:auto;z-index:4;background:linear-gradient(var(--ba),var(--bb));color:var(--bink);border-bottom:0;border-radius:0 0 28px 28px;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 8px) 14px 18px 24px;overflow:visible}
+#v-tools .tl-band .zb-lead{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px}
+#v-tools .tl-band .tl-autob{color:var(--bink);border:1px solid color-mix(in srgb,var(--bink) 45%,transparent);border-radius:7px;padding:1px 6px;font-size:10.5px;font-weight:800;letter-spacing:.08em;opacity:1}
+#v-tools .tl-band .tl-segw{display:flex;background:none;border:0;padding:0;border-radius:0;margin:12px 10px 0 0;gap:6px}
+#v-tools .tl-band .tl-segw.zb-chips button{flex:0 0 auto;min-height:36px;padding:0 14px;border-radius:18px;font-size:14px;font-weight:550;color:var(--bmute);opacity:1;background:transparent;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--bink) 18%,transparent)}
+#v-tools .tl-band .tl-segw.zb-chips button.on{background:var(--bchip);color:var(--bink);font-weight:650;box-shadow:none}
+#v-tools .tl-band .tl-segw.five button{padding:0 12px;min-width:0}
+#v-tools .tl-band .tl-mzsub{margin-top:10px;opacity:1}
+#v-tools .tl-band .zb-ib.aa{background:transparent}
+/* the reader's done bar: a hairline, the tick and a quiet Next pill */
+.rd-bar{border-top:1px solid var(--line)}
+.rd-tickl .rd-bx{width:26px;height:26px;border-radius:8px;box-shadow:inset 0 0 0 1.8px var(--mute)}
+.rd-tickl .rd-bx.on{box-shadow:none}
+.rd-tickl .t b{font-weight:500}
+.rd-next{border-radius:22px;font-size:15px!important;font-weight:650!important;padding:0 12px 0 16px!important}
+.rd-prev{border-radius:22px;background:transparent!important;box-shadow:inset 0 0 0 1px var(--line)}
+/* the readers' items: borderless, a hairline between them; the current one is marked by its filled counter
+   (no gold frame), the ones already read fade */
+.tl-list{padding:6px 16px 0 24px;gap:0}
+.tl-ad,.tl-fold{background:transparent;border:0;border-radius:0;border-top:1px solid var(--line);padding:16px 0}
+.tl-list > .tl-ad:first-child,.tl-list > .tl-fold:first-child,.tl-list > .tl-tip + .tl-ad,.tl-list > .tl-tip + .tl-fold,.tl-list > .tl-donec + .tl-ad,.tl-list > .tl-donec + .tl-fold{border-top:0}
+.tl-ad.now{border-color:var(--line);box-shadow:none}
+.tl-ad.now .tl-no{background:var(--neutral);color:var(--ink)}
+.tl-ad.done,.tl-fold{opacity:.62}
+.tl-fold{padding:12px 0}
+.tl-donec{border-radius:16px;border:0;margin:6px 0 10px}

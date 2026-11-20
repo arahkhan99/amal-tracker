@@ -1,0 +1,68 @@
+/* The month calendar (views/calendar.js, zc-) and its day-ahead sheet (z-ro), after
+   design-review/mockups2/redesign/declutter (cal-month, cal-future; NOTES.md "Month calendar").
+   Static: no animation, no :has(). Sizes in rem with min-heights, so large text grows instead of clipping.
+   Bar colours: the chart tokens darkened to reach 3:1 on the page (NOTES.md "Calendar bars"). */
+:root{--cal-c:#0F3D2E;--cal-o:#4E8A6E;--cal-u:#A9821A;--cal-x:#8C826B}
+:root[data-theme=dark]{--cal-c:#D6B868;--cal-o:#6F9A80;--cal-u:#9A865A;--cal-x:#738479}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]):not([data-theme=dark]){--cal-c:#D6B868;--cal-o:#6F9A80;--cal-u:#9A865A;--cal-x:#738479}
+}
+
+/* title: "November 2026" in Amiri, the Hijri month(s) under it, a chevron each side */
+.zc-bar{display:flex;align-items:center;gap:4px;margin:6px -10px 0}
+.zc-bar .t{flex:1;min-width:0;text-align:center}
+.zc-title{font:400 1.75rem/1.1 var(--serif);color:var(--ink);margin:0;overflow-wrap:anywhere}
+.zc-hj{font-size:.8125rem;color:var(--mute);margin:2px 0 0;line-height:1.35}
+
+/* the grid */
+.zc-wd,.zc-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.zc-wd{margin-top:18px}
+.zc-wd span{text-align:center;font-size:.75rem;color:var(--mute);font-weight:600;padding-bottom:6px}
+.zc-grid{row-gap:4px}
+.zc-dc{display:flex;flex-direction:column;align-items:center;min-width:0;min-height:4.125rem;padding:6px 0 4px;border-radius:14px;text-align:center;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.zc-dc.empty{cursor:default}
+.zc-dc:disabled{cursor:default;opacity:.5}
+.zc-dc .g{font-size:1rem;font-weight:500;min-width:1.875rem;height:1.875rem;line-height:1.875rem;border-radius:999px;padding:0 2px}
+.zc-dc.today .g{box-shadow:inset 0 0 0 2px var(--gold-dot);font-weight:700}
+.zc-dc .h{font-size:.6875rem;color:var(--mute);margin-top:-2px;white-space:nowrap;max-width:100%;letter-spacing:-.01em}
+.zc-dc .h.m{color:var(--acc);font-weight:700}
+.zc-dc .pp{display:flex;gap:2px;margin-top:5px;height:9px;align-items:flex-end}
+.zc-dc .pp i,.zc-legend .lp{width:4px;height:9px;border-radius:1.5px;background:var(--track);display:block;flex:none}
+.zc-dc .pp i.c,.zc-legend .lp.c{background:var(--cal-c)}
+.zc-dc .pp i.o,.zc-legend .lp.o{background:var(--cal-o)}
+.zc-dc .pp i.u,.zc-legend .lp.u{background:var(--cal-u)}
+.zc-dc .pp i.x,.zc-legend .lp.x{background:transparent;box-shadow:inset 0 0 0 1.2px var(--cal-x)}
+.zc-dc .ex{color:var(--mute);height:9px;margin-top:5px;display:grid;place-items:center}
+.zc-dc .ex svg{width:13px;height:13px}
+
+/* legend and the quiet foot line */
+.zc-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;font-size:.75rem;color:var(--mute);margin:14px 0 0}
+.zc-legend span{display:inline-flex;align-items:center;gap:5px}
+.zc-legend .lp{width:5px;height:11px}
+.zc-legend svg.xs{width:13px;height:13px}
+.zc-foot{font-size:.8125rem;color:var(--faint);margin:14px 4px 0;text-align:center;line-height:1.45}
+.zc-foot b{color:var(--ink);font-weight:600}
+
+/* a day ahead: its prayer times only (A.dayTimes) */
+.z-sh h3.z-sht{font:400 1.6rem/1.15 var(--serif);color:var(--ink)}
+.z-ro .z-sub{font-size:.8125rem;color:var(--mute);margin-top:2px}
+.z-trs{margin-top:6px}
+.z-tr{display:flex;align-items:center;gap:12px;min-height:3.375rem;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.z-tr:first-child{border-top:0}
+.z-tr .z-nm{flex:1;min-width:0;display:flex;align-items:center;gap:8px;font-size:1.0625rem;font-weight:500;color:var(--ink)}
+.z-tr .z-tm{font-size:.9375rem;color:var(--ink);white-space:nowrap;text-align:right}
+.z-tr .z-tm small{font-size:.72em;letter-spacing:.04em;margin-left:2px}
+.z-tr.z-sr{min-height:2.5rem}
+.z-tr.z-sr .z-nm{font-size:.875rem;font-weight:400;color:var(--mute)}
+.z-tr.z-sr .z-nm svg{width:17px;height:17px;color:var(--mute)}
+.z-tr.z-sr .z-tm{font-size:.8125rem;color:var(--mute)}
+.z-ronote{font-size:.8125rem;color:var(--faint);margin:12px 0 0;line-height:1.45}
+
+/* the header in the time-of-day band (css/band.css): "‹ Today", then the month and its Hijri months, arrows each side */
+.zc-band{padding-right:14px;padding-bottom:16px}
+.zc-band .zc-bar{margin:0 0 0 -14px}
+.zc-band .zc-title{color:var(--bink);font-size:1.875rem}
+.zc-band .zc-hj{color:var(--bmute)}
+.zc-band .zt-ib{color:var(--bink)}
+.zc-band .zt-ib:disabled{color:var(--bmute);opacity:.5}
+#v-calendar .zc{padding-top:4px}

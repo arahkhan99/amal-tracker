@@ -6,9 +6,11 @@ import "@fontsource/manrope/600.css";
 import "@fontsource/manrope/700.css";
 import "./styles.css";
 import "./css/theme.css";
+import "./css/band.css";
 import "./css/onboarding.css";
 import "./css/home.css";
 import "./css/today.css";
+import "./css/calendar.css";
 import "./css/progress.css";
 import "./css/settings.css";
 import "./css/tour.css";
@@ -50,6 +52,7 @@ import { initCrash, crashView, crashTheme } from "./crash.js";
 import { onRender } from "./app.js";
 import { APP_VERSION } from "./views/settings.js";
 // Tablet and iPad layout (768px+); imported last so it comes after every view's CSS, tools.css included
+import "./css/sheets.css";
 import "./css/tablet.css";
 
 // The bottom bar is built by app.js (renderNav, from features.navTabs); its buttons call A.go themselves.
@@ -91,7 +94,7 @@ A.unlock = async () => {
   try { await authenticate(); $("#lock").hidden = true; afterUnlock.flush(); } catch (e) { /* stay locked */ }
 };
 function lockIfNeeded() {
-  if (isNative() && S.settings.lock) { $("#lock").hidden = false; A.unlock(); }
+  if (isNative() && S.settings.lock) { $("#lock").hidden = false; A.drawLock?.(); A.unlock(); }
 }
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) { hiddenAt = Date.now(); return; }

@@ -31,6 +31,10 @@ import { hijriEditors, refreshHijriCommittee, saveCommitteeMonth } from "../clou
 import { setCrashReporting } from "../crash.js";
 import { TEXT_SIZES, AR_SIZES, textSizeIndex, arSizeIndex, setSize, applyScales } from "../appearance.js";
 import { plusPage } from "./plus.js";
+import { goalOf } from "../quran-goal.js";
+import { goalSummary } from "./quran-goal.js";
+import { QGOAL } from "../strings.js";
+import { bandHead, bandCover } from "../band.js";
 
 /* Settings-only labels (strings.js SETTINGS_X). */
 const X = SETTINGS_X;
@@ -92,9 +96,10 @@ function switchRow({ icon, title, sub = "", key, on, tone = "gold", tag = "", gl
 }
 const group = (title, rows, foot = "") => `<section class="sgroup"><h2>${esc(title)}</h2><div class="card scard">${rows.join("")}</div>${foot ? `<p class="sfoot">${esc(foot)}</p>` : ""}</section>`;
 /** A sub-page header: "‹ Settings" (or "‹ Help & tour" inside Help), then the page title. */
-const head = (title, back = "A.settingsBack()") => `<header class="shead"><button class="sback" onclick="${back}">${svg("back")}<span>${esc(HELP_SUBS.includes(page) ? GUIDE.helpTitle : T.title)}</span></button><h1>${esc(title)}</h1></header>`;
+// Both sit in the time-of-day band (band.js, css/band.css), with a cover behind the status bar once the page scrolls.
+const head = (title, back = "A.settingsBack()") => bandCover() + bandHead({ title, back, backLabel: HELP_SUBS.includes(page) ? GUIDE.helpTitle : T.title, cls: "shead" });
 /** The main page's header: "Done" at the top right (back to where Settings was opened), then "Settings". */
-const mainHead = () => `<header class="shead main"><button class="sdone" onclick="A.settingsDone()">${esc(COMMON.done)}</button><h1>${esc(T.title)}</h1></header>`;
+const mainHead = () => bandCover() + bandHead({ title: T.title, cls: "shead main", right: `<button type="button" class="zb-done sdone" onclick="A.settingsDone()">${esc(COMMON.done)}</button>` });
 const HELP_SUBS = ["hStatus", "hMakeups"];
 
 /* ---------- page state ---------- */
@@ -546,11 +551,18 @@ function sunnahPage() {
   const tiers = TIER_ORDER.filter(t => [...catalogue(m), ...DAY_NAFL].some(x => x.tier === t));
   return `${head(SUNNAH_UI.pageTitle)}<p class="spage-lead">${esc(SUNNAH_UI.pageIntro(m))}</p>
   ${tiers.map(t => tierBlock(t, m, t === "ghayr" ? st.sunnahGhayr !== false : !!st.sunnahNafl, t === "ghayr" ? "sunnahGhayr" : t === "nafl" ? "sunnahNafl" : "")).join("")}
-  <section class="tier"><div class="tier-h"><div><h2>${esc(X.witrHead)} ${glossBtn("witr")} <span class="wtag">${esc(w.tag)}</span></h2><p>${esc(w.settingsLine)}</p></div><span class="lockic">${svg("lock")}</span></div>
-  <div class="card scard"><div class="trow"><span>${esc(X.afterIsha)}</span><span class="chips"><span class="chip witr">${esc(w.chip)} · ${esc(w.tag)}</span></span></div></div></section><div class="space"></div>`;
+  <section class="tier"><div class="tier-h"><div><h2>${esc(X.witrHead)} ${glossBtn("witr")}${w.tag ? ` <span class="wtag">${esc(w.tag)}</span>` : ""}</h2><p>${esc(w.settingsLine)}</p></div><span class="lockic">${svg("lock")}</span></div>
+  <div class="card scard"><div class="trow"><span>${esc(X.afterIsha)}</span><span class="chips"><span class="chip witr">${esc(w.chip)}${w.tag ? ` · ${esc(w.tag)}` : ""}</span></span></div></div></section><div class="space"></div>`;
 }
 
 /* ---------- features page ---------- */
+/** Settings → Read: the Qurʾān goal (views/quran-goal.js A.qgSet sets, edits or clears it). */
+function qGoalRow() {
+  if (!feat.toolVisible(S, "quran")) return "";
+  const g = goalOf(S);
+  // a plan shows its finish date ("Finish by 9 Mar"); a daily or weekly goal its amount (views/quran-goal.js goalSummary)
+  return navRow({ icon: "book", title: QGOAL.settingsRow, sub: goalSummary(g), onclick: "A.qgSet()", tone: g ? "green" : "grey", id: "set-qgoal" });
+}
 /** Which nafl prayers the Good deeds sheet shows (settings.naflShow; the same switch as the sheet's "Choose"). */
 function naflGroupS() {
   if (!feat.isOn(S, "deeds")) return "";
@@ -560,7 +572,7 @@ function naflGroupS() {
 function featuresPage() {
   const rows = feat.featureRows(S).map(r => `<div class="srow ${r.on ? "" : "off"}"><div class="srow-main static">${tile(FEATURE_ICON[r.id], r.on ? "green" : "grey")}<span class="t"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span>${r.locked ? `<span class="lockic">${svg("lock")}</span>` : `<button class="switch${r.on ? " on" : ""}" role="switch" aria-checked="${r.on}" aria-label="${esc(r.name)}" onclick="A.featToggle('${r.id}')"></button>`}</div></div>${r.id === "progress" ? pvFeatureRow(tone => `<span class="ic ${tone}">${pvIcon("bag", "")}</span>`) : ""}`).join("");
   const toolsOn = feat.isOn(S, "tools");
-  const tools = toolsOn ? `<section class="sgroup" id="set-tools"><h2>${esc(X.toolsHead)}</h2><div class="card scard">${feat.toolRows(S).map(r => `<div class="srow ${r.visible ? "" : "off"}"><div class="srow-main static">${tile(TOOL_ICON[r.id], r.visible ? "green" : "grey")}<span class="t"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span><button class="switch${r.visible ? " on" : ""}" role="switch" aria-checked="${r.visible}" aria-label="${esc(r.name)}" onclick="A.toolToggle('${r.id}')"></button></div></div>`).join("")}</div><p class="sfoot">${esc(X.toolsLead)}</p></section>` : "";
+  const tools = toolsOn ? `<section class="sgroup" id="set-tools"><h2>${esc(X.toolsHead)}</h2><div class="card scard">${feat.toolRows(S).map(r => `<div class="srow ${r.visible ? "" : "off"}"><div class="srow-main static">${tile(TOOL_ICON[r.id], r.visible ? "green" : "grey")}<span class="t"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span><button class="switch${r.visible ? " on" : ""}" role="switch" aria-checked="${r.visible}" aria-label="${esc(r.name)}" onclick="A.toolToggle('${r.id}')"></button></div></div>`).join("")}${qGoalRow()}</div><p class="sfoot">${esc(X.toolsLead)}</p></section>` : "";
   const tabs = feat.navTabs(S);
   // Today · Read · Progress (Community only with Zad Plus). With one tab only there is no bar at all.
   const barIds = ["home", "tools", "progress", ...(feat.plusOn(S) ? ["community"] : [])];
