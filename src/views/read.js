@@ -12,15 +12,15 @@
  * Each item follows Settings → Features (tools); a chapter with nothing in it is left out.
  */
 import { S, A, NOW, todayKey, esc, I, T, open, redraw, openSheet, toast, COMMON } from "./tools/core.js";
-import { UI, commit, avatarBtn, render } from "../app.js";
+import { UI, commit, avatarBtn, render, onRender } from "../app.js";
 import * as store from "../store.js";
 import { makeChapters, setHTML } from "./chapters.js";
-import { readItems, setReadDone, isReadDone, isJumuah, slotOf, jumuahKey } from "../reading.js";
-import { toolVisible, isOn } from "../features.js";
-import { READ, GUIDE, PRAYER_NAME, NAV, QGOAL } from "../strings.js";
+import { readItems, todayGroups, setReadDone, isReadDone, isJumuah, slotOf, jumuahKey } from "../reading.js";
+import { toolVisible, isOn, visibleTools } from "../features.js";
+import { READ, GUIDE, PRAYER_NAME, NAV, QGOAL, WEEK_UI } from "../strings.js";
 import { timesFor } from "../times.js";
 import { dkey, DOW, MON3 } from "../util.js";
-import { thisWeek, contentReady, whenContent } from "../content.js";
+import { thisWeek, contentReady, whenContent, loadContent, setSahabiStart, monthIndex } from "../content.js";
 import { getMushaf, pageForSurah } from "../tools/quran-data.js";
 import { ADHKAR } from "../tools/data/adhkar.js";
 import { TT } from "./tools/strings-tools.js";
@@ -96,24 +96,50 @@ const chev = `<span class="rd-cv">${I.chev}</span>`;
 /** A tappable row with an icon, title, sub line and a chevron (or "Done"). */
 const linkRow = (id, title, sub, act, { done = false, now = false, sub2 = "" } = {}) => `<button type="button" class="rd-row link" onclick="${act}">${tile(id)}<span class="t"><b>${esc(title)}</b>${sub ? `<small>${now ? dot : ""}${esc(sub)}</small>` : ""}${sub2 ? `<small class="rd-s2">${esc(sub2)}</small>` : ""}</span>${done ? doneTag() : chev}</button>`;
 
-/* ---------- For today ---------- */
+/* ---------- For today (20 Nov 2026, layout C) ---------- */
+// Only the readings chosen as daily deeds (settings.dailyDeeds, the Good deeds sheet's choice; reading.todayGroups):
+// "Now" in full, then "Later today · n" and "Done · n" as one line each that opens on a tap. Leaving Read closes them.
+const grp = { later: false, done: false };
+onRender(() => { if (UI.view !== "tools") grp.later = grp.done = false; });
+// A tap only flips the line and shows or hides its list (already drawn): no redraw, so it is instant on slow phones
+A.readGrp = k => {
+  if (!(k in grp)) return;
+  grp[k] = !grp[k];
+  const b = document.querySelector(`#v-tools [data-f=g-${k}]`), l = document.getElementById(`rd-g-${k}`);
+  if (!b || !l) { redraw(); return; }
+  b.classList.toggle("open", grp[k]); b.setAttribute("aria-expanded", String(grp[k])); l.hidden = !grp[k];
+};
+/** For tests: open or close a group without drawing. */
+export const _grp = grp;
+
+function readRow(it, now, gs) {
+  if (it.id === "quran" && gs) return goalRow(it, gs);
+  const btn = it.done || it.id === "listen" ? "" : `<button type="button" class="rd-btn" data-f="o-${it.id}" onclick="A.readOpen('${it.id}')" aria-label="${esc(`${it.id === "quran" ? READ.open : READ.read}: ${it.title}`)}">${I.book}<span>${esc(it.id === "quran" ? READ.open : READ.read)}</span></button>`;
+  const s2 = it.id === "listen" && gs ? QGOAL.pausedShort : extraLine(it.id, now, it.done);
+  return `<div class="rd-row tk${it.done ? " done" : ""}">${tickBtn(it)}<span class="t"><b>${esc(it.title)}</b><small>${it.now ? dot : ""}${esc(it.sub)}</small>${s2 ? `<small class="rd-s2">${esc(s2)}</small>` : ""}</span>${btn}</div>`;
+}
+/** One collapsed line ("Later today · 2", "Done · 3 ✓") and, when open, its readings under it. */
+function groupLine(k, label, items, now, gs) {
+  if (!items.length) return "";
+  const open = grp[k], id = `rd-g-${k}`;
+  return `<button type="button" class="rd-gh${open ? " open" : ""}" data-f="g-${k}" aria-expanded="${open}" aria-controls="${id}" onclick="A.readGrp('${k}')"><span class="rd-gt">${esc(label)}</span>${k === "done" ? `<span class="rd-gck">${I.check}</span>` : ""}<span class="rd-gcv">${I.chev}</span></button><div class="rd-gl" id="${id}"${open ? "" : " hidden"}>${items.map(it => readRow(it, now, gs)).join("")}</div>`;
+}
 function forToday(now) {
-  const items = readItems(S, now, { lastRead: lastReadText() });
-  const n = items.filter(i => i.done).length;
-  const gs = goalStatus(S, now);
-  // done readings sink to the bottom (the order is otherwise the reading rules', src/reading.js)
-  const rows = [...items.filter(i => !i.done), ...items.filter(i => i.done)].map(it => {
-    if (it.id === "quran" && gs) return goalRow(it, gs);
-    const btn = it.done || it.id === "listen" ? "" : `<button type="button" class="rd-btn" data-f="o-${it.id}" onclick="A.readOpen('${it.id}')" aria-label="${esc(`${it.id === "quran" ? READ.open : READ.read}: ${it.title}`)}">${I.book}<span>${esc(it.id === "quran" ? READ.open : READ.read)}</span></button>`;
-    const s2 = it.id === "listen" && gs ? QGOAL.pausedShort : extraLine(it.id, now, it.done);
-    return `<div class="rd-row tk${it.done ? " done" : ""}">${tickBtn(it)}<span class="t"><b>${esc(it.title)}</b><small>${it.now ? dot : ""}${esc(it.sub)}</small>${s2 ? `<small class="rd-s2">${esc(s2)}</small>` : ""}</span>${btn}</div>`;
-  }).join("");
-  const head = `<header class="zt-chh"><h1 class="zt-title">${esc(READ.todayTitle)}</h1>${items.length ? `<p class="zt-sub"><b>${esc(READ.doneOf(n, items.length))}</b> ${esc(READ.doneWord)}</p>` : ""}</header>`;
-  const excused = items.length && S.days[dkey(now)]?.excused ? `<p class="zt-note">${esc(READ.excusedNote)}</p>` : "";
-  const list = items.length ? `<div class="zt-card list rd-list">${rows}</div>${excused}` : isOn(S, "tools") ? `<p class="zt-note">${esc(READ.nothingDue)}</p>` : "";
-  // "Your wird is voluntary…" (parity M11): a quiet note at the end of the list
-  const vol = items.length ? `<p class="zt-note rd-vol">${esc(TT.voluntary)}</p>` : "";
-  return `${head}${list}${weekRow(now)}${vol}<div class="zt-fill"></div><div class="rd-choose"><button type="button" class="zt-link" onclick="A.toolsSettings()">${esc(READ.choose)}</button></div>`;
+  const g = todayGroups(S, now, { lastRead: lastReadText() });
+  const gs = goalStatus(S, now), n = g.done.length;
+  const head = `<header class="zt-chh"><h1 class="zt-title">${esc(READ.todayTitle)}</h1>${g.of ? `<p class="zt-sub"><b>${esc(READ.doneOf(n, g.of))}</b> ${esc(READ.doneWord)}</p>` : ""}</header>`;
+  let body = "";
+  if (g.of) {
+    const nowRows = g.now.length ? `<p class="rd-gn">${esc(READ.nowHead)}</p><div class="zt-card list rd-list rd-now">${g.now.map(it => readRow(it, now, gs)).join("")}</div>`
+      : `<p class="zt-note rd-none">${esc(g.later.length ? READ.nothingNow : READ.allDone)}</p>`;
+    const rest = g.later.length || g.done.length ? `<div class="zt-card list rd-list rd-more">${groupLine("later", READ.laterHead(g.later.length), g.later, now, gs)}${groupLine("done", READ.doneHead(n), g.done, now, gs)}</div>` : "";
+    const excused = S.days[dkey(now)]?.excused ? `<p class="zt-note rd-xn">${esc(READ.excusedNote)}</p>` : "";
+    // "Your wird is voluntary…" (parity M11): a quiet note at the end of the list
+    body = `${nowRows}${rest}${excused}<p class="zt-note rd-vol">${esc(TT.voluntary)}</p>`;
+  } else if (isOn(S, "tools") && visibleTools(S).length) {
+    body = `<div class="zt-card pad rd-empty"><p>${esc(READ.dailyEmpty)}</p><button type="button" class="zt-btn pri" data-f="choose-daily" onclick="A.dailyChoose()">${esc(READ.chooseDaily)}</button></div>`;
+  }
+  return `${weekCard(now)}${head}${body}<div class="zt-fill"></div><div class="rd-choose"><button type="button" class="zt-link" onclick="A.toolsSettings()">${esc(READ.choose)}</button></div>`;
 }
 
 /** Qurʾān recitation with a goal: the text opens the reader, "I read…" adds reading done elsewhere, the tick is as before. */
@@ -124,20 +150,54 @@ function goalRow(it, gs) {
 }
 const tickBtn = it => `<button type="button" class="rd-tick" data-f="t-${it.id}" role="checkbox" aria-checked="${it.done}" aria-label="${esc(READ.markDone(it.title))}" onclick="A.readTick('${it.id}')"><span class="rd-bx${it.done ? " on" : ""}">${it.done ? I.check : ""}</span></button>`;
 
-/** "This week · New on Sunday": one row; it opens the six weekly readings. */
-function weekRow(now) {
-  if (!isOn(S, "week")) return "";
+/* ---------- This week (layout A): one slim card at the top of For today; its sheet has This week and This month ---------- */
+// What has been opened is kept on this device under the same keys as Home's weekly tiles (views/home.js weekTiles):
+// weekly items under the week ("2026-11-15ayah"), the month's sunnah under the month, the Sahābī's fact under the day.
+// The card's "New" dot: from Sunday (a new week key) until its sheet is opened that week ("2026-11-15wk").
+const OPENED = "zad-wk-opened";
+const readOpened = () => { try { return JSON.parse(localStorage.getItem(OPENED) || "{}"); } catch (e) { return {}; } };
+function markOpened(k) { try { const o = readOpened(); o[k] = 1; localStorage.setItem(OPENED, JSON.stringify(o)); } catch (e) { /* private mode */ } }
+/** The sheet's two sections: the week's readings and the month's (the Sahābī of the month, the sunnah of the month). */
+export const WEEK_ITEMS = { week: ["ayah", "hadith", "dua", "seerah"], month: ["sahabi", "sunnah"] };
+/** The opened-key of a This week item (the same keys as Home's tiles). */
+export function weekItemKey(id, now, wk) {
+  const mk = `${now.getFullYear()}-${now.getMonth()}`;
+  return id === "sahabi" ? `${mk}-${now.getDate()}sahabi` : id === "sunnah" ? `${mk}sunnah` : `${wk}${id}`;
+}
+/** Whether the This week card shows its "New" dot: its sheet hasn't been opened since this week began (Sunday). */
+export const weekIsNew = (wk, opened = readOpened()) => !opened[`${wk}wk`];
+/** This week's content, with the Sahābī rotation started at the user's first month (as Home's tiles do). */
+function weekContent(now) {
+  if (!Number.isInteger(S.settings.sahabiStart)) { S.settings.sahabiStart = monthIndex(now); commit(); }
+  setSahabiStart(S.settings.sahabiStart);
   if (!contentReady()) whenContent(render);
-  let title = READ.weekTitle;
-  try { const c = thisWeek(now); title = c.ayah?.title || c.ayah?.en || title; } catch (e) { /* content not loaded yet */ }
-  return `<button type="button" class="zt-card rd-week" onclick="A.readWeek()"><span class="rd-wh"><span>${esc(READ.thisWeek)}</span><span>${esc(READ.newOnSunday)}</span></span>
-    <span class="rd-row link">${tile("leaf")}<span class="t"><b>${esc(title)}</b><small>${esc(READ.weekSub(READ.verseOfWeek, 5))}</small></span>${chev}</span></button>`;
+  try { return thisWeek(now); } catch (e) { return null; } // content not loaded yet
+}
+function weekCard(now) {
+  if (!isOn(S, "week")) return "";
+  const c = weekContent(now), title = c?.ayah?.title || c?.ayah?.en || READ.verseOfWeek;
+  const isNew = !!c && weekIsNew(c.weekKey);
+  return `<button type="button" class="zt-card rd-wk" data-f="week" onclick="A.readWeek()" aria-label="${esc(READ.weekCardLabel(title, isNew))}">${tile("leaf")}<span class="t"><span class="rd-wk1">${esc(READ.thisWeek)}${isNew ? `<i class="rd-new">${esc(READ.weekNew)}</i>` : ""}</span><b>${esc(title)}</b></span>${chev}</button>`;
+}
+/** The This week sheet's HTML for `now` (marks it opened first). */
+export function weekSheet(now) {
+  const c = weekContent(now); if (!c) return "";
+  markOpened(`${c.weekKey}wk`);
+  const opened = readOpened(), mon = MONTHS[now.getMonth()];
+  const kick = { ayah: WEEK_UI.ayah, hadith: WEEK_UI.hadith, dua: WEEK_UI.dua, seerah: WEEK_UI.seerah, sahabi: WEEK_UI.sahabi(mon), sunnah: WEEK_UI.sunnah(mon) };
+  const name = id => { const it = c[id] || {}; return (id === "sahabi" ? it.name : it.title || it.en) || ""; };
+  const row = id => { const seen = !!opened[weekItemKey(id, now, c.weekKey)]; return `<button type="button" class="rd-wi" data-f="wi-${id}" onclick="A.weekItem('${id}')"><span class="t"><small>${esc(kick[id])}</small><b>${esc(name(id))}</b></span>${seen ? "" : `<i class="rd-ndot" role="img" aria-label="${esc(READ.weekNew)}"></i>`}${chev}</button>`; };
+  const sec = (h, ids) => `<h4 class="rd-wsh">${esc(h)}</h4><div class="rd-wl">${ids.map(row).join("")}</div>`;
+  return `<div class="z-sh rd-wsheet"><div class="z-lhd"><div><h3>${esc(READ.thisWeek)}</h3><p class="z-sub">${esc(READ.weekSheetLead(c.rangeLabel))}</p></div><button class="z-cls" onclick="A.closeSheet()" aria-label="${esc(COMMON.close)}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    ${sec(READ.thisWeek, WEEK_ITEMS.week)}${sec(READ.thisMonth, WEEK_ITEMS.month)}<div class="z-shfoot"><button class="z-pbtn" onclick="A.closeSheet()">${esc(COMMON.done)}</button></div></div>`;
 }
 A.readWeek = () => {
-  const tiles = A.weekTiles?.() || "";
-  openSheet(`<div class="z-sh"><div class="z-lhd"><div><h3>${esc(READ.thisWeek)}</h3></div><button class="z-cls" onclick="A.closeSheet()" aria-label="${esc(COMMON.close)}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="rd-wsheet">${tiles}</div><div class="z-shfoot"><button class="z-pbtn" onclick="A.closeSheet()">${esc(COMMON.done)}</button></div></div>`);
+  if (!contentReady()) { loadContent().then(() => A.readWeek()).catch(() => {}); return; }
+  const h = weekSheet(NOW()); if (!h) return;
+  openSheet(h);
+  render(); // the card's "New" dot goes
 };
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 /* ---------- Qurʾān ---------- */
 function quranCh(now) {

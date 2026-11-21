@@ -20,7 +20,7 @@ import { isOn, toolVisible } from "./features.js";
 import { helpState } from "./guide.js";
 import { timesFor, currentWindow, nextPrayer } from "./times.js";
 import { PRAYERS, dkey, addDays, parseKey } from "./util.js";
-import { prayerStreak, sunnahMeasureDay } from "./stats.js";
+import { sunnahMeasureDay } from "./stats.js";
 import { readItems, READ_DEEDS } from "./reading.js";
 import { NAFL_ADDON, itemById, madhhabOf } from "./rules/madhhab.js";
 
@@ -177,18 +177,6 @@ export function nowFocus(S, now = new Date()) {
   return { kind: "next", p: nx.p, key: nx.tomorrow ? dkey(addDays(now, 1)) : dkey(now), time: nx.time, tomorrow: !!nx.tomorrow, after: cur ? cur.p : null };
 }
 
-/**
- * The "all five prayed" moment on Today (M6): { key, streak } once every fard of the day whose prayers are current
- * (last night's ʿIshāʾ window belongs to yesterday) is prayed, else null. Not on an excused day.
- */
-export function allFiveMoment(S, now = new Date()) {
-  const cur = currentWindow(now, S.settings);
-  const key = cur ? dkey(cur.date) : dkey(now);
-  if (store.isExcusedDay(S, key)) return null;
-  if (!PRAYERS.every(p => store.isPrayed(store.prayerStatus(S, key, p)))) return null;
-  return { key, streak: prayerStreak(S, now) };
-}
-
 /* ---------- the merged Today page: rows, the highlighted row, the tap cycle ---------- */
 /** One tap on a prayer row: what it stores next (null clears), or "sheet" (Made up, Missed, Excused: open the options). */
 const CYCLE = { "": "ontime", ontime: "congregation", congregation: null };
@@ -214,17 +202,17 @@ export function todayRows(S, now = new Date()) {
 
 /**
  * The highlighted row: { kind: "now", p, key, cur } while a prayer's time is open and it isn't logged (on an
- * excused day: while it is open), else { kind: "next", p, key, time } (the next prayer; not tappable until it
- * begins). After ʿIshāʾ is logged the next prayer is tomorrow's Fajr, which isn't on the page, so ʿIshāʾ stays
- * highlighted ({ kind: "now", next }) with its Witr until midnight passes.
+ * excused day: while it is open), else { kind: "next", p, key, time, tomorrow } (the next prayer; not tappable
+ * until it begins). Once ʿIshāʾ is logged that is the next Fajr (20 Nov 2026): before midnight tomorrow's
+ * (tomorrow: true; not on the page, so no row is highlighted), after midnight this morning's. Its Witr moves to
+ * ʿIshāʾ's row (views/home.js rowHTML). Unlogged, ʿIshāʾ stays current until its time ends.
  */
 export function todayFocus(S, now = new Date()) {
   const cur = currentWindow(now, S.settings);
   const ck = cur ? dkey(cur.date) : null;
   if (cur && (store.isExcusedDay(S, ck) || !store.prayerStatus(S, ck, cur.p))) return { kind: "now", p: cur.p, key: ck, cur };
   const nx = nextPrayer(now, S.settings);
-  if (nx.tomorrow && cur) return { kind: "now", p: cur.p, key: ck, cur, next: nx };
-  return { kind: "next", p: nx.p, key: nx.tomorrow ? dkey(addDays(now, 1)) : dkey(now), time: nx.time };
+  return { kind: "next", p: nx.p, key: nx.tomorrow ? dkey(addDays(now, 1)) : dkey(now), time: nx.time, tomorrow: !!nx.tomorrow };
 }
 
 /**
@@ -306,13 +294,22 @@ export function dailyChoices(S) {
     const tool = { morning: "adhkar", evening: "adhkar", hizb: "hizb", manzil: "manzil", durud: "durud" }[id] || "quran";
     return toolVisible(S, tool) || (id === "durud" && S.amalList.some(a => a.id === "salawat")) || (READ_DEEDS[id] && S.amalList.some(a => a.id === id));
   });
-  return { reading, deeds: S.amalList.filter(a => !READ_DEEDS[a.id]), nafl: naflShown(S).map(x => x.key) };
+  // every nafl prayer of the madhhab (not only the ones shown): the Good deeds sheet now lists only daily deeds,
+  // so this is where any of them is picked
+  const m = madhhabOf(S);
+  return { reading, deeds: S.amalList.filter(a => !READ_DEEDS[a.id]), nafl: NAFL_ADDON.filter(x => itemById(x.id, m)).map(x => x.key) };
 }
 
-/** Turn one item on or off as a daily deed (the first change keeps the default list as the starting point). */
+/** Turn one item on or off as a daily deed (the first change keeps the default list as the starting point).
+ *  A nafl prayer chosen as daily is also shown (settings.naflShow), so the sheet lists it and the pill counts it. */
 export function setDaily(S, id, on) {
   const cur = store.dailyIds(S).filter(x => x !== id);
   S.settings.dailyDeeds = on ? [...cur, id] : cur;
+  const nk = NAFL_ADDON.map(n => n.key);
+  if (on && nk.includes(id)) {
+    const show = Array.isArray(S.settings.naflShow) ? S.settings.naflShow : [];
+    if (!show.includes(id)) S.settings.naflShow = nk.filter(k => k === id || show.includes(k));
+  }
 }
 
 /* ---------- the quiet lines on the Today page ---------- */
@@ -334,8 +331,8 @@ export { BANDS, bandAt } from "./band.js";
  * The header's hero (the arch): { mode: "now" | "next", p, key, status, act } from todayFocus.
  * act: "pray" (the Prayed button: one tap on the prayer, as its row), "remember" (an excused day's open prayer:
  * remembrance at prayer time), or "" (the next prayer hasn't begun: no button, only Qibla).
- * After the current prayer is logged the hero shows the next one; ʿIshāʾ stays until midnight (tomorrow's Fajr isn't
- * on the page), with its Prayed button showing how it was logged (tap again: congregation, as its row).
+ * After the current prayer is logged the hero shows the next one; after ʿIshāʾ, the next Fajr ("Tomorrow 5:48 AM ·
+ * begins in 7 h 12 min" before midnight), with no Prayed button until it begins (20 Nov 2026).
  */
 export function heroOf(S, now = new Date(), focus = todayFocus(S, now)) {
   const { p, key } = focus, status = store.prayerStatus(S, key, p);

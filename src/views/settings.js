@@ -1,5 +1,8 @@
-/* Settings (SE-B; redesign final/fin-settings-*): a full page with "Done" (no tab bar), a list of icon rows, sub-pages
- * (Features, Sunnah prayers, Appearance, Zad Plus, Help & tour) with a "‹ Settings" link, and sheets for the rest. */
+/* Settings (SE-B; redesign final/fin-settings-*): a full page with "Done" (no tab bar) and, since 20 Nov 2026, about ten
+ * rows on one screen: You (the profile card) · Zad Plus · Prayer times · Prayers & tracking · Reminders & widgets ·
+ * What Zad shows · Appearance · Help & feedback · Privacy & data · About, each with a short summary on the right and
+ * opening a page with "‹ Settings" in the band (Features, Sunnah prayers and the help pages one level further down).
+ * Sheets for the rest. "Carry Qurʾān position forward" is gone: always on (store.normalize). */
 import { S, UI, A, $, $$, NOW, onRender, commit, toast, openSheet, closeSheet, replaceState, glossBtn, systemIsDark } from "../app.js";
 import * as store from "../store.js";
 import { PRAYERS, esc, dkey, addDays, fmt12 } from "../util.js";
@@ -97,16 +100,20 @@ function switchRow({ icon, title, sub = "", key, on, tone = "gold", tag = "", gl
 const group = (title, rows, foot = "") => `<section class="sgroup"><h2>${esc(title)}</h2><div class="card scard">${rows.join("")}</div>${foot ? `<p class="sfoot">${esc(foot)}</p>` : ""}</section>`;
 /** A sub-page header: "‹ Settings" (or "‹ Help & tour" inside Help), then the page title. */
 // Both sit in the time-of-day band (band.js, css/band.css), with a cover behind the status bar once the page scrolls.
-const head = (title, back = "A.settingsBack()") => bandCover() + bandHead({ title, back, backLabel: HELP_SUBS.includes(page) ? GUIDE.helpTitle : T.title, cls: "shead" });
+const head = (title, back = "A.settingsBack()") => bandCover() + bandHead({ title, back, backLabel: backTo ? NAV[backTo] || T.title : PARENT[page] ? parentTitle(PARENT[page]) : T.title, cls: "shead" });
 /** The main page's header: "Done" at the top right (back to where Settings was opened), then "Settings". */
 const mainHead = () => bandCover() + bandHead({ title: T.title, cls: "shead main", right: `<button type="button" class="zb-done sdone" onclick="A.settingsDone()">${esc(COMMON.done)}</button>` });
-const HELP_SUBS = ["hStatus", "hMakeups"];
+/** Pages one level down: back goes to their group page (everything else goes back to the main page). */
+const PARENT = { features: "shows", sunnah: "tracking", hStatus: "help", hMakeups: "help" };
+const parentTitle = p => (p === "help" ? GUIDE.helpTitle : X.pages[p] || T.title);
 
 /* ---------- page state ---------- */
-let page = "main"; // "main" | "features" | "sunnah" | "appearance" | "plus" | "help" | "hStatus" | "hMakeups" (Help & tour, views/help.js)
+// "main" | the group pages "you" | "times" | "tracking" | "reminders" | "shows" | "data" | "about" | "appearance" | "plus" |
+// "help" (Help & feedback, views/help.js) | one level down: "features" | "sunnah" | "hStatus" | "hMakeups"
+let page = "main";
 let backTo = ""; // "tools" when the Features page was opened from the Tools hub
 A.settingsPage = p => { page = p; backTo = ""; $("#screen").scrollTop = 0; UI.settingsPage = p; renderSettings(); };
-A.settingsBack = () => { if (backTo) { const v = backTo; backTo = ""; page = "main"; A.go(v); } else if (page === "hStatus" || page === "hMakeups") A.settingsPage("help"); else if (page !== "main") A.settingsPage("main"); else A.settingsDone(); };
+A.settingsBack = () => { if (backTo) { const v = backTo; backTo = ""; page = "main"; A.go(v); } else if (page !== "main") A.settingsPage(PARENT[page] || "main"); else A.settingsDone(); };
 /** From the Tools hub: open Settings → Features, scrolled to the Tools section. Back returns to Tools. */
 A.settingsTools = () => {
   A.go("settings"); A.settingsPage("features"); backTo = "tools";
@@ -349,10 +356,18 @@ function madhhabList(onpick, cur) {
   return `<div class="opts">${madhhabOptions().map(o => `<button class="opt mopt ${cur === o.id ? "sel" : ""}" role="radio" aria-checked="${cur === o.id}" onclick="${onpick}('${o.id}')"><div><b>${esc(o.name)}${o.isDefault ? `<em class="deftag">${esc(MADHHAB_UI.defaultTag)}</em>` : ""}</b><small>${esc(o.summary)}</small></div><span class="radio${cur === o.id ? " on" : ""}"></span></button>`).join("")}</div>`;
 }
 A.madhhabSheet = () => {
-  openSheet(`<div class="sheet-head"><h3>${esc(MADHHAB_UI.title)} ${glossBtn("madhhab")}</h3><button class="link-btn" onclick="A.closeSheet()">${esc(COMMON.done)}</button></div>
-    <p>${esc(MADHHAB_UI.lead)}</p>${madhhabList("A.pickMadhhab", madhhabOf(S))}<p class="note">${esc(MADHHAB_UI.fine)}</p>`);
+  openSheet(`<div class="sheet-head"><h3>${esc(X.madhhabAsr)} ${glossBtn("madhhab")}</h3><button class="link-btn" onclick="A.closeSheet()">${esc(COMMON.done)}</button></div>
+    <p>${esc(MADHHAB_UI.lead)}</p>${madhhabList("A.pickMadhhab", madhhabOf(S))}<p class="note">${esc(MADHHAB_UI.fine)}</p>
+    ${asrOpts("A.pickAsr")}`);
 };
 A.pickMadhhab = m => { store.setMadhhab(S, m); commit(); toast(MADHHAB_UI.changed(m)); A.madhhabSheet(); };
+/** Madhhab & ʿAsr is one row (20 Nov 2026): the madhhab sets ʿAsr; under it, ʿAsr on its own for a different time. */
+function asrOpts(fn) {
+  const o = (v, t, sub) => `<button class="opt mopt ${S.settings.asr === v ? "sel" : ""}" role="radio" aria-checked="${S.settings.asr === v}" onclick="${fn}('${v}')"><div><b>${esc(t)}</b><small>${esc(sub)}</small></div><span class="radio${S.settings.asr === v ? " on" : ""}"></span></button>`;
+  return `<h4 class="sh-h" id="asrHead">${esc(X.asrHead)}</h4><p class="note" style="margin-top:4px">${esc(X.asrFollows)}</p>
+    <div class="opts" role="radiogroup" aria-labelledby="asrHead">${o("shafi", ASR_UI.standard, ASR_UI.standardSub)}${o("hanafi", ASR_UI.hanafi, ASR_UI.hanafiSub)}</div>`;
+}
+A.pickAsr = v => { store.setAsr(S, v); commit(); toast(ASR_UI.updated); A.madhhabSheet(); };
 
 /* one-time question for users migrated from the old ʿAsr default (settings.madhhabAsk) */
 A.madhhabAskSheet = () => {
@@ -556,7 +571,7 @@ function sunnahPage() {
 }
 
 /* ---------- features page ---------- */
-/** Settings → Read: the Qurʾān goal (views/quran-goal.js A.qgSet sets, edits or clears it). */
+/** Settings → What Zad shows: the Qurʾān goal (views/quran-goal.js A.qgSet sets, edits or clears it). */
 function qGoalRow() {
   if (!feat.toolVisible(S, "quran")) return "";
   const g = goalOf(S);
@@ -572,7 +587,7 @@ function naflGroupS() {
 function featuresPage() {
   const rows = feat.featureRows(S).map(r => `<div class="srow ${r.on ? "" : "off"}"><div class="srow-main static">${tile(FEATURE_ICON[r.id], r.on ? "green" : "grey")}<span class="t"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span>${r.locked ? `<span class="lockic">${svg("lock")}</span>` : `<button class="switch${r.on ? " on" : ""}" role="switch" aria-checked="${r.on}" aria-label="${esc(r.name)}" onclick="A.featToggle('${r.id}')"></button>`}</div></div>${r.id === "progress" ? pvFeatureRow(tone => `<span class="ic ${tone}">${pvIcon("bag", "")}</span>`) : ""}`).join("");
   const toolsOn = feat.isOn(S, "tools");
-  const tools = toolsOn ? `<section class="sgroup" id="set-tools"><h2>${esc(X.toolsHead)}</h2><div class="card scard">${feat.toolRows(S).map(r => `<div class="srow ${r.visible ? "" : "off"}"><div class="srow-main static">${tile(TOOL_ICON[r.id], r.visible ? "green" : "grey")}<span class="t"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span><button class="switch${r.visible ? " on" : ""}" role="switch" aria-checked="${r.visible}" aria-label="${esc(r.name)}" onclick="A.toolToggle('${r.id}')"></button></div></div>`).join("")}${qGoalRow()}</div><p class="sfoot">${esc(X.toolsLead)}</p></section>` : "";
+  const tools = toolsOn ? `<section class="sgroup" id="set-tools"><h2>${esc(X.toolsHead)}</h2><div class="card scard">${feat.toolRows(S).map(r => `<div class="srow ${r.visible ? "" : "off"}"><div class="srow-main static">${tile(TOOL_ICON[r.id], r.visible ? "green" : "grey")}<span class="t"><b>${esc(r.name)}</b><small>${esc(r.sub)}</small></span><button class="switch${r.visible ? " on" : ""}" role="switch" aria-checked="${r.visible}" aria-label="${esc(r.name)}" onclick="A.toolToggle('${r.id}')"></button></div></div>`).join("")}</div><p class="sfoot">${esc(X.toolsLead)}</p></section>` : "";
   const tabs = feat.navTabs(S);
   // Today · Read · Progress (Community only with Zad Plus). With one tab only there is no bar at all.
   const barIds = ["home", "tools", "progress", ...(feat.plusOn(S) ? ["community"] : [])];
@@ -582,86 +597,150 @@ function featuresPage() {
   <div class="sec" style="padding-top:0"><div class="card scard">${rows}</div></div>${pvGroup(svg("chev"))}${naflGroupS()}${tools}${bar}<p class="sfoot center">${esc(FEATURE.count(on, of))}</p><div class="space"></div>`;
 }
 
-/* ---------- main page ---------- */
+/* ---------- main page (20 Nov 2026: about ten rows on one screen; each opens a page with "‹ Settings") ---------- */
+/** "London", from "London, UK" (the main page's short summaries). */
+const city = loc => (loc?.label || FALLBACK_LOCATION.label).split(",")[0].trim();
+/** The reminders and widget switches that are on (the main row's "4 on"). */
+function remindersOn(st) {
+  const plat = Capacitor.getPlatform();
+  return [!!st.preQada, feat.isOn(S, "makeups") && st.makeupNudge !== false, !!st.prayerAlerts, !!st.evening, st.seerahNotify !== false,
+    ...(plat === "android" || plat === "ios" ? [st.showTimesOnly === true] : []), ...(plat === "android" ? [st.ongoingNow === true] : []), ...(plat === "ios" ? [st.lockDots === true] : [])].filter(Boolean).length;
+}
+const asrName = st => (st.asr === "hanafi" ? ASR_UI.hanafi : ASR_UI.standard);
+/** The cloud line under the name: "Cloud backup · Off", or the address and when it last synced. */
+function cloudShort() {
+  if (!cloud.available) return "";
+  if (!cloud.user) return `${T.cloud} · ${COMMON.off}`;
+  return (cloud.syncing ? T.cloudSyncing(cloud.user.email) : T.cloudOn(cloud.user.email, cloud.error || T.synced(ago(cloud.lastSync)))).replace(/^On · /, "");
+}
 function mainPage() {
-  const st = S.settings, m = madhhabOf(S), info = madhhabInfo(m);
-  const { on, of } = feat.featureCount(S), loc = st.location, name = S.profile.name || "";
-  const isOnF = f => feat.isOn(S, f);
-  const sunnahTiers = [1, st.sunnahGhayr !== false, st.sunnahNafl].filter(Boolean).length + 0;
-  const profile = `<button class="profile card" onclick="A.${cloud.available ? "cloudSheet" : "nameSheet"}()"><span class="avatar">${esc((name[0] || APP.name[0]).toUpperCase())}</span><span class="t"><b>${esc(name || X.profileTitle)}</b>${cloud.available ? `<small><i class="dotg ${cloud.user ? "on" : ""}"></i>${esc(cloud.user ? (cloud.syncing ? T.cloudSyncing(cloud.user.email).replace(/^On · /, "") : T.cloudOn(cloud.user.email, cloud.error || T.synced(ago(cloud.lastSync))).replace(/^On · /, "")) : `${T.cloud} · ${COMMON.off}`)}</small>` : ""}</span><span class="chev">${svg("chev")}</span></button>`;
-  const appearanceVal = T.appearanceOpts[st.appearance || "system"];
-  const g = [];
-  // Zad Plus: one quiet row (its only place besides its own page; no badges, no prompts)
-  g.push(`<section class="sgroup plusrow"><div class="card scard">${navRow({ icon: "leaf", title: X.plusRow, sub: X.plusRowSub, onclick: "A.settingsPage('plus')" })}</div></section>`);
-  g.push(group(X.general, [
-    navRow({ icon: "toggles", title: FEATURE.title, value: FEATURE.count(on, of), onclick: "A.settingsPage('features')" }),
-    navRow({ icon: "palette", title: T.appearance, value: appearanceVal, onclick: "A.settingsPage('appearance')" }),
-    navRow({ icon: "calendar", title: H.title, value: hijriSummary(), onclick: "A.hijriSheet()" }),
-    navRow({ icon: "info", title: GUIDE.helpRow, sub: GUIDE.helpRowSub, tag: helpIsNew(S) ? GUIDE.newTag : "", onclick: "A.helpOpen()" }),
-  ]));
-  g.push(group(T.groups.prayer, [
+  const st = S.settings, info = madhhabInfo(madhhabOf(S)), name = S.profile.name || "";
+  const { on, of } = feat.featureCount(S);
+  const cl = cloudShort(), g = genderVal(store.genderOf(S));
+  const profile = `<button class="profile card" id="youRow" onclick="A.settingsPage('you')"><span class="avatar">${esc((name[0] || APP.name[0]).toUpperCase())}</span><span class="t"><b>${esc(name || X.profileTitle)}</b><small>${cl ? `<i class="dotg ${cloud.user ? "on" : ""}"></i>` : ""}<span>${esc([g, cl].filter(Boolean).join(" · "))}</span></small></span><span class="chev">${svg("chev")}</span></button>`;
+  const card = rows => `<section class="sgroup tight"><div class="card scard">${rows.join("")}</div></section>`;
+  return `${mainHead()}${profile}<div class="smain">
+  ${card([navRow({ icon: "leaf", title: X.plusRow, onclick: "A.settingsPage('plus')" })])}
+  ${card([
+    navRow({ icon: "pin", tone: "green", title: X.pages.times, value: `${city(st.location)} · ${info.name}`, onclick: "A.settingsPage('times')", id: "timesRow" }),
+    navRow({ icon: "mosque", tone: "green", title: X.pages.tracking, value: feat.isOn(S, "makeups") ? `${S.qada.goal} ${X.perMonth}` : "", onclick: "A.settingsPage('tracking')", id: "trackingRow" }),
+    navRow({ icon: "bell", title: X.pages.reminders, value: X.nOn(remindersOn(st)), onclick: "A.settingsPage('reminders')", id: "remindersRow" }),
+    navRow({ icon: "toggles", title: X.pages.shows, value: FEATURE.count(on, of), onclick: "A.settingsPage('shows')", id: "showsRow" }),
+    navRow({ icon: "palette", title: T.appearance, value: T.appearanceOpts[st.appearance || "system"], onclick: "A.settingsPage('appearance')" }),
+  ])}
+  ${card([
+    navRow({ icon: "help", tone: "grey", title: X.pages.help, tag: helpIsNew(S) ? GUIDE.newTag : "", onclick: "A.helpOpen()", id: "helpRow" }),
+    navRow({ icon: "shield", tone: "grey", title: X.pages.data, value: cloud.available && cloud.user ? X.backedUp(ago(cloud.lastSync)) : X.onPhone, onclick: "A.settingsPage('data')", id: "dataRow" }),
+    navRow({ icon: "info", tone: "grey", title: X.pages.about, value: APP_VERSION.split("-")[0], onclick: "A.settingsPage('about')", id: "aboutRow" }),
+  ])}</div><div class="space"></div>`;
+}
+
+/* ---------- You: name, Brother / Sister, cloud backup, sign in / out ---------- */
+function youPage() {
+  const name = S.profile.name || "";
+  return `${head(X.pages.you)}<p class="spage-lead">${esc(X.youSub)}</p>${group("", [
+    navRow({ icon: "user", title: T.yourName, value: name || T.notSet, onclick: "A.nameSheet()" }),
     navRow({ icon: "user", tone: "green", title: GENDER.row, value: genderVal(store.genderOf(S)), onclick: "A.genderSheet()" }),
-    navRow({ icon: "book", tone: "green", title: MADHHAB_UI.title, sub: info.summary, value: info.name, onclick: "A.madhhabSheet()", gl: "" }),
-    switchRow({ icon: "mosque", tone: "green", title: GENDER.jumuah, sub: GENDER.jumuahSub, key: "jumuah", on: st.jumuah !== false }),
-    ...(isOnF("sunnah") ? [navRow({ icon: "layers", tone: "green", title: SUNNAH_UI.pageTitle, value: SUNNAH_UI.tiersOn(sunnahTiers), onclick: "A.settingsPage('sunnah')" })] : []),
+    ...(cloud.available ? [navRow({ icon: "cloud", tone: "green", title: T.cloud, sub: cloudStatus(), onclick: "A.cloudSheet()", id: "cloudRow" })] : []),
+    ...(cloud.available ? [cloud.user ? navRow({ icon: "userx", tone: "grey", title: T.signOut, sub: T.signOutNote, onclick: "A.cloudSignOut()", id: "signRow" })
+      : navRow({ icon: "cloud", tone: "green", title: X.signIn, sub: X.signInSub, onclick: "A.cloudSheet()", id: "signRow" })] : []),
+  ])}<div class="space"></div>`;
+}
+
+/* ---------- Prayer times: location (+ travel), method, madhhab & ʿAsr (one row), Hijri date, Jumuʿah, Qibla ---------- */
+function timesPage() {
+  const st = S.settings, loc = st.location, info = madhhabInfo(madhhabOf(S));
+  return `${head(X.pages.times)}${group("", [
     navRow({ icon: "pin", tone: "green", title: T.location, value: loc ? loc.label : "", sub: loc ? (loc.source === "gps" ? T.locRowGps : loc.source === "city" ? T.locRowCity : "") : T.locNotSet(FALLBACK_LOCATION.label), onclick: "A.locationSheet()", id: "locRow" }),
     // Only for a location from "Use my current location"; a searched city never changes on its own. An older save
     // that didn't record its source gets a hint (opening the location sheet) instead of the switch.
     ...(loc?.source === "gps" ? [switchRow({ icon: "refresh", tone: "green", title: TRAVEL.row, sub: TRAVEL.rowSub, key: "autoLocation", on: st.autoLocation !== false })]
       : loc?.source === "unknown" ? [navRow({ icon: "refresh", tone: "green", title: TRAVEL.row, sub: TRAVEL.unknownHint, onclick: "A.locationSheet()" })] : []),
     navRow({ icon: "compass", tone: "green", title: T.method, value: METHOD_SHORT[st.method] || st.method, onclick: "A.methodSheet()" }),
-    navRow({ icon: "sun", tone: "green", title: ASR_UI.title, value: st.asr === "hanafi" ? ASR_UI.hanafi : ASR_UI.standard, onclick: "A.asrSheet()" }),
+    // the madhhab sets ʿAsr (store.setMadhhab); the sheet also has ʿAsr on its own, for a different time
+    navRow({ icon: "book", tone: "green", title: X.madhhabAsr, sub: `${ASR_UI.title} · ${asrName(st)}`, value: info.name, onclick: "A.madhhabSheet()", id: "madhhabRow" }),
+    navRow({ icon: "calendar", tone: "green", title: H.title, value: hijriSummary(), onclick: "A.hijriSheet()" }),
+    switchRow({ icon: "mosque", tone: "green", title: GENDER.jumuah, sub: GENDER.jumuahSub, key: "jumuah", on: st.jumuah !== false }),
     navRow({ icon: "compass", tone: "green", title: T.qiblaRow, sub: T.qiblaRowSub, value: qiblaDegrees(loc) == null ? "" : `${qiblaDegrees(loc)}°`, onclick: "A.openQibla()", id: "qiblaRow" }),
-  ]));
+  ])}<div class="space"></div>`;
+}
+
+/* ---------- Prayers & tracking: sunnah prayers, excused days, the make-up goal, daily good deeds ---------- */
+function trackingPage() {
+  const st = S.settings, isOnF = f => feat.isOn(S, f);
+  const sunnahTiers = [1, st.sunnahGhayr !== false, st.sunnahNafl].filter(Boolean).length;
+  return `${head(X.pages.tracking)}${group("", [
+    ...(isOnF("sunnah") ? [navRow({ icon: "layers", tone: "green", title: SUNNAH_UI.pageTitle, value: SUNNAH_UI.tiersOn(sunnahTiers), onclick: "A.settingsPage('sunnah')" })] : []),
+    switchRow({ icon: "moon", tone: "grey", title: EXCUSED.feature, sub: EXCUSED.featureSub, key: "excusedDays", on: st.excusedDays !== false, gl: glossBtn("hayd") }),
+    ...(st.excusedDays !== false ? [navRow({ icon: "history", tone: "grey", title: EXCUSED.markDays, sub: S.excusedMode ? EXCUSED.since(S.excusedMode.since) : EXCUSED.markDaysSub, onclick: "A.excusedCal()" })] : []),
+    ...(isOnF("makeups") ? [navRow({ icon: "target", tone: "grey", title: MAKEUPS.goalSetting, value: `${S.qada.goal} ${X.perMonth}`, onclick: "A.goalSheet()" })] : []),
+    ...(isOnF("deeds") ? [navRow({ icon: "checkc", tone: "grey", title: X.dailyDeeds, sub: X.dailyDeedsSub, value: String(store.dailyIds(S).length), onclick: "A.dailyChoose()", id: "dailyRow" })] : []),
+    ...(isOnF("deeds") ? [navRow({ icon: "list", tone: "grey", title: X.deeds, value: String(S.amalList.length), onclick: "A.amalListSheet()" })] : []),
+  ])}<div class="space"></div>`;
+}
+
+/* ---------- Reminders & widgets ---------- */
+function remindersPage() {
+  const st = S.settings;
   const lead = [5, 10, 15, 30].map(x => `<button class="${+st.leadMin === x ? "on" : ""}" aria-pressed="${+st.leadMin === x}" onclick="A.setLead(${x})">${esc(COMMON.minutes(x))}</button>`).join("");
-  // Widgets (phone app only): plain switches, off by default; the widgets pick them up from the snapshot
-  const plat = Capacitor.getPlatform();
-  if (plat === "android" || plat === "ios") g.push(group(X.widgetsHead, [
-    switchRow({ icon: "lock", title: X.showTimesOnly, sub: X.showTimesOnlySub, key: "showTimesOnly", on: st.showTimesOnly === true, fn: "A.widgetToggle('showTimesOnly')" }),
-    ...(plat === "android" ? [`<div class="srow"><div class="srow-main static">${tile("toggles")}<span class="t"><b>${esc(X.tile)}</b><small>${esc(X.tileSub)}</small></span><button type="button" class="tileadd" onclick="A.addTile()">${esc(X.tileAdd)}</button></div></div>`] : []),
-    ...(plat === "android" ? [switchRow({ icon: "bell", title: X.ongoingNow, sub: X.ongoingNowSub, key: "ongoingNow", on: st.ongoingNow === true, fn: "A.widgetToggle('ongoingNow')" })] : []),
-    ...(plat === "ios" ? [switchRow({ icon: "checkc", title: X.lockDots, sub: X.lockDotsSub, key: "lockDots", on: st.lockDots === true, fn: "A.widgetToggle('lockDots')" })] : []),
-  ]));
-  g.push(group(T.groups.reminders, [
+  const plat = Capacitor.getPlatform(), widgets = plat === "android" || plat === "ios";
+  // the two headings only when there are widget settings too (the page title says Reminders already)
+  const g = [group(widgets ? T.groups.reminders : "", [
     switchRow({ icon: "bell", title: T.preQada, sub: st.preQada ? T.preQadaMin(st.leadMin) : T.preQadaSub, key: "preQada", on: !!st.preQada, extra: st.preQada ? `<div class="leadseg"><div class="seg" role="group">${lead}</div></div>` : "" }),
-    ...(isOnF("makeups") ? [switchRow({ icon: "refresh", title: T.makeupNudge, sub: T.makeupNudgeSub, key: "makeupNudge", on: st.makeupNudge !== false, tag: X.newTag })] : []),
+    ...(feat.isOn(S, "makeups") ? [switchRow({ icon: "refresh", title: T.makeupNudge, sub: T.makeupNudgeSub, key: "makeupNudge", on: st.makeupNudge !== false })] : []),
     switchRow({ icon: "sunrise", title: T.prayerAlerts, key: "prayerAlerts", on: !!st.prayerAlerts }),
     switchRow({ icon: "moon", title: T.evening, sub: T.eveningSub, key: "evening", on: !!st.evening }),
     // the Friday sīrah moment (notify.js, settings.seerahNotify, on unless switched off)
     switchRow({ icon: "book", title: T.seerah, sub: T.seerahSub, key: "seerahNotify", on: st.seerahNotify !== false }),
     ...(exactAllowed === false ? [navRow({ icon: "bell", title: T.exactOff.split(" · ")[0], sub: T.exactOff, onclick: "A.exactAlarms()" })] : []),
+  ])];
+  // Widgets (phone app only): plain switches, off by default; the widgets pick them up from the snapshot
+  if (widgets) g.push(group(X.widgetsHead, [
+    switchRow({ icon: "lock", title: X.showTimesOnly, sub: X.showTimesOnlySub, key: "showTimesOnly", on: st.showTimesOnly === true, fn: "A.widgetToggle('showTimesOnly')" }),
+    ...(plat === "android" ? [switchRow({ icon: "bell", title: X.ongoingNow, sub: X.ongoingNowSub, key: "ongoingNow", on: st.ongoingNow === true, fn: "A.widgetToggle('ongoingNow')" })] : []),
+    ...(plat === "ios" ? [switchRow({ icon: "checkc", title: X.lockDots, sub: X.lockDotsSub, key: "lockDots", on: st.lockDots === true, fn: "A.widgetToggle('lockDots')" })] : []),
+    ...(plat === "android" ? [`<div class="srow"><div class="srow-main static">${tile("toggles")}<span class="t"><b>${esc(X.tile)}</b><small>${esc(X.tileSub)}</small></span><button type="button" class="tileadd" onclick="A.addTile()">${esc(X.tileAdd)}</button></div></div>`] : []),
   ]));
-  g.push(group(T.groups.tracking, [
-    switchRow({ icon: "moon", tone: "grey", title: EXCUSED.feature, sub: EXCUSED.featureSub, key: "excusedDays", on: st.excusedDays !== false, gl: glossBtn("hayd") }),
-    ...(st.excusedDays !== false ? [navRow({ icon: "history", tone: "grey", title: EXCUSED.markDays, sub: S.excusedMode ? EXCUSED.since(S.excusedMode.since) : EXCUSED.markDaysSub, onclick: "A.excusedCal()" })] : []),
-    ...(isOnF("deeds") ? [navRow({ icon: "list", tone: "grey", title: X.deeds, value: String(S.amalList.length), onclick: "A.amalListSheet()" })] : []),
-    ...(isOnF("makeups") ? [navRow({ icon: "target", tone: "grey", title: MAKEUPS.goalSetting, value: `${S.qada.goal} ${X.perMonth}`, onclick: "A.goalSheet()" })] : []),
-    ...(isOnF("deeds") ? [switchRow({ icon: "book", tone: "grey", title: T.carryQuran, sub: T.carryQuranSub, key: "carryQuran", on: !!st.carryQuran })] : []),
-  ]));
-  g.push(group(T.groups.content, [
-    switchRow({ icon: "chart", title: T.weekCard, sub: T.weekCardSub, key: "week", on: isOnF("week"), fn: "A.featToggle('week')" }),
-  ]));
-  g.push(group(T.groups.account, [
-    ...(cloud.available ? [navRow({ icon: "cloud", tone: "green", title: T.cloud, value: cloud.user ? COMMON.on : COMMON.off, sub: cloud.user ? "" : "", onclick: "A.cloudSheet()", id: "cloudRow" })] : []),
+  return `${head(X.pages.reminders)}${g.join("")}<div class="space"></div>`;
+}
+
+/* ---------- What Zad shows: Features, "This week" readings, the Qurʾān goal ---------- */
+function showsPage() {
+  const { on, of } = feat.featureCount(S);
+  return `${head(X.pages.shows)}${group("", [
+    navRow({ icon: "toggles", title: FEATURE.title, value: FEATURE.count(on, of), onclick: "A.settingsPage('features')", id: "featuresRow" }),
+    switchRow({ icon: "chart", title: T.weekCard, sub: T.weekCardSub, key: "week", on: feat.isOn(S, "week"), fn: "A.featToggle('week')" }),
+    qGoalRow(),
+  ].filter(Boolean))}<div class="space"></div>`;
+}
+
+/* ---------- Privacy & data ---------- */
+const arow = (p, label, ic, sub = "") => `<a class="srow-main arow" href="${pageUrl(p)}" target="_blank" rel="noopener">${tile(ic, "grey")}<span class="t"><b>${esc(label)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span><span class="chev">${svg("chev")}</span></a>`;
+function dataPage() {
+  const st = S.settings, signedIn = cloud.available && cloud.user;
+  return `${head(X.pages.data)}${group("", [
     ...(isNative() ? [switchRow({ icon: "lock", tone: "green", title: T.lock, sub: T.lockSub, key: "lock", on: !!st.lock })] : []),
     ...(isNative() ? [switchRow({ icon: "shield", tone: "green", title: T.crashReports, sub: T.crashReportsSub, key: "crashReports", on: st.crashReports === true, fn: "A.crashToggle()" })] : []),
     navRow({ icon: "download", tone: "green", title: T.exportCsv, value: "CSV", onclick: "A.exportCsv()" }),
     navRow({ icon: "upload", tone: "green", title: T.backup, onclick: "A.backup()" }),
     navRow({ icon: "history", tone: "green", title: T.restore, onclick: "A.restore()" }),
-  ]));
-  g.push(group("", [
+  ])}<section class="sgroup"><div class="card scard">${arow("privacy.html", T.privacy, "shield", X.privacySub)}${arow("terms.html", T.terms, "file")}</div></section>
+  ${group("", [
     navRow({ icon: "trash", title: T.reset, danger: true, onclick: "A.resetSheet()" }),
-    ...(cloud.available && cloud.user ? [navRow({ icon: "userx", title: T.deleteGo, danger: true, onclick: "A.deleteSheet()" })] : []),
-  ], cloud.available && cloud.user ? T.deleteFoot : ""));
-  g.push(`<section class="sgroup"><h2>${esc(T.groups.about)}</h2><div class="card scard"><div class="why"><small>${esc(T.whyZad.toUpperCase())}</small><p>${esc(APP.mission)}</p></div>
-    ${navRow({ icon: "help", title: T.feedbackRow, sub: FEEDBACK.rowSub, onclick: "A.feedback()", id: "feedbackRow" })}
-    <div class="srow"><div class="srow-main static">${tile("info", "grey")}<span class="t"><b>${esc(APP_NAME())}</b></span><span class="val">${esc(APP.version(APP_VERSION))}</span></div></div>
-    ${[["privacy.html", T.privacy, "shield", X.privacySub], ["terms.html", T.terms, "file", ""], ["support.html", T.support, "help", X.supportSub], ["delete-account.html", X.deleteAcct, "userx", ""], ["release-notes.html", X.releaseNotes, "history", ""]].map(([p, l, ic, sub]) => `<a class="srow-main arow" href="${pageUrl(p)}" target="_blank" rel="noopener">${tile(ic, "grey")}<span class="t"><b>${esc(l)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span><span class="chev">${svg("chev")}</span></a>`).join("")}</div>
-    <p class="sfoot center">${esc(APP.madeWithCare)}</p></section><div class="space"></div>`);
-  return `${mainHead()}${profile}${g.join("")}`;
+    // signed in: delete here; otherwise the page that explains how (an account from another phone, or none)
+    ...(signedIn ? [navRow({ icon: "userx", title: X.deleteAcct, danger: true, onclick: "A.deleteSheet()", id: "deleteRow" })] : [`<div class="srow danger">${arow("delete-account.html", X.deleteAcct, "userx")}</div>`]),
+  ], signedIn ? T.deleteFoot : "")}<div class="space"></div>`;
 }
-const APP_NAME = () => APP.name;
+
+/* ---------- About: why Zad, the version, release notes ---------- */
+function aboutPage() {
+  return `${head(X.pages.about)}<section class="sgroup"><div class="card scard"><div class="why"><small>${esc(T.whyZad.toUpperCase())}</small><p>${esc(APP.mission)}</p></div>
+    <div class="srow"><div class="srow-main static">${tile("info", "grey")}<span class="t"><b>${esc(APP.name)}</b></span><span class="val">${esc(APP.version(APP_VERSION))}</span></div></div>
+    ${arow("release-notes.html", X.releaseNotes, "history")}</div>
+    <p class="sfoot center">${esc(APP.madeWithCare)}</p></section><div class="space"></div>`;
+}
 const HELP_PAGES = ["help", "hStatus", "hMakeups"];
+const PAGES = { you: youPage, times: timesPage, tracking: trackingPage, reminders: remindersPage, shows: showsPage, data: dataPage, about: aboutPage, features: featuresPage, sunnah: sunnahPage, appearance: appearancePage };
 
 /* ---------- render ---------- */
 function renderSettings() {
@@ -670,7 +749,7 @@ function renderSettings() {
   // Redrawing while typing or scrolling is unnecessary: only redraw when this view is showing
   if (UI.view !== "settings") return;
   const y = $("#screen").scrollTop;
-  root.innerHTML = `<div class="settings">${page === "features" ? featuresPage() : page === "sunnah" ? sunnahPage() : page === "appearance" ? appearancePage() : page === "plus" ? plusPage({ head }) : HELP_PAGES.includes(page) ? helpPage(page, { head, group, navRow }) : mainPage()}</div>`;
+  root.innerHTML = `<div class="settings">${PAGES[page] ? PAGES[page]() : page === "plus" ? plusPage({ head }) : HELP_PAGES.includes(page) ? helpPage(page, { head, group, navRow }) : mainPage()}</div>`;
   $("#screen").scrollTop = y;
   if (exactAllowed === null) refreshExact();
 }

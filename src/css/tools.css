@@ -387,7 +387,7 @@
 :where(#v-tools[data-screen=hub],#v-tools .rd-bar) button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:inherit;padding:0}
 #v-tools .zt-ch svg{display:block}
 .rd-list{padding:4px 16px}
-.rd-list + .rd-list,.zt-card + .rd-week,.rd-list + .zt-note + .rd-week{margin-top:12px}
+.rd-list + .rd-list{margin-top:12px}
 .rd-row{display:flex;align-items:center;gap:12px;min-height:68px;padding:10px 0;border-top:1px solid var(--line);width:100%;text-align:left;color:var(--ink)}
 .rd-row:first-child{border-top:0}
 .rd-row .zt-ico svg{width:20px;height:20px}
@@ -406,10 +406,6 @@
 .rd-tag{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:15px;font-weight:600;color:var(--acc2)}
 .rd-tag svg{width:16px;height:16px}
 :root[data-theme=dark] .rd-tag{color:var(--acc)}
-.rd-week{display:block;width:100%;padding:14px 16px 4px;text-align:left}
-.rd-wh{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--mute)}
-.rd-wh span:first-child{font-weight:600}
-.rd-week .rd-row{border-top:0;min-height:64px}
 .rd-cont .rd-kick{font-size:13px;font-weight:600;color:var(--mute);margin:0}
 .rd-cont .rd-big{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:6px 0 16px}
 .rd-cont .rd-big b{font-size:22px;font-weight:600;color:var(--ink)}
@@ -419,8 +415,6 @@
 .rd-choose{display:flex;justify-content:center;margin-top:8px}
 .rd-choose .zt-link{font-size:14px;padding:0 12px}
 .rd-tips p{font-size:14.5px;line-height:1.55;color:var(--ink);margin-top:10px}
-.rd-wsheet .z-sec{margin:4px 0 0;padding:0}
-.rd-wsheet .z-sec h2{display:none}
 
 /* ---------- the bar at the bottom of a reader: tick "… done · Ticks it off for today", and Next ---------- */
 .rd-gap{height:20px}
@@ -574,8 +568,6 @@
 .rd-btn::before{content:"";position:absolute;inset:-5px 0}
 .rd-btn svg{width:15px;height:15px}
 .rd-tag{font-size:14px}
-.rd-week{padding:4px 0 0 8px;border-top:1px solid var(--line)!important;margin-top:16px}
-.rd-week .rd-row{min-height:56px}
 .rd-cont{background:var(--neutral)!important;border-radius:20px!important;padding:16px 18px!important}
 .rd-cont .rd-big{margin:2px 0 14px}
 .rd-cont .rd-big b{font-size:20px;font-weight:650}
@@ -611,3 +603,42 @@
 .tl-ad.done,.tl-fold{opacity:.62}
 .tl-fold{padding:12px 0}
 .tl-donec{border-radius:16px;border:0;margin:6px 0 10px}
+
+/* ---------- Read → For today, layout C (20 Nov 2026): "Now" in full, then "Later today · n" and "Done · n" ---------- */
+.rd-gn{font-size:13px;font-weight:600;color:var(--mute);margin:0 8px 6px}
+.rd-xn{margin:12px 8px 0}
+.rd-more{padding-top:0;padding-bottom:0}
+.rd-more + .zt-note{margin-top:12px}
+.rd-now + .rd-more,.rd-none + .rd-more{margin-top:12px}
+#v-tools .rd-gh{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;border-top:1px solid var(--line);font-size:15px;font-weight:600;color:var(--ink)}
+#v-tools .rd-more > .rd-gh:first-child{border-top:0}
+.rd-gt{flex:1;min-width:0}
+.rd-gck{color:var(--acc2);display:grid}
+.rd-gck svg{width:16px;height:16px}
+:root[data-theme=dark] .rd-gck{color:var(--acc)}
+.rd-gcv{color:var(--faint);display:grid;transition:transform .18s}
+.rd-gcv svg{width:18px;height:18px}
+.rd-gh.open .rd-gcv{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){.rd-gcv{transition:none}}
+.rd-gl[hidden]{display:none}
+.rd-gl .rd-row:first-child{border-top:1px solid var(--line)}
+.rd-empty p{font-size:15px;line-height:1.5;color:var(--ink);margin:0 0 16px}
+/* This week (layout A): one slim card at the top of For today */
+#v-tools .rd-wk{display:flex;align-items:center;gap:12px;padding:10px 16px;margin-bottom:18px;text-align:left}
+.rd-wk .zt-ico svg{width:20px;height:20px}
+.rd-wk .t{flex:1;min-width:0;display:flex;flex-direction:column}
+.rd-wk1{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--mute)}
+.rd-wk .t b{font-size:15.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-new{font-style:normal;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--ok-fg)}
+.rd-new::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--gold-dot)}
+:root[data-theme=dark] .rd-new{color:var(--acc)}
+/* its sheet: This week · This month */
+.rd-wsh{font-size:13px;font-weight:600;color:var(--mute);margin:18px 0 4px}
+.rd-wl{border-top:1px solid var(--line)}
+.z-sh .rd-wi{display:flex;align-items:center;gap:10px;width:100%;min-height:60px;padding:8px 0;border-bottom:1px solid var(--line);text-align:left}
+.rd-wi .t{flex:1;min-width:0;display:flex;flex-direction:column}
+.rd-wi .t small{font-size:12.5px;color:var(--mute)}
+.rd-wi .t b{font-size:16px;font-weight:600;color:var(--ink);margin-top:1px}
+.rd-wi .rd-cv{color:var(--faint);display:grid}
+.rd-wi .rd-cv svg{width:18px;height:18px}
+.rd-ndot{width:8px;height:8px;border-radius:50%;background:var(--gold-dot);flex:none}

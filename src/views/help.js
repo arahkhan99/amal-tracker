@@ -4,7 +4,7 @@ import { S, A, commit, toast, openSheet, go } from "../app.js";
 import * as store from "../store.js";
 import { esc } from "../util.js";
 import { isOn } from "../features.js";
-import { GUIDE as G, STATUS, COMMON, FEEDBACK } from "../strings.js";
+import { GUIDE as G, STATUS, COMMON, SETTINGS, SETTINGS_X } from "../strings.js";
 import { READING, applyReading, readingOf, replayTour, markHelpOpened } from "../guide.js";
 
 const infoSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.01"/></svg>';
@@ -53,8 +53,9 @@ export function helpPage(page, h) {
   if (page === "hMakeups") return makeupsPage(h);
   const r = readingOf(S);
   const short = !isOn(S, "tools") || !isOn(S, "progress");
-  // Send feedback (views/feedback.js). The sheet also shows the email address for people who prefer email.
-  const contact = `<section class="sgroup"><h2>${esc(G.touch)}</h2><div class="card scard"><div class="srow"><button type="button" class="srow-main" onclick="A.feedback()"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5z"/><path d="M8.5 9h7M8.5 12h4.5"/></svg></span><span class="t"><b>${esc(FEEDBACK.row)}</b><small>${esc(FEEDBACK.rowSub)}</small></span><span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span></button></div></div><p class="sfoot">${esc(G.contactFoot)}</p></section>`;
+  // Send feedback / Report a mistake (views/feedback.js): ONE row (20 Nov 2026: the old Support link is merged into it).
+  // The sheet also shows the email address for people who prefer email.
+  const contact = `<section class="sgroup"><h2>${esc(G.touch)}</h2><div class="card scard"><div class="srow" id="feedbackRow"><button type="button" class="srow-main" onclick="A.feedback()"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5z"/><path d="M8.5 9h7M8.5 12h4.5"/></svg></span><span class="t"><b>${esc(SETTINGS.feedbackRow)}</b><small>${esc(SETTINGS_X.feedbackSub)}</small></span><span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span></button></div></div><p class="sfoot">${esc(G.contactFoot)}</p></section>`;
   return `${h.head(G.helpTitle)}<p class="spage-lead">${esc(G.helpLead)}</p>
   ${h.group(G.learn, [
     h.navRow({ icon: "play", title: G.replay, sub: short ? G.replaySubShort : G.replaySub, onclick: "A.helpReplay()" }),

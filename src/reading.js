@@ -226,6 +226,46 @@ export function readItems(S, now = new Date(), extra = {}) {
   return out.map((it, i) => [it, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
 }
 
+/**
+ * When item `id` is due, against today's windows (the same ones as its sub line): "now" (its window is open, or it
+ * has no window: Qurʾān, Hizb, the Manzil's half of the day, durūd, al-Kahf on Jumuʿah), "later" (its window opens
+ * later: evening adhkār and Yā-Sīn before ʿAsr, morning before Fajr, al-Mulk before ʿIshāʾ) or "past" (the morning's
+ * window has closed).
+ */
+export function readWhen(id, now, settings) {
+  const t = timesFor(now, settings);
+  if (id === "morning" || id === "yasinAm") return now < t.Fajr ? "later" : isMorning(now, t) ? "now" : "past";
+  if (id === "evening" || id === "yasinPm") return isEvening(now, t) ? "now" : "later";
+  if (id === "mulk") return now >= t.Isha || now < t.Fajr ? "now" : "later";
+  return "now";
+}
+
+/** Whether Read item `id` is one of the daily readings (settings.dailyDeeds, as the Good deeds sheet counts them). */
+export function isDailyReading(S, id, daily = new Set(store.dailyIds(S))) {
+  return daily.has(id) || (id === "listen" && daily.has("quran"));
+}
+
+/**
+ * For today (20 Nov 2026, layout C): ONLY the readings chosen as daily deeds, in three groups:
+ * now (due right now, shown in full; the first keeps the gold dot), later (the rest still to do: due later today,
+ * then any whose window has passed) and done. { now, later, done, of } (of: how many are chosen and shown today).
+ */
+export function todayGroups(S, now = new Date(), extra = {}) {
+  const daily = new Set(store.dailyIds(S));
+  const items = readItems(S, now, extra).filter(it => isDailyReading(S, it.id, daily));
+  const g = { now: [], later: [], done: [], of: items.length };
+  const past = [];
+  for (const it of items) {
+    if (it.done) { g.done.push(it); continue; }
+    const w = readWhen(it.id, now, S.settings);
+    (w === "now" ? g.now : w === "later" ? g.later : past).push(it);
+  }
+  g.later.push(...past);
+  g.now.forEach((it, i) => { it.now = i === 0; });
+  for (const it of [...g.later, ...g.done]) it.now = false;
+  return g;
+}
+
 /** "Today's reading · n of m done". */
 export function readCount(S, now = new Date()) {
   const items = readItems(S, now);

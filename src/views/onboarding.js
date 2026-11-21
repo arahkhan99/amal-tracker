@@ -447,6 +447,8 @@ onRender(() => { if (UI.view === "onboard") draw(); });
 /* ---------- lock screen (LK2) ----------
    Drawn only while it shows (main.js lockIfNeeded draws it as it appears): every redraw used to rebuild it, hidden,
    which cost each tap on Today about 3 ms (4x CPU: 11 ms). */
+/** "As-salāmu ʿalaykum," with the name on its own line under it (as on Today), or the greeting alone. */
+const greetH1 = name => (name ? `<span class="g">${esc(SETUP.welcome)},</span> <span class="nm">${esc(name)}</span>` : esc(SETUP.welcome));
 function renderLock(force = false) {
   const el = $("#lock");
   if (!el || (el.hidden && !force)) return;
@@ -456,7 +458,7 @@ function renderLock(force = false) {
   const hj = hijriLabel(now).replace(/ \d{4}$/, "");
   el.innerHTML = `<svg class="pattern" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice"><rect width="100%" height="100%" fill="url(#st)"/></svg>
     <div class="lock-in">${logo(64)}<p class="lock-date">${esc(longDay)} ${now.getDate()} ${esc(MON[now.getMonth()])}${hj ? ` · ${esc(hj)}` : ""}</p>
-    <h1>${esc(X.greet(S.profile.name))}</h1>
+    <h1>${greetH1((S.profile.name || "").trim())}</h1>
     <div class="nextpill">${svg("clock")}<span>${esc(prayerName(nx.p))} at <b>${fmt12(nx.time).replace(/ [AP]M$/, "")}</b> · in ${esc(TIMES.hm(Math.floor(mins / 60), mins % 60))}</span></div>
     <div class="grow"></div>
     <button class="fp" onclick="A.unlock()" aria-label="${esc(X.unlock)}"><span>${svg("finger")}</span></button>

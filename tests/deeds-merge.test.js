@@ -114,7 +114,8 @@ describe("the Good deeds sheet: Reading · Deeds · Nafl prayers", () => {
   it("draws ticks that are Read's own tick, a Read button that opens the reader, Count on the merged item, and Choose daily deeds", () => {
     A.deedsSheet(KEY);
     const h = calls.sheet.at(-1);
-    for (const g of [TODAY.groupReading, TODAY.groupDeeds, "Nafl prayers"]) expect(h).toContain(`>${g}<`);
+    for (const g of [TODAY.groupReading, TODAY.groupDeeds]) expect(h).toContain(`>${g}<`);
+    expect(h).not.toContain(">Nafl prayers<"); // none chosen as daily by default
     expect(h).toContain(`onclick="A.readTick('morning')"`);
     expect(h).toContain(`onclick="A.readTick('durud')"`);
     expect(h).toContain(`onclick="A.deedRead('durud')"`);
@@ -174,5 +175,90 @@ describe("Choose daily deeds", () => {
     expect(h).toMatch(/data-f="daily-durud"[^>]*>/);
     expect(h).toContain('aria-checked="true" aria-label="Durūd / Salawāt"');
     expect(h).toContain('aria-checked="false" aria-label="Sūrat al-Mulk"');
+  });
+});
+
+// 20 Nov 2026: on Today the Good deeds sheet lists ONLY the daily deeds (settings.dailyDeeds); everything else is
+// behind "Add or change daily deeds" (Choose daily deeds, with "+ Add your own"). Same ticks, same storage.
+describe("the Good deeds sheet on Today: only the daily deeds", () => {
+  beforeEach(reset);
+  const sheet = () => { A.deedsSheet(KEY); return calls.sheet.at(-1); };
+  const ticks = h => [...h.matchAll(/data-f="(?:deed|nafl)-([a-z]+)"/g)].map(m => m[1]);
+  it("four chosen (a reading, the Qurʾān, a deed, a nafl): just those, then the one quiet row", () => {
+    S.settings.dailyDeeds = ["morning", "quran", "sadaqah", "duha"];
+    const h = sheet();
+    expect(ticks(h)).toEqual(["morning", "quran", "sadaqah", "duha"]);
+    for (const id of ["evening", "mulk", "durud", "ishraq", "tahajjud"]) expect(h).not.toContain(`-${id}"`);
+    expect(h).toContain(">Nafl prayers<");
+    expect(h).toContain(`data-f="choose-daily" onclick="A.dailyChoose('${KEY}','')"`);
+    expect(h).toContain(TODAY.dailyEdit);
+    expect(h.indexOf('data-f="choose-daily"')).toBeGreaterThan(h.indexOf('data-f="nafl-duha"')); // at the bottom
+    expect(h).not.toContain('data-f="add-deed"'); // "+ Add" lives in Choose daily deeds now
+    expect(h).not.toContain('data-f="nafl-choose"');
+    expect(h).toContain(TODAY.deedsDaily("Thursday", 0, 4));
+    expect(today.deedsLine(S, KEY, DAY)).toMatchObject({ done: 0, of: 4, empty: false }); // the pill: chosen only
+  });
+  it("ticking from the sheet writes the same storage as before (no double counting)", () => {
+    S.settings.dailyDeeds = ["morning", "quran", "sadaqah", "duha"];
+    expect(sheet()).toContain(`onclick="A.readTick('morning')"`); // Read's own tick (the For today log)
+    setReadDone(S, "morning", true, DAY);
+    A.tapAmal("sadaqah", KEY, "deeds");
+    A.naflTick("duha", KEY);
+    expect(S.days[KEY].amal.sadaqah.done).toBe(true);
+    expect(store.sunnahDone(S, KEY, "duha")).toBe(true);
+    expect(isReadDone(S, "morning", DAY)).toBe(true);
+    expect(today.deedsLine(S, KEY, DAY)).toMatchObject({ done: 3, of: 4 });
+    const h = sheet();
+    expect(h).toMatch(/aria-checked="true" aria-label="Morning adhkār"/);
+    expect(h).toMatch(/aria-checked="true" aria-label="Sadaqah"/);
+    // an extra done in Read (not daily) is not on the sheet and not in the pill
+    setReadDone(S, "mulk", true, DAY);
+    expect(sheet()).not.toContain('data-f="deed-mulk"');
+    expect(today.deedsLine(S, KEY, DAY)).toMatchObject({ done: 3, of: 4 });
+  });
+  it("Read's For today is unaffected: it still lists every reading, daily or not", () => {
+    const before = readItems(S, DAY).map(i => i.id);
+    S.settings.dailyDeeds = ["morning", "quran", "sadaqah", "durud"]; // keeps Durūd daily (its own For today rule)
+    sheet();
+    const after = readItems(S, DAY).map(i => i.id);
+    expect(after).toEqual(before);
+    expect(after).toEqual(expect.arrayContaining(["morning", "evening", "quran", "mulk", "durud"]));
+  });
+  it("nothing chosen: a short note and the same row; the pill offers to choose", () => {
+    S.settings.dailyDeeds = [];
+    const h = sheet();
+    expect(h).toContain('data-f="deeds-empty"');
+    expect(h).toContain(TODAY.deedsEmpty);
+    expect(h).toContain('data-f="choose-daily"');
+    expect(ticks(h)).toEqual([]);
+    expect(h).not.toContain("z-gbar");
+    expect(today.deedsLine(S, KEY, DAY)).toMatchObject({ of: 0, empty: true });
+  });
+  it("Choose daily deeds offers every item (all nafl, even hidden ones) and \"+ Add your own\", which returns there", () => {
+    S.settings.naflShow = ["ishraq"];
+    A.dailyChoose(KEY);
+    let h = calls.sheet.at(-1);
+    for (const k of ["ishraq", "duha", "awwabin", "tahajjud", "mulk", "kahf", "sadaqah"]) expect(h).toContain(`data-f="daily-${k}"`);
+    expect(h).toContain(`data-f="add-own" onclick="A.addAmal('${KEY}','','choose')"`);
+    expect(h).toContain(TODAY.addOwn);
+    A.dailyToggle("tahajjud"); // chosen: shown and counted
+    expect(S.settings.naflShow).toEqual(["ishraq", "tahajjud"]);
+    expect(sheet()).toContain('data-f="nafl-tahajjud"');
+    A.addAmal(KEY, "", "choose");
+    clock.dom = { "#nIn": { value: "Visit the sick", focus() {} }, "#nType": { value: "none" } };
+    A.saveAmal();
+    clock.dom = null;
+    h = calls.sheet.at(-1);
+    expect(h).toContain(TODAY.chooseDailyLead); // back in Choose daily deeds
+    const id = S.amalList.at(-1).id;
+    expect(h).toContain(`aria-checked="true" aria-label="Visit the sick"`);
+    expect(sheet()).toContain(`data-f="deed-${id}"`); // a new deed is a daily deed, so it is on the sheet
+  });
+  it("from a day in the calendar the sheet still lists all that day's deeds", () => {
+    S.settings.dailyDeeds = ["sadaqah"];
+    A.deedsSheet("2026-11-18", "day");
+    const h = calls.sheet.at(-1);
+    expect(h).toContain('data-f="deed-sadaqah"');
+    expect(h).toContain('data-f="nafl-ishraq"'); // not daily, still listed for that day
   });
 });

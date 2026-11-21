@@ -122,6 +122,7 @@ export function normalize(s, now = new Date()) {
   // A set-up user whose save has no method was on the old default: keep it (only new installs get Karachi)
   if (s.settings && !s.settings.method && s.profile?.onboarded) out.settings.method = "NorthAmerica";
   migrateMadhhab(s, out);
+  out.settings.carryQuran = true; // 20 Nov 2026: always on (the Settings switch is gone); older saves with it off too
   out.settings.features = normalizeFeatures(out.settings.features);
   out.settings.hiddenTools = Array.isArray(out.settings.hiddenTools) ? out.settings.hiddenTools : [];
   if (!Array.isArray(out.settings.naflShow)) out.settings.naflShow = d.settings.naflShow.slice();

@@ -20,7 +20,7 @@ import * as T from "../strings.js";
 import { HOME_X, NOT_YET, TODAY } from "../strings.js";
 import { reportLink } from "../feedback.js";
 import { homeChip as pvChip, homeOffer as pvOffer } from "./provisions.js";
-import { otherOptions, logPrayer, snapshotDays, restoreSnapshot, guideLineDue, makeUpNowOn, makeupsLine, todayRows, todayFocus, rowState, tapHintDue, markTapHint, allFiveMoment, naflTimes, deedsLine, deedGroups, dailyChoices, setDaily, bandAt, heroOf, tapNext } from "../today.js";
+import { otherOptions, logPrayer, snapshotDays, restoreSnapshot, guideLineDue, makeUpNowOn, makeupsLine, todayRows, todayFocus, rowState, tapHintDue, markTapHint, naflTimes, deedsLine, deedGroups, dailyChoices, setDaily, bandAt, heroOf, tapNext } from "../today.js";
 import { goalStatus } from "../quran-goal.js";
 import { goalLine } from "./quran-goal.js";
 import { NAFL_ADDON } from "../rules/madhhab.js";
@@ -416,9 +416,10 @@ A.saveDetail = (id, key) => {
   if (back) { commit(); back(); } else { closeSheet(); commit(); }
   toast(DEEDS.saved);
 };
-/** "+ Add a good deed" (M1): a name and a type (tick / note / count). From the Good deeds sheet, Add returns there. */
+/** "+ Add a good deed" (M1): a name and a type (tick / note / count). From the Good deeds sheet (or, to "choose",
+ *  from Choose daily deeds' "+ Add your own"), Add and Cancel return there. */
 let addFrom = null;
-A.addAmal = (key = "", back = "") => { addFrom = key ? () => A.deedsSheet(key, back) : null; addSheet(); };
+A.addAmal = (key = "", back = "", to = "") => { addFrom = key ? () => (to === "choose" ? A.dailyChoose(key, back) : A.deedsSheet(key, back)) : null; addSheet(); };
 const addSheet = () => openSheet(zz(`<div class="sh"><h3>${DEEDS.addTitle}</h3><p class="sub">${DEEDS.addLead}</p>
   <div class="field"><label for="nIn">${DEEDS.name}</label><input id="nIn" placeholder="${esc(DEEDS.namePlaceholder)}"></div>
   <div class="field"><label for="nType">${DEEDS.whenCheck}</label><select id="nType"><option value="none">${DEEDS.typeNone}</option><option value="note">${DEEDS.typeNote}</option><option value="count">${DEEDS.typeCount}</option></select></div>
@@ -516,6 +517,7 @@ A.deedsSheet = (key = todayKey(), back = "") => showSheet(() => {
   const label = key === todayKey() ? weekday(parseKey(key)) : longDate(parseKey(key));
   const pct = g.of ? Math.round(g.done / g.of * 100) : 0;
   const group = (title, items, after = "") => items.length || after ? `<div class="lsec">${esc(title)}</div><div class="drows">${items.map(it => deedRow(it, key, from)).join("")}</div>${after}` : "";
+  if (back !== "day") return chosenSheet(g, key, label, pct, group);
   const add = `<button type="button" class="addd" data-f="add-deed" onclick="A.addAmal('${key}','${back}')">${ic("plus", "")}<span>${esc(TODAY.addDeed)}</span></button>`;
   const nf = store.isExcusedDay(S, key) ? "" : naflHead(key, back) + (g.nafl.length ? `<div class="drows">${g.nafl.map(it => deedRow(it, key, from)).join("")}</div>` : `<p class="note2">${esc(NAFL.noneShown)}</p>`);
   return `<div class="sh gd"><div class="lhd"><div><h3>${esc(TODAY.goodDeeds)}</h3><p class="sub">${esc(g.of ? TODAY.deedsDaily(label, g.done, g.of) : TODAY.deedsNoDaily(label))}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
@@ -523,6 +525,24 @@ A.deedsSheet = (key = todayKey(), back = "") => showSheet(() => {
     ${group(TODAY.groupReading, g.reading)}${group(TODAY.groupDeeds, g.deeds, add)}${nf}
     <div class="shfoot"><button class="gbtn" data-f="choose-daily" onclick="A.dailyChoose('${key}','${back}')">${esc(TODAY.chooseDaily)}</button><button class="pbtn" onclick="${back === "day" ? `A.daySheet('${key}')` : "A.closeSheet()"}">${back === "day" ? COMMON.back : COMMON.done}</button></div></div>`;
 });
+
+/**
+ * The sheet from Today (20 Nov 2026): ONLY the daily deeds (settings.dailyDeeds: chosen readings, deeds and nafl),
+ * ticked exactly as before (Read's tick, the deed, the nafl's sunnah item), so nothing is counted twice. Everything
+ * else is behind one quiet row, "Add or change daily deeds" (Choose daily deeds, with "+ Add your own"). Nothing
+ * chosen: a short note and that row. (From a day in the calendar the sheet still lists all that day's deeds.)
+ */
+function chosenSheet(g, key, label, pct, group) {
+  const pick = items => items.filter(i => i.daily), from = "deeds";
+  const reading = pick(g.reading), deeds = pick(g.deeds), nafl = pick(g.nafl);
+  const nf = nafl.length ? `<div class="lsec nfh"><span>${esc(NAFL.title)}</span>${xi("nafl")}</div><div class="drows">${nafl.map(it => deedRow(it, key, from)).join("")}</div>` : "";
+  const edit = `<button type="button" class="addd${g.of ? "" : " first"}" data-f="choose-daily" onclick="A.dailyChoose('${key}','')">${ic("plus", "")}<span>${esc(TODAY.dailyEdit)}</span></button>`;
+  const body = g.of ? `${group(TODAY.groupReading, reading)}${group(TODAY.groupDeeds, deeds)}${nf}${edit}` : `<p class="note2 gde" data-f="deeds-empty">${esc(TODAY.deedsEmpty)}</p>${edit}`;
+  return `<div class="sh gd"><div class="lhd"><div><h3>${esc(TODAY.goodDeeds)}</h3><p class="sub">${esc(g.of ? TODAY.deedsDaily(label, g.done, g.of) : label)}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
+    ${g.of ? `<span class="gbar" aria-hidden="true"><i style="width:${pct}%"></i></span>` : ""}
+    ${body}
+    <div class="shfoot"><button class="pbtn" onclick="A.closeSheet()">${COMMON.done}</button></div></div>`;
+}
 
 /** "Choose daily deeds": a switch per item; "Good deeds · n of m" counts the ones on (today.dailyIds). */
 A.dailyToggle = id => { setDaily(S, id, !store.dailyIds(S).includes(id)); commit(); };
@@ -532,6 +552,7 @@ A.dailyChoose = (key = todayKey(), back = "") => showSheet(() => {
   const grp = (title, rows) => rows.length ? `<div class="lsec">${esc(title)}</div><div class="drows">${rows.join("")}</div>` : "";
   return `<div class="sh"><div class="lhd"><div><h3>${esc(TODAY.chooseDaily)}</h3><p class="sub">${esc(TODAY.chooseDailyLead)}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
     ${grp(TODAY.groupReading, c.reading.map(id => sw(id, READ.item[id] || id)))}${grp(TODAY.groupDeeds, c.deeds.map(a => sw(a.id, a.name)))}${grp(NAFL.title, c.nafl.map(k => sw(k, SUNNAH_NAME[k])))}
+    <button type="button" class="addd own" data-f="add-own" onclick="A.addAmal('${key}','${back}','choose')">${ic("plus", "")}<span>${esc(TODAY.addOwn)}</span></button>
     <div class="shfoot"><button class="pbtn" onclick="A.deedsSheet('${key}','${back}')">${COMMON.done}</button></div></div>`;
 });
 
@@ -643,7 +664,7 @@ A.weekItem = id => {
      the date and the Hijri date, then a slim mihrab arch framing the current prayer ("Now", its name, the time left)
      with Qibla, the big Prayed button, ⋯ and its sunnah ("Sunnah · 4 before"). Once it is logged the arch shows
      the next prayer ("Next · Maghrib · Begins in 1 h 28 min") with only a Qibla chip (today.heroOf);
-   - above the list: all five prayed, the first-run guide line, the excused-day band, yesterday's make-ups;
+   - above the list: the first-run guide line, the excused-day band, yesterday's make-ups;
    - the thin list: name, time (small AM/PM) and the mark, with a quiet Sunrise row; the current (or next) row has
      the gold dot; "Make up now" only on a missed row. Tap a row to log it (on time → congregation → clear,
      today.tapNext), long press for every status (a ⋯ for keyboards and screen readers appears on focus);
@@ -672,7 +693,7 @@ function bestBefore(f, now) {
   const best = ishaBestBefore(f.cur.date, S.settings);
   return now < best ? TODAY.bestBeforeSub(fmt12(best)) : "";
 }
-/** The time line under the prayer's name: "1 h 31 min left" (ʿIshāʾ: to the middle of the night, then "… · until Fajr"), or "Begins in 1 h 28 min". */
+/** The time line under the prayer's name: "1 h 31 min left" (ʿIshāʾ: to the middle of the night, then "… · until Fajr"), or "Begins in 1 h 28 min" (tomorrow's Fajr: "Tomorrow 5:48 AM · begins in …"). */
 function countdown(f, now) {
   if (f.kind === "now") {
     const cur = f.cur;
@@ -682,7 +703,9 @@ function countdown(f, now) {
     }
     return TODAY.leftShort(hm(cur.end - now));
   }
-  return TODAY.beginsInShort(hm(f.time - now)) + (f.key !== todayKey() ? ` · ${COMMON.tomorrow}` : "");
+  // after ʿIshāʾ is logged, before midnight: "Tomorrow 5:48 AM · begins in 7 h 12 min"
+  if (f.key !== todayKey()) return TODAY.beginsTomorrow(fmt12(f.time), hm(f.time - now));
+  return TODAY.beginsInShort(hm(f.time - now));
 }
 
 /* ---------- "Make up now" on a missed row (today.makeUpNowOn); "Not now" hides it for that prayer today ---------- */
@@ -738,7 +761,7 @@ function heroChips(h) {
   const one = items.length === 1 && !items[0].witr;
   return `<div class="zt-chips">${items.map(it => `<button type="button" class="zt-chip${it.done ? " d" : ""}" ${it.attr} data-key="${h.key}" aria-pressed="${it.done}"><span class="rg">${it.done ? ic("check", "") : ""}</span><span>${one ? `${esc(TODAY.sunnahWord)} · ` : ""}${it.label}</span></button>`).join("")}</div>`;
 }
-/** The Prayed button: one tap on the prayer; once logged (ʿIshāʾ stays until midnight) it shows how, and a tap moves it on. */
+/** The Prayed button: one tap on the prayer; once logged it shows how, and a tap moves it on. */
 function prayBtn(h) {
   const nm = pName(h.p, h.key), s = h.status;
   if (!s) return `<button type="button" class="zt-pray" data-f="pray" aria-label="${esc(TODAY.prayedAria(nm))}" onclick="A.heroPray('${h.p}','${h.key}')">${ic("check", "i")}<span>${esc(TODAY.prayed)}</span></button>`;
@@ -765,10 +788,19 @@ const hijriToday = now => { const k = dkey(now) + "|" + JSON.stringify(currentHi
 function topBar(now) {
   const cal = `<button type="button" class="zt-ib" aria-label="${esc(TODAY.calendar)}" onclick="A.calOpen()">${ic("cal", "i")}</button>`;
   const name = (S.profile?.name || "").trim(), hj = hijriToday(now);
-  return `<b class="zt-hi">${esc(name ? HOME.greetingName(name) : HOME.greeting)}</b>${avatarBtn(cal + pvChip())}<small class="zt-date">${DOW[now.getDay()]} ${now.getDate()} ${MON[now.getMonth()]}${hj ? ` · ${esc(hj)}` : ""}</small>`;
+  // with a name: "As-salāmu ʿalaykum," then the name on its own line, a little larger and heavier (css/today.css)
+  const hi = name ? `<span class="zt-hi1">${esc(HOME.greetingLine1)}</span> <span class="zt-hin">${esc(name)}</span>` : esc(HOME.greeting);
+  return `<b class="zt-hi${name ? " two" : ""}">${hi}</b>${avatarBtn(cal + pvChip())}<small class="zt-date">${DOW[now.getDay()]} ${now.getDate()} ${MON[now.getMonth()]}${hj ? ` · ${esc(hj)}` : ""}</small>`;
 }
 
 /* ---------- the list ---------- */
+/** Witr on ʿIshāʾ's row once ʿIshāʾ is logged (the hero has moved on to Fajr): a small ring toggle, as in the hero. */
+function witrRow(st) {
+  if (st.p !== "Isha" || !store.isPrayed(st.status) || store.isExcusedDay(S, st.key)) return "";
+  const w = witrShown(st.key);
+  if (!w) return "";
+  return `<button type="button" class="zt-chip zt-wr${w.done ? " d" : ""}" data-witr="1" data-key="${st.key}" data-f="witr-${st.key}" aria-pressed="${w.done}" aria-label="${esc(TODAY.witrRowAria(w.done))}"><span class="rg">${w.done ? ic("check", "") : ""}</span><span>${esc(T.WITR_UI.name)}</span></button>`;
+}
 /** One prayer row (today.rowState): name, time and mark; the whole row is the tap target once its prayer has begun. */
 function rowHTML(st, now) {
   const { p, key, status: s0, hl } = st;
@@ -780,10 +812,11 @@ function rowHTML(st, now) {
   const extra = hl ? (hl === "now" ? TODAY.current : TODAY.nextPrayer) : "";
   const tap = st.tap === "none" ? ""
     : `<button type="button" class="zt-tap" data-tap="${p}" data-key="${key}" data-f="row-${rowId(p, key)}" aria-label="${esc(TODAY.rowAria(nm, s0, st.tap, extra))}"></button>`;
+  const wr = witrRow(st);
   const mk = st.mkNow ? `<button type="button" class="zt-mkn" data-f="mk-${rowId(p, key)}" aria-label="${esc(TODAY.mkNowAria(nm))}" onclick="A.mkNow('${p}','${key}')">${ic("madeup", "i")}${esc(TODAY.mkNow)}</button>` : "";
   const more = st.begun || !!store.getDay(S, key).prayers?.[p]
     ? `<button type="button" class="zt-srm" data-f="more-${rowId(p, key)}" aria-label="${esc(TODAY.more(nm))}" onclick="A.rowMore('${p}','${key}')">${ic("dots", "i")}</button>` : "";
-  return `<div class="zt-row${hl ? " cur" : ""}${st.begun ? "" : " up"}">${tap}${hl ? '<i class="zt-cdot" aria-hidden="true"></i>' : ""}${name}${mk}<span class="zt-tm">${tmHTML(t)}</span><span class="zt-mkw">${mark}</span>${more}</div>`;
+  return `<div class="zt-row${hl ? " cur" : ""}${st.begun ? "" : " up"}">${tap}${hl ? '<i class="zt-cdot" aria-hidden="true"></i>' : ""}${name}${wr}${mk}<span class="zt-tm">${tmHTML(t)}</span><span class="zt-mkw">${mark}</span>${more}</div>`;
 }
 /** Sunrise between Fajr and Zuhr: when Fajr's time ends. Quiet, never logged or counted (today.TODAY_ROWS). */
 function sunriseRow(key) {
@@ -812,11 +845,9 @@ function excusedFoot(key) {
   return `<p class="zt-foot">${esc(TODAY.onlyYou)} ${S.excusedMode ? `<button type="button" class="zt-link in" data-f="endex" onclick="A.endExcusedMode()">${esc(TODAY.endExcused)}</button>` : `<button type="button" class="zt-link in" data-f="notex" onclick="A.excusedToday('${key}')">${esc(TODAY.notExcused)}</button>`}</p>`;
 }
 
-/** Between the header and the list: all five prayed, the first-run guide line, the excused-day band, yesterday's catch-up and make-ups. */
+/** Between the header and the list (the all-five line is gone: it lives in Progress, 20 Nov 2026): the first-run guide line, the excused-day band, yesterday's catch-up and make-ups. */
 function leadHTML(now, key) {
   const parts = [];
-  const m = allFiveMoment(S, now);
-  if (m) parts.push(`<p class="zt-five" role="status">${ic("check", "i")}<span><b>${esc(TODAY.allFive)}</b>${m.streak >= 2 ? ` · ${esc(TODAY.allFiveStreak(m.streak))}` : ""}</span></p>`);
   if (guideLineDue(S)) parts.push(`<p class="zt-guide">${ic("hand", "i")}${esc(TODAY.guide)}</p>`);
   if (store.isExcusedDay(S, key)) {
     const mode = S.excusedMode?.since, n = mode ? daysBetween(parseKey(mode), parseKey(key)) + 1 : 0;

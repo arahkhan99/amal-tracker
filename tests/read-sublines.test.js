@@ -21,15 +21,18 @@ vi.mock("@capacitor/core", () => ({ Capacitor: { getPlatform: () => "web", isNat
 globalThis.addEventListener ||= () => {};
 globalThis.document ||= { addEventListener() {}, getElementById: () => null, querySelector: () => null, querySelectorAll: () => [], documentElement: { dataset: {} } };
 
-const { _chapters: R } = await import("../src/views/read.js");
+const { _chapters: R, _grp } = await import("../src/views/read.js");
 const { READ } = await import("../src/strings.js");
 const { TT } = await import("../src/views/tools/strings-tools.js");
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 describe("Read → For today", () => {
   beforeEach(() => { S.tools = {}; delete S.days["2026-11-20"]; });
-  it("lists Yā-Sīn morning and evening, each with Read and a tick", () => {
+  it("lists Yā-Sīn morning and evening (chosen as daily readings), each with Read and a tick", () => {
+    S.settings.dailyDeeds = [...store.dailyIds({ ...S, settings: { ...S.settings, dailyDeeds: undefined } }), "yasinAm", "yasinPm"];
+    _grp.later = true; // the morning's half is past at ʿAsr: under "Later today", opened
     const h = R.today(clock.now);
+    _grp.later = false; delete S.settings.dailyDeeds;
     for (const id of ["yasinAm", "yasinPm"]) {
       expect(h).toContain(esc(READ.item[id]));
       expect(h).toContain(`onclick="A.readOpen('${id}')"`);

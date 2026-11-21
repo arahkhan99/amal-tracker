@@ -237,7 +237,6 @@ export const TODAY = {
   afterSalah: "Adhkār after ṣalāh", afterSalahSub: "In Read",
   thisWeek: "This week", prayedOfDue: (n, m) => `${n} of ${m}`, prayedWord: "prayed",
   todayTitle: "Today", nOf5: n => `${n} of 5`,
-  allFive: "All five prayers, Alhamdulillah",
   notLogged: "Not logged", log: "Log", withWitr: "with Witr", nowLeft: left => `Now · ${left} left`,
   sunnahN: n => `${n} sunnah`,
   stillTime: "Missed · still time before Fajr",
@@ -272,7 +271,6 @@ export const TODAY = {
   deedsSub: (day, n, m) => `${day} · ${n} of ${m} done`, editList: "Edit list",
   // 19 Nov 2026 round (views/home.js): Now after logging, all five, the Today lines, the greeting, Qibla
   inLeft: left => `in ${left}`, tomorrowWord: "tomorrow",
-  allFiveStreak: n => `${n} days in a row`,
   deedsAddOwn: "add your own", addDeed: "Add a good deed",
   stillCount: "Dhikr and duʿāʾ still count.",
   sunnahLine: "Sunnah", sunnahRakahs: (got, of) => `${got} of ${of} rakʿahs`,
@@ -300,6 +298,8 @@ export const TODAY = {
   bestBeforeSub: t => `best before ${t}`,
   leftFajr: left => `${left} left · until Fajr`,
   beginsInShort: left => `Begins in ${left}`,
+  beginsTomorrow: (t, left) => `Tomorrow ${t} · begins in ${left}`, // the next Fajr once ʿIshāʾ is logged
+  witrRowAria: done => (done ? "Witr prayed: tap to clear" : "Witr: tap when prayed"),
   prayed: "Prayed", prayedAria: p => `Prayed ${p}: log it as prayed on time`,
   heroAs: { congregation: "In congregation", ontime: "On time", madeup: "Made up", missed: "Missed", excused: "Excused" },
   prayedAgainAria: (p, s) => `${p}, ${s}. Tap to change it.`,
@@ -313,6 +313,9 @@ export const TODAY = {
   groupReading: "Reading", groupDeeds: "Deeds",
   readBtn: "Read", readBtnAria: t => `Read: ${t}`, countBtn: "Count", countAria: t => `Count ${t}`,
   chooseDaily: "Choose daily deeds",
+  // the Good deeds sheet on Today shows only the daily deeds; the rest is behind this row (20 Nov 2026)
+  dailyEdit: "Add or change daily deeds", addOwn: "Add your own",
+  deedsEmpty: "No daily deeds chosen yet. Pick the ones you’d like to keep up each day, and tick them off here.",
   chooseDailyLead: "Your daily goals: “Good deeds · n of m” on Today counts these. Everything else is a welcome extra.",
   dailyOn: t => `${t}: a daily goal`,
   // the community placeholder (Zad Plus only)
@@ -1013,6 +1016,18 @@ export const SETTINGS_X = {
   arSize: "Arabic text size", arSizeNote: "For the Qurʾān, adhkār and duʿās. Each reader can still change it with Aa.",
   sizeSmaller: "Smaller", sizeLarger: "Larger", sizeOf: (n, m) => `Size ${n} of ${m}`,
   plusRow: "Zad Plus", plusRowSub: "Leaderboards, Circles, Family plan, mentoring",
+  // Settings, consolidated (20 Nov 2026): about ten rows on one screen, each opening a page with "‹ Settings"
+  pages: {
+    you: "You", times: "Prayer times", tracking: "Prayers & tracking", reminders: "Reminders & widgets",
+    shows: "What Zad shows", help: "Help & feedback", data: "Privacy & data", about: "About",
+  },
+  youSub: "Your name, who Zad is set up for, and cloud backup",
+  signIn: "Sign in", signInSub: "Back up and sync with Google or Apple",
+  madhhabAsr: "Madhhab & ʿAsr", asrHead: "ʿAsr time",
+  dailyDeeds: "Daily good deeds", dailyDeedsSub: "What “Good deeds · n of m” on Today counts",
+  nOn: n => `${n} on`, onPhone: "On this phone", backedUp: ago => `Backed up ${ago}`,
+  feedbackSub: "Help, questions, ideas, or a mistake in the content",
+  widgetsLead: "Widgets, the lock screen and the Now notification",
 };
 
 /* ---------- Zad Plus (Settings → Zad Plus; views/plus.js). Nothing is sold yet: no payments exist. ---------- */
@@ -1085,7 +1100,7 @@ export const GUIDE = {
 
   // Settings row + Help & tour page
   helpRow: "Help & tour", helpRowSub: "Replay the tour, how statuses and make-ups work", newTag: "New",
-  helpTitle: "Help & tour", helpLead: "A quick walk through Zad, and answers to the questions people ask most.",
+  helpTitle: "Help & feedback", helpLead: "A quick walk through Zad, and answers to the questions people ask most.",
   learn: "Learn Zad", touch: "Get in touch",
   replay: "Replay the tour", replaySub: "A short walk through Today, Read and Progress", replaySubShort: "A short walk through Today and the calendar",
   howRead: "How you read", howReadSub: "Arabic, transliteration and meaning in the tools",
@@ -1385,6 +1400,19 @@ export const READ = {
   weekSub: (kind, n) => `${kind} · and ${n} more`,
   verseOfWeek: "Verse of the week",
   weekTitle: "This week",
+  // For today, layout C (20 Nov 2026): only the daily readings, grouped Now · Later today · Done
+  nowHead: "Now",
+  laterHead: n => `Later today · ${n}`,
+  doneHead: n => `Done · ${n}`,
+  nothingNow: "Nothing due right now.",
+  allDone: "All of today's readings are done. Alhamdulillah.",
+  dailyEmpty: "Choose the readings you keep each day and they gather here, in the order they're due. Everything else stays in the Qurʾān and Adhkār chapters.",
+  chooseDaily: "Choose your daily readings",
+  // the This week card at the top of For today and its sheet (This week · This month)
+  weekNew: "New",
+  weekCardLabel: (title, isNew) => `This week: ${title}${isNew ? ". New" : ""}`,
+  weekSheetLead: range => `${range} · new each Sunday`,
+  thisMonth: "This month",
   choose: "Choose what Read shows",
   // Qurʾān
   quranTitle: "Qurʾān",

@@ -6,7 +6,8 @@ import { readFileSync } from "node:fs";
 import * as store from "../src/store.js";
 import { timesFor } from "../src/times.js";
 import { dkey, addDays, PRAYERS } from "../src/util.js";
-import { nowFocus, allFiveMoment, deedsLine, sunnahLine, naflShown, naflTimes } from "../src/today.js";
+import * as today from "../src/today.js";
+import { nowFocus, deedsLine, sunnahLine, naflShown, naflTimes } from "../src/today.js";
 import { dayProvisions } from "../src/points.js";
 import { NAFL_ADDON, NAFL_ADDON_IDS } from "../src/rules/madhhab.js";
 import { tabOf, tabToReset, viewsOfTab, landing, resolveView, OVER_PAGES } from "../src/routes.js";
@@ -53,20 +54,10 @@ describe("Now moves on to the next prayer after logging", () => {
   });
 });
 
-describe("all five prayed (M6)", () => {
-  it("shows once the fifth fard is logged, with the run of days", () => {
-    const S = fresh(), now = at(S, "Isha", 30), y = dkey(addDays(DAY, -1));
-    for (const p of PRAYERS) store.setPrayer(S, y, p, "ontime", now);
-    for (const p of PRAYERS.slice(0, 4)) store.setPrayer(S, KEY, p, "ontime", now);
-    expect(allFiveMoment(S, now)).toBe(null);
-    store.setPrayer(S, KEY, "Isha", "ontime", now);
-    expect(allFiveMoment(S, now)).toEqual({ key: KEY, streak: 2 });
-  });
-  it("is not shown on an excused day", () => {
-    const S = fresh(), now = at(S, "Isha", 30);
-    for (const p of PRAYERS) store.setPrayer(S, KEY, p, "ontime", now);
-    store.setExcusedDay(S, KEY, true, now);
-    expect(allFiveMoment(S, now)).toBe(null);
+describe("all five prayed: no longer on Today (20 Nov 2026; it lives in Progress)", () => {
+  it("the helper and the line are gone", () => {
+    expect("allFiveMoment" in today).toBe(false);
+    expect(src("src/views/home.js")).not.toContain("zt-five");
   });
 });
 
@@ -199,9 +190,9 @@ describe("leaving a tab resets it; deep links still land", () => {
 
 describe("Settings: feedback, Qibla, the Friday sīrah switch, location", () => {
   const set = src("src/views/settings.js");
-  it("has a direct Send feedback / Report a mistake row and a Qibla finder row", () => {
-    const about = set.slice(set.indexOf("T.groups.about"), set.indexOf("APP.madeWithCare"));
-    expect(about).toMatch(/onclick: "A\.feedback\(\)"/);
+  it("has a direct Send feedback / Report a mistake row (Help & feedback) and a Qibla finder row", () => {
+    const help = src("src/views/help.js");
+    expect(help).toMatch(/id="feedbackRow"><button type="button" class="srow-main" onclick="A\.feedback\(\)"/);
     expect(set).toMatch(/onclick: "A\.openQibla\(\)"/);
   });
   it("the Friday sīrah notification follows its switch (on by default)", () => {

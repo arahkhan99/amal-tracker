@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import * as store from "../src/store.js";
 import { timesFor } from "../src/times.js";
-import { dkey, addDays, PRAYERS } from "../src/util.js";
+import { dkey, addDays, PRAYERS, fmt12 } from "../src/util.js";
 import * as today from "../src/today.js";
 
 const DAY = new Date(2026, 10, 19, 12, 0); // Thursday
@@ -204,16 +204,14 @@ describe("the highlighted row is the current prayer, or the next one", () => {
     expect(hero).not.toContain('data-f="pray"');
     expect(hero).toContain('class="zt-qb"');
   });
-  it("the big Prayed button is one tap on the current prayer: on time, then (ʿIshāʾ stays) congregation", () => {
+  it("the big Prayed button is one tap on the current prayer; ʿIshāʾ's row tap then moves it on to congregation", () => {
     A.heroPray("Asr", KEY);
     expect(status("Asr")).toBe("ontime");
     clock.now = at("Isha", 30);
     A.heroPray("Isha", KEY);
     expect(status("Isha")).toBe("ontime");
-    const h = hero_();
-    expect(h).toContain('class="zt-pray done"'); // ʿIshāʾ stays until midnight, showing how it was logged
-    expect(h).toContain(TODAY.heroAs.ontime);
-    A.heroPray("Isha", KEY);
+    expect(hero_()).not.toContain('data-f="pray"'); // the hero has moved on to tomorrow's Fajr
+    A.rowTap("Isha", KEY);
     expect(status("Isha")).toBe("congregation");
   });
   it("between sunrise and Zuhr, the next prayer is Zuhr", () => {
@@ -231,10 +229,53 @@ describe("the highlighted row is the current prayer, or the next one", () => {
     clock.now = new Date(2026, 10, 20, 3, 0);
     expect(_today.countdown(today.todayFocus(S, clock.now), clock.now)).toMatch(/left · until Fajr$/);
   });
-  it("after ʿIshāʾ is logged it stays highlighted (tomorrow's Fajr isn't on the page)", () => {
-    clock.now = at("Isha", 30);
+  it("ʿIshāʾ logged at 21:00: the hero is tomorrow's Fajr (\"Tomorrow 5:48 AM · begins in …\"), no Prayed button, Qibla chip", () => {
+    clock.now = new Date(2026, 10, 19, 21, 0);
     A.rowTap("Isha");
+    const tk = dkey(addDays(DAY, 1)), fajr = timesFor(addDays(DAY, 1), S.settings).Fajr;
+    const f = today.todayFocus(S, clock.now);
+    expect(f).toMatchObject({ kind: "next", p: "Fajr", key: tk, tomorrow: true });
+    expect(+f.time).toBe(+fajr);
+    const left = Math.round((fajr - clock.now) / 60000);
+    expect(_today.countdown(f, clock.now)).toBe(TODAY.beginsTomorrow(fmt12(fajr), TODAY.hm(Math.floor(left / 60), left % 60)));
+    expect(_today.countdown(f, clock.now)).toMatch(/^Tomorrow [0-9]+:[0-9][0-9] AM · begins in [0-9]+ h [0-9]+ min$/);
+    const h = hero_();
+    expect(h).toContain(`>${TODAY.next}<`);
+    expect(h).toContain(">Fajr<");
+    expect(h).not.toContain('data-f="pray"');
+    expect(h).toContain('class="zt-qb"');
+    expect(h).not.toContain("data-witr"); // Witr is on ʿIshāʾ's row now
+    expect(_today.model(clock.now).states.some(st => st && st.hl)).toBe(false); // tomorrow's Fajr isn't on the page
+  });
+  it("ʿIshāʾ logged: Witr is a ring toggle on ʿIshāʾ's row (not before ʿIshāʾ is logged)", () => {
+    clock.now = new Date(2026, 10, 19, 21, 0);
+    expect(html("Isha")).not.toContain("data-witr");
+    expect(hero_()).toContain('data-witr="1"'); // unlogged: Witr stays in the hero, as before
+    A.rowTap("Isha");
+    let r = html("Isha");
+    expect(r).toContain(`class="zt-chip zt-wr" data-witr="1" data-key="${KEY}"`);
+    expect(r).toContain('aria-pressed="false"');
+    store.setWitr(S, KEY, "done", clock.now);
+    r = html("Isha");
+    expect(r).toContain("zt-wr d");
+    expect(r).toContain('aria-pressed="true"');
+  });
+  it("after midnight with last night's ʿIshāʾ logged: the hero is this morning's Fajr", () => {
+    const y = dkey(addDays(DAY, -1));
+    clock.now = new Date(2026, 10, 19, 1, 30);
+    store.setPrayer(S, y, "Isha", "ontime", clock.now);
+    const f = today.todayFocus(S, clock.now);
+    expect(f).toMatchObject({ kind: "next", p: "Fajr", key: KEY, tomorrow: false });
+    expect(_today.countdown(f, clock.now)).toMatch(/^Begins in [0-9]+ h [0-9]+ min$/);
+    expect(hero_()).not.toContain('data-f="pray"');
+    expect(html("Isha", y)).toContain("data-witr"); // Witr on last night's row
+  });
+  it("ʿIshāʾ not logged: unchanged (current until its time ends; after midnight last night's ʿIshāʾ)", () => {
+    clock.now = new Date(2026, 10, 19, 21, 0);
     expect(today.todayFocus(S, clock.now)).toMatchObject({ kind: "now", p: "Isha", key: KEY });
+    expect(hero_()).toContain('data-f="pray"');
+    clock.now = new Date(2026, 10, 19, 1, 30);
+    expect(today.todayFocus(S, clock.now)).toMatchObject({ kind: "now", p: "Isha", key: dkey(addDays(DAY, -1)) });
   });
   it("after midnight last night's ʿIshāʾ comes first, highlighted, and can still be logged", () => {
     clock.now = new Date(2026, 10, 19, 1, 30);
@@ -309,10 +350,11 @@ describe("the page and its speed", () => {
     expect(h).not.toContain(TODAY.thisWeek);
     expect(h).toContain(`${TODAY.makeups}<em>${TODAY.makeupsLeft(3, 0)}</em>`);
   });
-  it("all five prayed: one line at the top with the run of days", () => {
+  it("all five prayed: no line on Today any more (it lives in Progress)", () => {
     clock.now = at("Isha", 30);
     for (const p of PRAYERS) store.setPrayer(S, KEY, p, "ontime", clock.now);
-    expect(_today.leadHTML(clock.now, KEY)).toContain(TODAY.allFive);
+    expect(_today.leadHTML(clock.now, KEY)).not.toContain("Alhamdulillah");
+    expect(_today.leadHTML(clock.now, KEY)).not.toContain("zt-five");
   });
   it("the first-run guide line reads 'Tap a prayer when you've prayed it'", () => {
     expect(TODAY.guide).toBe("Tap a prayer when you've prayed it");
@@ -420,7 +462,24 @@ describe("Direction B: the hero and the rows", () => {
   it("the top row: the greeting, then the date · Hijri date", () => {
     S.profile.name = "Raheem";
     const h = _today.topBar(clock.now);
-    expect(h).toContain("As-salāmu ʿalaykum, Raheem");
+    // the name on its own second line, under "As-salāmu ʿalaykum,"; read out as one line
+    expect(h).toContain(`<b class="zt-hi two"><span class="zt-hi1">As-salāmu ʿalaykum,</span> <span class="zt-hin">Raheem</span></b>`);
+    expect(h.replace(/<[^>]+>/g, "")).toContain("As-salāmu ʿalaykum, Raheem");
     expect(h).toMatch(/<small class="zt-date">Thu 19 November · \d+ [A-Za-z' -]+ 14\d\d<\/small>/);
+  });
+  it("without a name: the greeting alone, on one line", () => {
+    S.profile.name = "  ";
+    const h = _today.topBar(clock.now);
+    expect(h).toContain(`<b class="zt-hi">As-salāmu ʿalaykum</b>`);
+    expect(h).not.toContain("zt-hin");
+  });
+  it("the name line is larger and heavier than the greeting line (css/today.css)", () => {
+    const css = readFileSync("src/css/today.css", "utf8");
+    const rule = sel => css.slice(css.indexOf(`.zt-head .${sel}{`)).split("}")[0];
+    const px = sel => +rule(sel).match(/font-size:([\d.]+)px/)[1];
+    const wt = sel => +rule(sel).match(/font-weight:(\d+)/)[1];
+    expect(px("zt-hin")).toBeGreaterThan(px("zt-hi1"));
+    expect(wt("zt-hin")).toBeGreaterThan(wt("zt-hi1"));
+    expect(css).toContain(".zt-head b.zt-hi.two{display:flex;flex-direction:column");
   });
 });

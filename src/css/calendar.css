@@ -2,10 +2,10 @@
    design-review/mockups2/redesign/declutter (cal-month, cal-future; NOTES.md "Month calendar").
    Static: no animation, no :has(). Sizes in rem with min-heights, so large text grows instead of clipping.
    Bar colours: the chart tokens darkened to reach 3:1 on the page (NOTES.md "Calendar bars"). */
-:root{--cal-c:#0F3D2E;--cal-o:#4E8A6E;--cal-u:#A9821A;--cal-x:#8C826B}
-:root[data-theme=dark]{--cal-c:#D6B868;--cal-o:#6F9A80;--cal-u:#9A865A;--cal-x:#738479}
+:root{--cal-c:#0F3D2E;--cal-o:#4E8A6E;--cal-u:#A9821A;--cal-x:#8C826B;--cal-today:#82610F}
+:root[data-theme=dark]{--cal-c:#D6B868;--cal-o:#6F9A80;--cal-u:#9A865A;--cal-x:#738479;--cal-today:#E0BE62}
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme=light]):not([data-theme=dark]){--cal-c:#D6B868;--cal-o:#6F9A80;--cal-u:#9A865A;--cal-x:#738479}
+  :root:not([data-theme=light]):not([data-theme=dark]){--cal-c:#D6B868;--cal-o:#6F9A80;--cal-u:#9A865A;--cal-x:#738479;--cal-today:#E0BE62}
 }
 
 /* title: "November 2026" in Amiri, the Hijri month(s) under it, a chevron each side */
@@ -23,7 +23,8 @@
 .zc-dc.empty{cursor:default}
 .zc-dc:disabled{cursor:default;opacity:.5}
 .zc-dc .g{font-size:1rem;font-weight:500;min-width:1.875rem;height:1.875rem;line-height:1.875rem;border-radius:999px;padding:0 2px}
-.zc-dc.today .g{box-shadow:inset 0 0 0 2px var(--gold-dot);font-weight:700}
+/* today: its number in gold, bold (no ring). --cal-today on the page: light #82610F 5.2:1, dark #E0BE62 9.2:1 (AA for normal text) */
+.zc-dc.today .g{color:var(--cal-today);font-weight:800}
 .zc-dc .h{font-size:.6875rem;color:var(--mute);margin-top:-2px;white-space:nowrap;max-width:100%;letter-spacing:-.01em}
 .zc-dc .h.m{color:var(--acc);font-weight:700}
 .zc-dc .pp{display:flex;gap:2px;margin-top:5px;height:9px;align-items:flex-end}

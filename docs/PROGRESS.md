@@ -1134,3 +1134,23 @@ If they stopped at the usage limit, resume them with SendMessage if their ids ar
   - **Launched the restyle agent** for all other screens in B, including Welcome D (screenshots to build8/, port 5202). Then verify, commit, push and build.
 - 19 Nov: User confirmed the Today B open points (no changes). The restyle agent is running.
 - 20 Nov: The restyle agent stalled (watchdog) while building screenshots; resumed it.
+- 20 Nov: ✅ **Restyle done and committed as 5377505**, pushed to redesign. Tests: 733 passed; vite build and assembleDebug OK. Android CI run 44742247630 started. Screenshots: https://claude.ai/artifact/Q6N9pGXajhF9CCRoRWeFnt (build8/). New files: band.js, css/band.css, css/sheets.css, logo SVGs. Not restyled: the full mushaf reader bars, and Community (out of scope).
+- 20 Nov: ✅ Android CI 44742247630 (5377505) succeeded; the build was sent to the user's phone.
+
+## ▶ RESUME HERE (saved 20 Nov 2026)
+**State:** branch `redesign` at 5377505 is pushed, and the test build is on the user's phone. `main` is still the old design (website, public release).
+**Agreed plan:**
+1. The user tests the build for a day or two and reports bugs; also ask for a widget screenshot (the root cause of the "old widget" is unproven).
+2. Run the thorough code review of `main..redesign`, ideally right after a usage reset, then fix the findings.
+3. Merge `redesign` into `main` ONLY with the user's OK. That updates the website and the public APK and runs iOS CI.
+
+**Open items:**
+- Qibla magnetic declination (US West Coast); haptics on iOS.
+- The scholar to review the nafl timing wording (TODO in strings.js NAFL).
+- Not yet restyled: the mushaf reader bars, Community.
+- GitHub collaborator `heemai` invited with write access. Branch protection on main was suggested and is not set.
+- Still waiting on the user: Play account, testers, Apple account, Firebase DPA, Ramadan content review, lawyer.
+- 20 Nov: User feedback on the build (launch-and-premium). Agent started on items 1–3 (screenshots to build9/, port 5203). Proposals for 4–6 sent to the user.
+- 20 Nov: Second agent started on the Read For today C, the weekly card and the Settings consolidation (screenshots to build9b/, port 5204).
+- 20 Nov: Remove the 'All five prayers, Alhamdulillah' line from Today. **BUG:** after ʿIshāʾ is logged, the hero must show the next day's Fajr (Witr moves to ʿIshāʾ's row). Both sent to agent a2f18 (Today).
+- 20 Nov: ✅ Agent a2f18 done: greeting on 2 lines (lock screen too), the calendar's gold today number (#82610F / #E0BE62), the deeds sheet showing chosen items only plus 'Add or change daily deeds', the all-five line removed, and the hero showing tomorrow's Fajr after ʿIshāʾ is logged (Witr ring on ʿIshāʾ's row). Tests: 745 passed. Screenshots in build9/. Waiting on the Read/Settings agent (build9b) before commit, push and build.

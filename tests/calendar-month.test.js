@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as store from "../src/store.js";
 import { timesFor } from "../src/times.js";
 import { fmt12 } from "../src/util.js";
+import { readFileSync } from "node:fs";
 
 const S = store.defaultState(new Date(2026, 9, 1));
 const UI = { view: "calendar" };
@@ -67,7 +68,7 @@ describe("the month view", () => {
     expect(cell(h, "2026-11-19")).toContain('<span class="h">10</span>');
     expect(cell(h, "2026-11-10")).toContain('<span class="h m">1 Jum II</span>');
   });
-  it("past days: one bar per prayer by status (missed is its own class); today has the ring; days ahead have no bars", () => {
+  it("past days: one bar per prayer by status (missed is its own class); today is marked; days ahead have no bars", () => {
     store.setPrayer(S, "2026-11-18", "Fajr", "congregation", clock.now);
     store.setPrayer(S, "2026-11-18", "Dhuhr", "ontime", clock.now);
     store.setPrayer(S, "2026-11-18", "Asr", "madeup", clock.now);
@@ -95,6 +96,24 @@ describe("the month view", () => {
     expect(draw()).toContain("November 2027");
     A.calStep(-1);
     expect(draw()).toContain("October 2027");
+  });
+});
+
+describe("today in the month view: its number in gold, no ring", () => {
+  const css = readFileSync("src/css/calendar.css", "utf8");
+  const L = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const ratio = (a, b) => { const x = L(a), y = L(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  it("the today cell has no ring (box-shadow) and a bold gold number", () => {
+    const rule = css.slice(css.indexOf(".zc-dc.today .g{")).split("}")[0];
+    expect(rule).not.toContain("box-shadow");
+    expect(rule).toContain("color:var(--cal-today)");
+    expect(+rule.match(/font-weight:([0-9]+)/)[1]).toBeGreaterThanOrEqual(700);
+  });
+  it("the gold passes 4.5:1 (normal-size text) on the page, light and dark (both dark rules)", () => {
+    const tokens = [...css.matchAll(/--cal-today:(#[0-9A-Fa-f]{6})/g)].map(m => m[1]);
+    expect(tokens.length).toBe(3); // light, dark, and dark by the system setting
+    expect(ratio(tokens[0], "#F8F4EA")).toBeGreaterThanOrEqual(4.5);
+    for (const t of tokens.slice(1)) expect(ratio(t, "#16221C")).toBeGreaterThanOrEqual(4.5);
   });
 });
 
