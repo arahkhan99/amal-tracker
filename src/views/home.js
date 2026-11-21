@@ -790,7 +790,8 @@ function topBar(now) {
   const name = (S.profile?.name || "").trim(), hj = hijriToday(now);
   // with a name: "As-salāmu ʿalaykum," then the name on its own line, a little larger and heavier (css/today.css)
   const hi = name ? `<span class="zt-hi1">${esc(HOME.greetingLine1)}</span> <span class="zt-hin">${esc(name)}</span>` : esc(HOME.greeting);
-  return `<b class="zt-hi${name ? " two" : ""}">${hi}</b>${avatarBtn(cal + pvChip())}<small class="zt-date">${DOW[now.getDay()]} ${now.getDate()} ${MON[now.getMonth()]}${hj ? ` · ${esc(hj)}` : ""}</small>`;
+  // one left column (greeting, name, date) so the three lines sit tight together; the icons centre on that block
+  return `<div class="zt-hd-l"><b class="zt-hi${name ? " two" : ""}">${hi}</b><small class="zt-date">${DOW[now.getDay()]} ${now.getDate()} ${MON[now.getMonth()]}${hj ? ` · ${esc(hj)}` : ""}</small></div>${avatarBtn(cal + pvChip())}`;
 }
 
 /* ---------- the list ---------- */

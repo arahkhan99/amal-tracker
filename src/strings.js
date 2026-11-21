@@ -1229,7 +1229,7 @@ export const PROVISIONS = {
   plusN: n => `<b>+${n}</b> provisions`,
   plusNPlain: n => `+${n} provisions`,
   level: n => `Level ${n}`,
-  lv: n => `Lv ${n}`,
+  lv: n => `Lv ${n}`, lvShort: "Lv",
   ringLabel: "Level",
   how: "How provisions work",
   niyyahLine: "A personal tracker for your consistency, not a measure of reward with Allah.",

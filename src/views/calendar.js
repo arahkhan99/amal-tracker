@@ -269,3 +269,27 @@ A.notExcused = key => {
 };
 
 onRender(renderCalendar);
+
+/* Swipe left/right on the month to go to the next/previous month (arrows and keyboard still work).
+ * One passive listener pair on #v-calendar, added once: a horizontal swipe of 50px+ that is clearly
+ * more sideways than up/down changes the month; anything else (taps, scrolling) is left alone. */
+let swipeOn = false;
+function wireSwipe() {
+  const el = $("#v-calendar");
+  if (!el || swipeOn || typeof el.addEventListener !== "function") return; // (tests render into a stub element)
+  swipeOn = true;
+  let x0 = 0, y0 = 0, t0 = 0, track = false;
+  el.addEventListener("touchstart", e => {
+    if (e.touches.length !== 1 || e.target.closest?.("header")) { track = false; return; }
+    const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); track = true;
+  }, { passive: true });
+  el.addEventListener("touchend", e => {
+    if (!track) return;
+    track = false;
+    const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+    if (Date.now() - t0 > 800 || Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    A.calStep(dx < 0 ? 1 : -1);
+  }, { passive: true });
+}
+export const _calendarSwipe = { swipeStep: (dx, dy, ms = 200) => (ms > 800 || Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) ? 0 : (dx < 0 ? 1 : -1) };
+onRender(wireSwipe);
