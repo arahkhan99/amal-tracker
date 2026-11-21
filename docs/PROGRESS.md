@@ -1159,3 +1159,4 @@ If they stopped at the usage limit, resume them with SendMessage if their ids ar
 - 20 Nov: ✅ cf9d5a4: Today header aligned (grid layout: greeting and name left, icons centred on them, date full width), the provisions chip as a 40px ring with 'Lv' and the number inside, calendar swipe between months (passive touch). Tests: 768 passed. Android CI 44866328708.
 - 20 Nov: ✅ Android CI 44866328708 (cf9d5a4) succeeded; the build was sent to the user's phone.
 - 20 Nov: ✅ 24349d1: the provisions ring shows 'Lv 3' on one line inside a 44px ring (arc clear of the text). Android CI 44866930375.
+- 20 Nov: ✅ Splash fix committed and pushed (@capacitor/splash-screen 8, launchAutoHide false, hide after first paint in main.js, 4 s safety hide in index.html, inline dark/light background, values-night appBackground). Android and iOS CI started on redesign. iOS Package.swift isn't updated locally (Windows symlink EPERM); CI's cap sync regenerates it.

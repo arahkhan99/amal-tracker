@@ -374,3 +374,5 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .pv-chip.ring{width:44px;height:44px}
 .pv-chip.ring svg{z-index:0}
 .pv-lv{z-index:1;flex-direction:row;font:700 11.5px/1 var(--sans);letter-spacing:-.01em;white-space:nowrap}
+/* the date · Hijri line as the heading of the prayer list (between the hero and Fajr), not in the band */
+.zt-lead .zt-ldate{margin:14px 8px 2px;font-size:13px;font-weight:600;color:var(--mute);letter-spacing:.01em;font-variant-numeric:tabular-nums}

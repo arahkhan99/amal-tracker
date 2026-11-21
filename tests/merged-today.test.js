@@ -465,7 +465,9 @@ describe("Direction B: the hero and the rows", () => {
     // the name on its own second line, under "As-salāmu ʿalaykum,"; read out as one line
     expect(h).toContain(`<b class="zt-hi two"><span class="zt-hi1">As-salāmu ʿalaykum,</span> <span class="zt-hin">Raheem</span></b>`);
     expect(h.replace(/<[^>]+>/g, "")).toContain("As-salāmu ʿalaykum, Raheem");
-    expect(h).toMatch(/<small class="zt-date">Thu 19 November · \d+ [A-Za-z' -]+ 14\d\d<\/small>/);
+    // the date · Hijri line is no longer in the band: it heads the prayer list, right above Fajr
+    expect(h).not.toContain("zt-date");
+    expect(_today.leadHTML(clock.now, KEY)).toMatch(/<p class="zt-date zt-ldate">Thu 19 November · \d+ [A-Za-z' -]+ 14\d\d<\/p>$/);
   });
   it("without a name: the greeting alone, on one line", () => {
     S.profile.name = "  ";

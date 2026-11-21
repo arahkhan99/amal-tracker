@@ -791,7 +791,13 @@ function topBar(now) {
   // with a name: "As-salāmu ʿalaykum," then the name on its own line, a little larger and heavier (css/today.css)
   const hi = name ? `<span class="zt-hi1">${esc(HOME.greetingLine1)}</span> <span class="zt-hin">${esc(name)}</span>` : esc(HOME.greeting);
   // one left column (greeting, name, date) so the three lines sit tight together; the icons centre on that block
-  return `<div class="zt-hd-l"><b class="zt-hi${name ? " two" : ""}">${hi}</b><small class="zt-date">${DOW[now.getDay()]} ${now.getDate()} ${MON[now.getMonth()]}${hj ? ` · ${esc(hj)}` : ""}</small></div>${avatarBtn(cal + pvChip())}`;
+  // the date · Hijri line sits between the hero and the list (listDate, in leadHTML), keeping the band calm
+  return `<div class="zt-hd-l"><b class="zt-hi${name ? " two" : ""}">${hi}</b></div>${avatarBtn(cal + pvChip())}`;
+}
+/** "Thu 19 November · 9 Jumada al-Akhirah 1448": the heading of the prayer list, right above Fajr. */
+function listDate(now) {
+  const hj = hijriToday(now);
+  return `<p class="zt-date zt-ldate">${DOW[now.getDay()]} ${now.getDate()} ${MON[now.getMonth()]}${hj ? ` · ${esc(hj)}` : ""}</p>`;
 }
 
 /* ---------- the list ---------- */
@@ -857,6 +863,7 @@ function leadHTML(now, key) {
   const yu = yesterdayUnlogged(now);
   if (yu.length) parts.push(`<button type="button" class="zt-guide zt-yu" data-f="catch" onclick="A.catchSheet()">${ic("history", "i")}<span>${esc(TODAY.yesterday(yu.length))} · <b>${esc(LOG.review)}</b></span></button>`);
   parts.push(yesterdayMakeups(now));
+  parts.push(listDate(now)); // last, so it sits directly above Fajr
   return parts.join("");
 }
 /** A pill below the list ("Good deeds · 2 of 7", "Make-ups · 8 left"). */
