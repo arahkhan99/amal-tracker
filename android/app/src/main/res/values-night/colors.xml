@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark mode: the window behind the WebView matches the app's dark background, so nothing flashes light -->
+    <color name="appBackground">#16221C</color>
+</resources>

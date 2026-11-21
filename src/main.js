@@ -121,6 +121,15 @@ if (syncExcusedMode(S, todayKey())) commit();
 // A link to a place (#read, #calendar …; old names redirect: #tracker → calendar, #tools → Read) opens there
 // Someone who used Zad before the redesign sees "What's new" once first (views/whatsnew.js); new users never do
 if (S.profile.onboarded) { if (whatsNewDue(S)) showWhatsNew(startView()); else go(startView()); } else startOnboarding();
+// Keep the native splash up until the first screen is drawn, so there is no blank flash on open
+// (capacitor.config.json SplashScreen.launchAutoHide = false; index.html has a 4 s safety hide)
+hideSplashAfterPaint();
+function hideSplashAfterPaint() {
+  if (!isNative()) return;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    import("@capacitor/splash-screen").then(({ SplashScreen }) => SplashScreen.hide({ fadeOutDuration: 200 })).catch(() => {});
+  }));
+}
 function startView() {
   const v = resolveView(location.hash);
   return v && v !== "onboard" ? v : "home";

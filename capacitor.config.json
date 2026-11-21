@@ -16,6 +16,13 @@
         "google.com",
         "apple.com"
       ]
+    },
+    "SplashScreen": {
+      "launchAutoHide": false,
+      "launchShowDuration": 0,
+      "launchFadeOutDuration": 200,
+      "backgroundColor": "#0F3D2E",
+      "showSpinner": false
     }
   },
   "experimental": {

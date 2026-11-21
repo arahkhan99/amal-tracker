@@ -11,6 +11,13 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Zad</title>
+<!-- painted before any script or stylesheet loads, so opening the app never flashes a blank or wrong-coloured screen -->
+<style>html,body{background:#F8F4EA;margin:0}@media (prefers-color-scheme:dark){html,body{background:#16221C}}</style>
+<script>
+  // Safety net: the app hides the native splash after its first paint (src/main.js). If anything goes wrong before
+  // that, hide it anyway after 4 s so the app can never get stuck behind the splash.
+  setTimeout(function () { try { window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SplashScreen && window.Capacitor.Plugins.SplashScreen.hide(); } catch (e) {} }, 4000);
+</script>
 </head>
 <body>
 <!-- the star pattern of the set-up screens and the lock screen (views/onboarding.js); the main screens have none -->
