@@ -370,3 +370,7 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .zt-head .zt-top > .zt-tr{grid-column:2;grid-row:1;align-self:center}
 .zt-head b.zt-hi{grid-column:1;grid-row:1}
 .zt-head .zt-date{grid-column:1 / -1;grid-row:2;margin-top:0}
+/* the level ring: one centred line "Lv 3", well inside the ring so the gold arc never touches it */
+.pv-chip.ring{width:44px;height:44px}
+.pv-chip.ring svg{z-index:0}
+.pv-lv{z-index:1;flex-direction:row;font:700 11.5px/1 var(--sans);letter-spacing:-.01em;white-space:nowrap}

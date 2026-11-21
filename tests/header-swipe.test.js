@@ -12,7 +12,7 @@ describe("Today header alignment and calendar swipe (20 Nov)", () => {
   it("provisions chip: the level sits inside the ring", () => {
     const src = readFileSync("src/views/provisions.js", "utf8");
     expect(src).toContain('class="pv-chip ring"');
-    expect(src).toContain('<span class="pv-lv" aria-hidden="true"><small>');
+    expect(src).toContain('<span class="pv-lv" aria-hidden="true">${esc(P.lv(s.level))}</span>');
   });
   it("calendar swipe: sideways 50px+ changes month, small or vertical moves don't", async () => {
     const src = readFileSync("src/views/calendar.js", "utf8");

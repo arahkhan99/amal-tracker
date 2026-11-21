@@ -115,9 +115,9 @@ export function homeChip() {
   if (!homeChipOn(S)) return "";
   const s = pvSummary(S, todayKey(), ctx());
   // the level sits inside the progress ring ("Lv" small over the number); colours come from css (band-aware)
-  const size = 40, r = size / 2 - 2.5, C = 2 * Math.PI * r, h = size / 2;
-  const ringSvg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle class="t" cx="${h}" cy="${h}" r="${r}" fill="none" stroke-width="3"/><circle class="a" cx="${h}" cy="${h}" r="${r}" fill="none" stroke-width="3" stroke-linecap="round" stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C * (1 - s.frac)).toFixed(2)}" transform="rotate(-90 ${h} ${h})"/></svg>`;
-  return `<button type="button" class="pv-chip ring" aria-label="${esc(P.chipLabel(s.level, fmt(s.toNext), s.next))}" onclick="A.pvOpen()">${ringSvg}<span class="pv-lv" aria-hidden="true"><small>${esc(P.lvShort)}</small>${s.level}</span></button>`;
+  const size = 44, r = size / 2 - 2, C = 2 * Math.PI * r, h = size / 2;
+  const ringSvg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle class="t" cx="${h}" cy="${h}" r="${r}" fill="none" stroke-width="2.5"/><circle class="a" cx="${h}" cy="${h}" r="${r}" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${(C * (1 - s.frac)).toFixed(2)}" transform="rotate(-90 ${h} ${h})"/></svg>`;
+  return `<button type="button" class="pv-chip ring" aria-label="${esc(P.chipLabel(s.level, fmt(s.toNext), s.next))}" onclick="A.pvOpen()">${ringSvg}<span class="pv-lv" aria-hidden="true">${esc(P.lv(s.level))}</span></button>`;
 }
 A.pvOpen = () => {
   if (!progressChapters(S).includes("provisions")) { A.pvInfo(); return; }
