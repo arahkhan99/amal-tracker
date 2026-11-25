@@ -53,26 +53,34 @@ describe("distance threshold", () => {
     expect(distanceKm(HOME, { lat: HOME.lat + 1, lng: HOME.lng })).toBeCloseTo(111.2, 0);
     expect(distanceKm(HOME, HOME)).toBe(0);
   });
-  it("24 km away: no change", async () => {
-    geo.pos = north(24);
+  it("2 km away: no change", async () => {
+    geo.pos = north(2);
     const S = setup(), d = deps();
     expect(await checkTravel(S, d)).toBe(false);
     expect(S.settings.location).toEqual(HOME);
     expect(d.commit).not.toHaveBeenCalled();
     expect(d.toast).not.toHaveBeenCalled();
   });
-  it("26 km away: updates the location (rounded), commits and shows the toast", async () => {
-    geo.pos = north(26);
+  it("4 km away: updates the location (rounded), commits and shows the toast", async () => {
+    geo.pos = north(4);
     const S = setup(), d = deps();
     expect(await checkTravel(S, d)).toBe(true);
     const loc = S.settings.location;
     expect(loc.source).toBe("gps");
     expect(loc.label).toBe("Milwaukee, WI");
-    expect(loc.lat).toBe(Math.round(north(26).latitude * 100) / 100);
+    expect(loc.lat).toBe(Math.round(north(4).latitude * 100) / 100);
     expect(loc.lng).toBe(HOME.lng);
     expect(d.cityName).toHaveBeenCalledWith(loc.lat, loc.lng);
     expect(d.commit).toHaveBeenCalledTimes(1);
     expect(d.toast).toHaveBeenCalledWith("Prayer times updated for Milwaukee, WI");
+  });
+  it("moved but the place name is the same: updates quietly, no toast", async () => {
+    geo.pos = north(5);
+    const S = setup(), d = deps({ cityName: async () => "Chicago, IL" });
+    expect(await checkTravel(S, d)).toBe(true);
+    expect(S.settings.location.lat).toBe(Math.round(north(5).latitude * 100) / 100);
+    expect(d.commit).toHaveBeenCalledTimes(1);
+    expect(d.toast).not.toHaveBeenCalled();
   });
   it("falls back to “Current location” when the city name can't be found", async () => {
     const S = setup(), d = deps({ cityName: async () => "Your location" });
@@ -125,7 +133,7 @@ describe("when it runs", () => {
     expect(geo.requestPermissions).not.toHaveBeenCalled();
     const opts = geo.getCurrentPosition.mock.calls[0][0];
     expect(opts.enableHighAccuracy).toBe(false);
-    expect(opts.maximumAge).toBe(30 * 60e3);
+    expect(opts.maximumAge).toBe(10 * 60e3);
     expect(opts.timeout).toBeLessThanOrEqual(10000);
   });
   it("web without a permissions API: skipped", async () => {
@@ -139,11 +147,11 @@ describe("when it runs", () => {
     expect(S.settings.location).toEqual(HOME);
     expect(d.toast).not.toHaveBeenCalled();
   });
-  it("throttled to once every 30 minutes", async () => {
-    geo.pos = north(10);
+  it("throttled to once every 10 minutes", async () => {
+    geo.pos = north(1);
     const S = setup();
     await checkTravel(S, deps({ now: 1e12 }));
-    await checkTravel(S, deps({ now: 1e12 + 10 * 60e3 }));
+    await checkTravel(S, deps({ now: 1e12 + 5 * 60e3 }));
     expect(geo.getCurrentPosition).toHaveBeenCalledTimes(1);
     await checkTravel(S, deps({ now: 1e12 + TRAVEL_THROTTLE_MS + 1 }));
     expect(geo.getCurrentPosition).toHaveBeenCalledTimes(2);
@@ -159,15 +167,35 @@ describe("when it runs", () => {
 });
 
 describe("migration of older settings", () => {
-  it("a saved location without a source is \"unknown\" (may be a hand-picked city): the travel check leaves it alone", async () => {
-    const S = store.normalize({ profile: { onboarded: true }, settings: { method: "Karachi", location: { lat: 41.8781, lng: -87.6298, label: "Chicago, IL" } } });
+  const older = () => store.normalize({ profile: { onboarded: true }, settings: { method: "Karachi", location: { lat: 41.8781, lng: -87.6298, label: "Chicago, IL" } } });
+  it("a saved location without a source is \"unknown\"; with location access it follows the phone and becomes gps", async () => {
+    const S = older();
     expect(S.settings.location).toEqual({ lat: 41.88, lng: -87.63, label: "Chicago, IL", source: "unknown" });
     expect(S.settings.autoLocation).toBe(true);
-    expect(travelEnabled(S.settings)).toBe(false);
+    expect(travelEnabled(S.settings)).toBe(true);
+    geo.pos = north(40);
+    const d = deps();
+    expect(await checkTravel(S, d)).toBe(true);
+    expect(S.settings.location).toMatchObject({ label: "Milwaukee, WI", source: "gps" });
+    expect(d.toast).toHaveBeenCalledWith("Prayer times updated for Milwaukee, WI");
+  });
+  it("\"unknown\" and still in the same place: marked gps quietly, label kept", async () => {
+    const S = older();
+    geo.pos = north(1);
+    const d = deps();
+    expect(await checkTravel(S, d)).toBe(false);
+    expect(S.settings.location).toEqual({ lat: 41.88, lng: -87.63, label: "Chicago, IL", source: "gps" });
+    expect(d.commit).toHaveBeenCalledTimes(1);
+    expect(d.toast).not.toHaveBeenCalled();
+  });
+  it("\"unknown\" without location access (likely a searched city): left alone", async () => {
+    geo.perm = "denied";
+    const S = older();
     geo.pos = north(5000);
     const d = deps();
     expect(await checkTravel(S, d)).toBe(false);
     expect(S.settings.location.label).toBe("Chicago, IL");
+    expect(S.settings.location.source).toBe("unknown");
     expect(geo.getCurrentPosition).not.toHaveBeenCalled();
     expect(d.commit).not.toHaveBeenCalled();
   });

@@ -63,6 +63,8 @@ public class LogActionReceiver extends BroadcastReceiver {
         if (!WidgetModel.begun(WidgetStore.read(c), date, prayer, now)) return false;
         JSONObject e = WidgetStore.append(c, date, prayer, status, src, now);
         WidgetStore.writeTap(c, e);
+        // Logged (or remembrance ticked on an excused day): its "has begun" / "ends soon" reminders are no longer wanted
+        ReminderCanceller.cancel(c, date, prayer);
         return true;
     }
 }

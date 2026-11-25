@@ -16,15 +16,68 @@ import com.zad.app.R;
  * - Small: the current prayer, its countdown and one On time button.
  * - Medium: the same with the one-tap buttons (brothers: Congregation then On time; sisters: On time) and the
  *   day's five dots; when nothing is open, the day's five times.
+ * - Medium tall: the medium widget with the day's five times above the buttons (a medium stretched taller).
  * - Large: the day's five prayers, the open one with its buttons.
+ * Every Zad widget follows its own size, whichever one was placed (sizeFor / responsive): a small one stretched
+ * wide becomes the medium, a medium stretched tall gains the times, a large one shrunk becomes the medium.
  * The buttons send a broadcast to LogActionReceiver (no app launch); everything else opens the app.
  */
 final class WidgetRenderer {
-    enum Size { SMALL, MEDIUM, LARGE }
+    /**
+     * The _SHORT kinds leave out the "Now" line (and, small, the "left · until" line) so the buttons always fit;
+     * SMALL_TALL adds the day's five times under the countdown; MEDIUM_TALL adds them above the buttons.
+     */
+    enum Size { SMALL_SHORT, SMALL, SMALL_TALL, MEDIUM_SHORT, MEDIUM, MEDIUM_TALL, LARGE }
+
+    /**
+     * Widths (dp): from MEDIUM_W the medium fits (name and countdown side by side, two buttons); below WIDE_W its
+     * buttons drop their icons so "Congregation" isn't cut off.
+     */
+    static final float MEDIUM_W = 250f, WIDE_W = 300f;
+    /**
+     * Heights (dp): below SHORT_H the short kinds; from TALL_H the medium gains the times above its buttons; from
+     * SMALL_TALL_H a narrow widget shows the times; from LARGE_H the five rows of the large fit.
+     * Checked on the debug preview screen (src/debug WidgetPreviewActivity).
+     */
+    static final float SHORT_H = 150f, TALL_H = 215f, SMALL_TALL_H = 270f, LARGE_H = 300f;
+
+    /** The layout for a widget this size (dp). */
+    static Size sizeFor(float w, float h) {
+        if (w < MEDIUM_W) return h < SHORT_H ? Size.SMALL_SHORT : h >= SMALL_TALL_H ? Size.SMALL_TALL : Size.SMALL;
+        if (h >= LARGE_H) return Size.LARGE;
+        if (h >= TALL_H) return Size.MEDIUM_TALL;
+        return h < SHORT_H ? Size.MEDIUM_SHORT : Size.MEDIUM;
+    }
+
+    static RemoteViews forSize(Context c, WidgetModel m, String staleJson, float w, float h) {
+        return render(c, sizeFor(w, h), m, staleJson, w < WIDE_W);
+    }
+
+    /**
+     * Android 12+: one RemoteViews holding every layout by the smallest size it needs; the launcher shows the
+     * largest that fits the widget as it is now, and switches by itself while it is resized.
+     */
+    static RemoteViews responsive(Context c, WidgetModel m, String staleJson) {
+        java.util.Map<android.util.SizeF, RemoteViews> map = new java.util.LinkedHashMap<>();
+        map.put(new android.util.SizeF(40f, 40f), render(c, Size.SMALL_SHORT, m, staleJson));
+        map.put(new android.util.SizeF(40f, SHORT_H), render(c, Size.SMALL, m, staleJson));
+        map.put(new android.util.SizeF(40f, SMALL_TALL_H), render(c, Size.SMALL_TALL, m, staleJson));
+        for (float w : new float[] { MEDIUM_W, WIDE_W }) {
+            boolean narrow = w < WIDE_W;
+            map.put(new android.util.SizeF(w, 40f), render(c, Size.MEDIUM_SHORT, m, staleJson, narrow));
+            map.put(new android.util.SizeF(w, SHORT_H), render(c, Size.MEDIUM, m, staleJson, narrow));
+            map.put(new android.util.SizeF(w, TALL_H), render(c, Size.MEDIUM_TALL, m, staleJson, narrow));
+        }
+        map.put(new android.util.SizeF(MEDIUM_W, LARGE_H), render(c, Size.LARGE, m, staleJson));
+        return new RemoteViews(map);
+    }
 
     private static final int[] DOT = { R.id.zw_dot0, R.id.zw_dot1, R.id.zw_dot2, R.id.zw_dot3, R.id.zw_dot4 };
     private static final int[] T_DOT = { R.id.zw_t0_dot, R.id.zw_t1_dot, R.id.zw_t2_dot, R.id.zw_t3_dot, R.id.zw_t4_dot };
     private static final int[] T_NAME = { R.id.zw_t0_name, R.id.zw_t1_name, R.id.zw_t2_name, R.id.zw_t3_name, R.id.zw_t4_name };
+    private static final int[] V_DOT = { R.id.zw_v0_dot, R.id.zw_v1_dot, R.id.zw_v2_dot, R.id.zw_v3_dot, R.id.zw_v4_dot };
+    private static final int[] V_NAME = { R.id.zw_v0_name, R.id.zw_v1_name, R.id.zw_v2_name, R.id.zw_v3_name, R.id.zw_v4_name };
+    private static final int[] V_TIME = { R.id.zw_v0_time, R.id.zw_v1_time, R.id.zw_v2_time, R.id.zw_v3_time, R.id.zw_v4_time };
     private static final int[] T_TIME = { R.id.zw_t0_time, R.id.zw_t1_time, R.id.zw_t2_time, R.id.zw_t3_time, R.id.zw_t4_time };
     private static final int[] R_ROOT = { R.id.zw_r0, R.id.zw_r1, R.id.zw_r2, R.id.zw_r3, R.id.zw_r4 };
     private static final int[] R_ICON = { R.id.zw_r0_icon, R.id.zw_r1_icon, R.id.zw_r2_icon, R.id.zw_r3_icon, R.id.zw_r4_icon };
@@ -43,10 +96,19 @@ final class WidgetRenderer {
     private WidgetRenderer() {}
 
     static RemoteViews render(Context c, Size size, WidgetModel m, String staleJson) {
+        return render(c, size, m, staleJson, false);
+    }
+
+    /** narrow: a medium under WIDE_W (its buttons without icons). */
+    static RemoteViews render(Context c, Size size, WidgetModel m, String staleJson, boolean narrow) {
         if (m == null) return message(c, staleJson);
         switch (size) {
-            case SMALL: return small(c, m);
-            case MEDIUM: return medium(c, m);
+            case SMALL_SHORT: return small(c, m, true, false);
+            case SMALL: return small(c, m, false, false);
+            case SMALL_TALL: return small(c, m, false, true);
+            case MEDIUM_SHORT: return medium(c, m, false, true, narrow);
+            case MEDIUM: return medium(c, m, false, false, narrow);
+            case MEDIUM_TALL: return medium(c, m, true, false, narrow);
             default: return large(c, m);
         }
     }
@@ -198,7 +260,8 @@ final class WidgetRenderer {
         for (int i = 0; i < 5 && i < m.prayers.size(); i++) {
             WidgetModel.Prayer x = m.prayers.get(i);
             v.setTextViewText(T_NAME[i], x.name);
-            v.setTextViewText(T_TIME[i], x.timeLabel);
+            // No AM/PM in this row: the five fit side by side and the order of the day makes it clear
+            v.setTextViewText(T_TIME[i], x.timeLabel.replace(" AM", "").replace(" PM", ""));
             boolean cur = x.focus && !"next".equals(m.mode);
             v.setViewVisibility(T_DOT[i], cur ? View.VISIBLE : View.GONE);
         }
@@ -206,22 +269,47 @@ final class WidgetRenderer {
 
     /* ---------- sizes ---------- */
 
-    private static RemoteViews small(Context c, WidgetModel m) {
+    /** A short widget: a tighter edge so the buttons still fit. */
+    private static void pad(RemoteViews v, Context c, int dp) {
+        int px = Math.round(dp * c.getResources().getDisplayMetrics().density);
+        v.setViewPadding(R.id.zw_root, px, px, px, px);
+    }
+
+    private static RemoteViews small(Context c, WidgetModel m, boolean shortH, boolean tall) {
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.zw_widget_small);
         hero(v, c, m);
+        v.setViewVisibility(R.id.zw_tag_row, shortH ? View.GONE : View.VISIBLE);
+        v.setViewVisibility(R.id.zw_countdown_label, shortH ? View.GONE : View.VISIBLE);
+        if (shortH) pad(v, c, 10);
+        v.setViewVisibility(R.id.zw_vtimes, tall ? View.VISIBLE : View.GONE);
+        if (tall) for (int i = 0; i < 5 && i < m.prayers.size(); i++) {
+            WidgetModel.Prayer x = m.prayers.get(i);
+            v.setTextViewText(V_NAME[i], x.name);
+            v.setTextViewText(V_TIME[i], x.timeLabel);
+            v.setViewVisibility(V_DOT[i], x.focus && !"next".equals(m.mode) ? View.VISIBLE : View.GONE);
+        }
         v.setViewVisibility(R.id.zw_bottom, bottom(v, c, m, Size.SMALL) ? View.VISIBLE : View.GONE);
         v.setOnClickPendingIntent(R.id.zw_root, link(c, heroUrl(m)));
         return v;
     }
 
-    private static RemoteViews medium(Context c, WidgetModel m) {
+    private static RemoteViews medium(Context c, WidgetModel m, boolean tall, boolean shortH, boolean narrow) {
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.zw_widget_medium);
         hero(v, c, m);
+        v.setViewVisibility(R.id.zw_tag_row, shortH ? View.GONE : View.VISIBLE);
+        v.setViewVisibility(R.id.zw_countdown_label, shortH ? View.GONE : View.VISIBLE);
+        if (shortH) pad(v, c, 12);
+        v.setViewVisibility(R.id.zw_btn_cong_icon, narrow ? View.GONE : View.VISIBLE);
+        v.setViewVisibility(R.id.zw_btn_ontime_icon, narrow ? View.GONE : View.VISIBLE);
         dots(v, m);
         boolean any = bottom(v, c, m, Size.MEDIUM);
         v.setViewVisibility(R.id.zw_bottom, any ? View.VISIBLE : View.GONE);
-        v.setViewVisibility(R.id.zw_times_box, any ? View.GONE : View.VISIBLE);
-        if (!any) times(v, m);
+        // Tall: the times sit above the buttons; otherwise they take the buttons' place when there are none
+        boolean showTimes = tall || !any;
+        v.setViewVisibility(R.id.zw_times_box, showTimes ? View.VISIBLE : View.GONE);
+        int gap = Math.round(12 * c.getResources().getDisplayMetrics().density);
+        v.setViewPadding(R.id.zw_times_box, 0, 0, 0, showTimes && any ? gap : 0);
+        if (showTimes) times(v, m);
         v.setOnClickPendingIntent(R.id.zw_root, link(c, heroUrl(m)));
         return v;
     }

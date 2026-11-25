@@ -1,20 +1,23 @@
 /*
  * "Update location when I travel" (S.settings.autoLocation, on by default).
- * When Zad starts or comes back to the foreground (at most once every 30 minutes), and the saved location
+ * When Zad starts or comes back to the foreground (at most once every 10 minutes), and the saved location
  * came from "Use my current location" (location.source "gps"), read the position quietly. Only when
- * location access is already allowed: this never asks for permission. If the phone is more than 25 km
- * from the saved point, save the new (rounded) location with its city name and commit, which recalculates
- * the times, redraws Home and the widget snapshot and reschedules the reminders.
- * A searched city (source "city") and an older save that didn't record how it was chosen (source "unknown")
- * never change on their own. A "gps" location is per phone: the cloud merge (store.mergeStates) keeps each
+ * location access is already allowed: this never asks for permission. If the phone is more than 3 km
+ * from the saved point, save the new (rounded) location with its place name and commit, which recalculates
+ * the times, redraws Home (its footer shows the place) and the widget snapshot and reschedules the reminders.
+ * The "Prayer times updated for …" toast shows only when the place name changed.
+ * A searched city (source "city") never changes on its own. An older save that didn't record how it was chosen
+ * (source "unknown", saved before 15 Nov 2026) follows the phone too, but only when location access is already
+ * allowed (a searched city almost never comes with it); the first reading then marks it "gps". A "gps" location is per phone: the cloud merge (store.mergeStates) keeps each
  * phone's own, so two signed-in phones in different places don't flip each other's times; a searched city
  * still syncs. The "Location updated" toast waits for the app lock (heldToast). Errors are swallowed and nothing about the
  * location is logged (crash reports must never carry it).
  */
 import { TRAVEL } from "./strings.js";
 
-export const TRAVEL_KM = 25;
-export const TRAVEL_THROTTLE_MS = 30 * 60e3;
+/** Moved further than this from the saved point: update the location and its place name. */
+export const TRAVEL_KM = 3;
+export const TRAVEL_THROTTLE_MS = 10 * 60e3;
 
 /** Great-circle distance in km between two {lat, lng} points. */
 export function distanceKm(a, b) {
@@ -27,7 +30,7 @@ export function distanceKm(a, b) {
 /** Whether the travel check applies to these settings at all. */
 export function travelEnabled(settings) {
   const loc = settings?.location;
-  return settings?.autoLocation !== false && !!loc && typeof loc.lat === "number" && loc.source === "gps";
+  return settings?.autoLocation !== false && !!loc && typeof loc.lat === "number" && (loc.source === "gps" || loc.source === "unknown");
 }
 
 /**
@@ -61,14 +64,20 @@ export async function checkTravel(S, deps) {
     const saved = S.settings.location;
     const pos = await deps.quietPosition();
     if (!pos || typeof pos.lat !== "number" || typeof pos.lng !== "number") return false;
-    if (distanceKm(saved, pos) <= TRAVEL_KM) return false;
+    if (distanceKm(saved, pos) <= TRAVEL_KM) {
+      // Still where it was saved: an older "unknown" save is now known to follow the phone
+      if (saved.source !== "unknown" || S.settings.location !== saved) return false;
+      S.settings.location = { ...saved, source: "gps" };
+      deps.commit();
+      return false;
+    }
     let label = await deps.cityName(pos.lat, pos.lng).catch(() => "");
     if (!label || label === "Your location") label = TRAVEL.fallbackLabel;
     // The user may have changed the location (or the switch) while we were waiting
     if (S.settings.location !== saved || !travelEnabled(S.settings)) return false;
     S.settings.location = { lat: pos.lat, lng: pos.lng, label, source: "gps" };
     deps.commit();
-    deps.toast(TRAVEL.updated(label));
+    if (label !== saved.label) deps.toast(TRAVEL.updated(label));
     return true;
   } catch (e) {
     return false; // quiet: no permission prompt, no log

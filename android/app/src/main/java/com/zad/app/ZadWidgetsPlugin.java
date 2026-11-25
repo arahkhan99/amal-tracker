@@ -10,6 +10,7 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.zad.app.widget.ReminderCanceller;
 import com.zad.app.widget.WidgetStore;
 import com.zad.app.widget.WidgetUpdater;
 import com.zad.app.widget.ZadTileService;
@@ -22,6 +23,8 @@ import org.json.JSONObject;
  * Bridge from the web app to the home-screen widgets, the Quick Settings tile and the ongoing "Now" notification
  * (src/widget-bridge.js, src/pending.js).
  * - setSnapshot({ json }) stores the snapshot (src/widgets.js buildSnapshot) and redraws everything.
+ * - setReminders({ json }) stores which reminder ids belong to which prayer (src/notify.js reminderMap), so a
+ *   one-tap log can cancel them at once (widget/ReminderCanceller).
  * - getPending() → { logs: [...] }: the one-tap queue the widgets, tile and notification wrote.
  * - clearPending({ ids: [...] }): remove the entries the app has handled (and anything malformed), then redraw.
  * - requestAddTile() → { result, added } on Android 13+ (the system's "Add tile" prompt; result is the
@@ -39,6 +42,17 @@ public class ZadWidgetsPlugin extends Plugin {
         }
         WidgetStore.write(getContext(), json);
         WidgetUpdater.updateAll(getContext());
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void setReminders(PluginCall call) {
+        String json = call.getString("json");
+        if (json == null) {
+            call.reject("json is required");
+            return;
+        }
+        ReminderCanceller.write(getContext(), json);
         call.resolve();
     }
 

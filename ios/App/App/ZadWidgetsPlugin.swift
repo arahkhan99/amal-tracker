@@ -15,6 +15,7 @@ public class ZadWidgetsPlugin: CAPPlugin, CAPBridgedPlugin {
     public let jsName = "ZadWidgets"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "setSnapshot", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setReminders", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "reload", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getSnapshot", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getPending", returnType: CAPPluginReturnPromise),
@@ -45,6 +46,17 @@ public class ZadWidgetsPlugin: CAPPlugin, CAPBridgedPlugin {
         }
         store.set(json, forKey: ZadWidgetsPlugin.key)
         ZadWidgetsPlugin.reloadWidgets()
+        call.resolve()
+    }
+
+    /// Which reminder ids belong to which prayer (src/notify.js reminderMap), so a one-tap log in the widget
+    /// extension can cancel them at once (ZadActions.cancelReminders). Stored as the JSON string it arrives as.
+    @objc func setReminders(_ call: CAPPluginCall) {
+        guard let json = call.getString("json") else {
+            call.reject("json is required")
+            return
+        }
+        store.set(json, forKey: "reminders")
         call.resolve()
     }
 

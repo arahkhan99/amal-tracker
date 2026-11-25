@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Medium widget (RemoteViews): the current prayer, its countdown, the one-tap buttons (brothers: Congregation and On time; sisters: On time) and the day's five dots. Filled in by WidgetRenderer.java. -->
+<!-- Medium widget (RemoteViews): the current prayer, its countdown, the one-tap buttons (brothers: Congregation and On time; sisters: On time) and the day's five dots; taller, the day's times too. Filled in by WidgetRenderer.java. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/zw_root" android:layout_width="match_parent" android:layout_height="match_parent"
     android:background="@drawable/zw_bg_card" android:orientation="vertical" android:padding="16dp">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+    <LinearLayout android:id="@+id/zw_tag_row" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
             <ImageView android:id="@+id/zw_tag_dot" android:layout_width="8dp" android:layout_height="8dp" android:src="@drawable/zw_dot_now" android:importantForAccessibility="no" />
             <TextView android:id="@+id/zw_tag" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
@@ -33,11 +33,12 @@
         </LinearLayout>
     </LinearLayout>
     <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:minHeight="6dp" />
-    <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-        <include layout="@layout/zw_part_actions" />
+    <!-- The times (when nothing is open, or always when the widget is tall: WidgetRenderer Size.MEDIUM_TALL), then the buttons -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
         <LinearLayout android:id="@+id/zw_times_box" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
             <FrameLayout android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginBottom="8dp" android:background="@drawable/zw_line" />
             <include layout="@layout/zw_part_times" />
         </LinearLayout>
-    </FrameLayout>
+        <include layout="@layout/zw_part_actions" />
+    </LinearLayout>
 </LinearLayout>

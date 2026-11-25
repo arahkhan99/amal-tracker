@@ -1,6 +1,7 @@
 import WidgetKit
 import SwiftUI
 import AppIntents
+import UserNotifications
 
 // Zad widgets: home screen small / medium / large with one-tap logging (App Intents, iOS 17+; on iOS 16 a
 // tap opens the log sheet), lock-screen inline / circular / rectangular, and the iOS 18 Control.
@@ -187,8 +188,26 @@ enum ZadActions {
                 return nil
             }
         }
+        if let e = added, e.status != "undo" { cancelReminders(date: date, prayer: prayer) }
         reloadAll()
         return added != nil
+    }
+
+    /// A one-tap log cancels that prayer's reminders ("has begun", "ends soon") at once, scheduled or showing,
+    /// instead of leaving them until the app next opens and reschedules. The app writes which ids belong to which
+    /// prayer after every reschedule (src/notify.js reminderMap → ZadWidgetsPlugin.setReminders): App Group
+    /// UserDefaults "reminders", a JSON string { "YYYY-MM-DD|Fajr": [1004, 2004] }. @capacitor/local-notifications
+    /// names each request by its id ("1004"). An app extension shares its app's notification centre.
+    static func cancelReminders(date: String, prayer: String) {
+        guard let s = UserDefaults(suiteName: SnapshotStore.appGroup)?.string(forKey: "reminders"),
+              let data = s.data(using: .utf8),
+              let map = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let ids = map["\(date)|\(prayer)"] as? [Any] else { return }
+        let names = ids.compactMap { ($0 as? NSNumber).map { "\($0.intValue)" } }
+        guard !names.isEmpty else { return }
+        let centre = UNUserNotificationCenter.current()
+        centre.removePendingNotificationRequests(withIdentifiers: names)
+        centre.removeDeliveredNotifications(withIdentifiers: names)
     }
 
     /// The single-action surfaces (the Control): log the open prayer On time.

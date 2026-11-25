@@ -3,7 +3,7 @@ import * as store from "../src/store.js";
 import * as st from "../src/stats.js";
 import { timesFor, currentWindow, nextPrayer, windowEnd } from "../src/times.js";
 import { hijriLabel } from "../src/hijri.js";
-import { planNotifications } from "../src/notify.js";
+import { planNotifications, reminderMap } from "../src/notify.js";
 import { dkey, addDays, fmt12, PRAYERS } from "../src/util.js";
 import { REFLECTIONS, reflectionFor } from "../src/reflections.js";
 
@@ -193,6 +193,18 @@ describe("notifications plan", () => {
     expect(plan.some(n => n.id === 2001)).toBe(false); // today's Dhuhr reminder dropped
     S.settings.preQada = false; S.settings.evening = false; S.settings.seerahNotify = false;
     expect(planNotifications(S, early).length).toBe(0);
+  });
+  it("reminderMap: each prayer's 'has begun' and 'ends soon' ids, so a widget log can cancel them at once", () => {
+    const S = fresh(); S.settings.location = { lat: 41.8781, lng: -87.6298, label: "Chicago" };
+    S.settings.prayerAlerts = true; S.settings.preQada = true;
+    const early = new Date(2026, 8, 22, 0, 5);
+    const plan = planNotifications(S, early), map = reminderMap(plan);
+    expect(map["2026-09-22|Asr"]).toEqual([1002, 2002]);
+    expect(map["2026-09-23|Fajr"]).toEqual([1010, 2010]);
+    // The evening check-in and the Friday sīrah moment aren't about one prayer
+    expect(Object.values(map).flat().every(id => id < 3000)).toBe(true);
+    // Only the prayer-time one carries the log buttons
+    expect(plan.find(n => n.id === 2002).log).toBeUndefined();
   });
 });
 

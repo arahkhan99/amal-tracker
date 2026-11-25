@@ -42,11 +42,11 @@ export async function locationGranted() {
 }
 
 /**
- * A quiet position read for the travel check: low accuracy, a reading up to 30 minutes old is fine,
+ * A quiet position read for the travel check: low accuracy, a reading up to 10 minutes old is fine,
  * short timeout, and no permission request. Rounded straight away like currentPosition(). Throws on failure.
  */
 export async function quietPosition() {
-  const opts = { enableHighAccuracy: false, timeout: 8000, maximumAge: 30 * 60e3 };
+  const opts = { enableHighAccuracy: false, timeout: 8000, maximumAge: 10 * 60e3 };
   if (isNative()) {
     const { Geolocation } = await import("@capacitor/geolocation");
     const p = await Geolocation.getCurrentPosition(opts);

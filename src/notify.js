@@ -54,7 +54,8 @@ export function planNotifications(S, now = new Date()) {
       if (st.preQada && !logged) {
         const end = windowEnd(date, p, st, t);
         const at = new Date(end.getTime() - st.leadMin * 60000);
-        if (at > now) out.push({ id: 2000 + i * 10 + pi, at, title: NOTIFY.preTitle(name, st.leadMin), body: NOTIFY.preBody(name) });
+        // prayer: which prayer it is about (reminderMap), without the log buttons
+        if (at > now) out.push({ id: 2000 + i * 10 + pi, at, title: NOTIFY.preTitle(name, st.leadMin), body: NOTIFY.preBody(name), prayer: { p, date: dkey(date) } });
       }
       // Make-up nudge: a prayer logged as Missed can still be marked Made up until the next Fajr
       if (st.makeupNudge !== false && isOn(S, "makeups") && status === "missed" && p !== "Isha") {
@@ -80,6 +81,28 @@ export function planNotifications(S, now = new Date()) {
   return out;
 }
 
+/**
+ * The reminders about each prayer, { "YYYY-MM-DD|Fajr": [ids] }: the prayer-time and before-it-ends ones.
+ * The phone keeps it (ZadWidgets.setReminders) so a one-tap log from a widget, the tile or the "Now" notification
+ * cancels that prayer's reminders straight away, without waiting for the app to open and reschedule.
+ */
+export function reminderMap(list) {
+  const out = {};
+  for (const n of list) {
+    const k = n.log || n.prayer;
+    if (k) (out[`${k.date}|${k.p}`] ||= []).push(n.id);
+  }
+  return out;
+}
+
+let widgetsPlugin = null;
+async function shareReminders(list) {
+  try {
+    if (!widgetsPlugin) { const { registerPlugin } = await import("@capacitor/core"); widgetsPlugin = registerPlugin("ZadWidgets"); }
+    await widgetsPlugin.setReminders({ json: JSON.stringify(reminderMap(list)) });
+  } catch (e) { console.warn("notify", e); } // an older native build without setReminders: the app's reschedule still catches up
+}
+
 let timer = null, lastS = null, actionsReady = null;
 /** Reschedule all local notifications (Android). Debounced; no-op on the web. */
 export function reschedule(S) {
@@ -100,6 +123,7 @@ async function doSchedule(S) {
   let list = planNotifications(S);
   // iOS keeps at most 64 pending notifications; keep the soonest (the rest are scheduled on a later open)
   if (Capacitor.getPlatform() === "ios") list = list.sort((a, b) => a.at - b.at).slice(0, 60);
+  await shareReminders(list);
   if (!list.length) return;
   const typeId = actionTypeFor(S);
   try { await registerActions(LocalNotifications); } catch (e) { console.warn("notify", e); }

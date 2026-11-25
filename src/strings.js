@@ -1355,7 +1355,7 @@ export const NOT_YET = {
 /* ---------- travel: prayer times follow where you are (src/travel.js, Settings → Prayer) ---------- */
 export const TRAVEL = {
   row: "Update location when I travel",
-  rowSub: "When Zad opens, it checks where you are and updates prayer times if you've moved more than 25 km.",
+  rowSub: "When Zad opens, it checks where you are and updates your prayer times and place.",
   updated: city => `Prayer times updated for ${city}`,
   fallbackLabel: "Current location",
   // An older saved location (source "unknown") shows this instead of the switch

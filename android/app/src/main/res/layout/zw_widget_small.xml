@@ -3,7 +3,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/zw_root" android:layout_width="match_parent" android:layout_height="match_parent"
     android:background="@drawable/zw_bg_card" android:padding="14dp">
     <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
-        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+        <LinearLayout android:id="@+id/zw_tag_row" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
             <ImageView android:id="@+id/zw_tag_dot" android:layout_width="8dp" android:layout_height="8dp" android:src="@drawable/zw_dot_now" android:importantForAccessibility="no" />
             <TextView android:id="@+id/zw_tag" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
                 android:text="Now" android:textColor="@color/zw_ink2" android:textSize="13sp" android:maxLines="1" />
@@ -14,6 +14,35 @@
             android:textColor="@color/zw_ink" android:textSize="17sp" android:textStyle="bold" android:maxLines="1" />
         <TextView android:id="@+id/zw_countdown_label" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:text="left · until 16:05" android:textColor="@color/zw_ink2" android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+        <!-- Tall: the day's five times under the countdown (WidgetRenderer Size.SMALL_TALL) -->
+        <LinearLayout android:id="@+id/zw_vtimes" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="10dp" android:visibility="gone">
+            <FrameLayout android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginBottom="6dp" android:background="@drawable/zw_line" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingTop="2dp" android:paddingBottom="2dp">
+                <ImageView android:id="@+id/zw_v0_dot" android:layout_width="6dp" android:layout_height="6dp" android:layout_marginEnd="5dp" android:src="@drawable/zw_dot_now" android:visibility="gone" android:importantForAccessibility="no" />
+                <TextView android:id="@+id/zw_v0_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Fajr" android:textColor="@color/zw_ink2" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/zw_v0_time" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5:52 AM" android:textColor="@color/zw_ink" android:textSize="13sp" android:textStyle="bold" android:maxLines="1" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingTop="2dp" android:paddingBottom="2dp">
+                <ImageView android:id="@+id/zw_v1_dot" android:layout_width="6dp" android:layout_height="6dp" android:layout_marginEnd="5dp" android:src="@drawable/zw_dot_now" android:visibility="gone" android:importantForAccessibility="no" />
+                <TextView android:id="@+id/zw_v1_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Zuhr" android:textColor="@color/zw_ink2" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/zw_v1_time" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="11:56 AM" android:textColor="@color/zw_ink" android:textSize="13sp" android:textStyle="bold" android:maxLines="1" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingTop="2dp" android:paddingBottom="2dp">
+                <ImageView android:id="@+id/zw_v2_dot" android:layout_width="6dp" android:layout_height="6dp" android:layout_marginEnd="5dp" android:src="@drawable/zw_dot_now" android:visibility="visible" android:importantForAccessibility="no" />
+                <TextView android:id="@+id/zw_v2_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="ʿAsr" android:textColor="@color/zw_ink2" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/zw_v2_time" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2:21 PM" android:textColor="@color/zw_ink" android:textSize="13sp" android:textStyle="bold" android:maxLines="1" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingTop="2dp" android:paddingBottom="2dp">
+                <ImageView android:id="@+id/zw_v3_dot" android:layout_width="6dp" android:layout_height="6dp" android:layout_marginEnd="5dp" android:src="@drawable/zw_dot_now" android:visibility="gone" android:importantForAccessibility="no" />
+                <TextView android:id="@+id/zw_v3_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Maghrib" android:textColor="@color/zw_ink2" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/zw_v3_time" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="4:05 PM" android:textColor="@color/zw_ink" android:textSize="13sp" android:textStyle="bold" android:maxLines="1" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingTop="2dp" android:paddingBottom="2dp">
+                <ImageView android:id="@+id/zw_v4_dot" android:layout_width="6dp" android:layout_height="6dp" android:layout_marginEnd="5dp" android:src="@drawable/zw_dot_now" android:visibility="gone" android:importantForAccessibility="no" />
+                <TextView android:id="@+id/zw_v4_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="ʿIshāʾ" android:textColor="@color/zw_ink2" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/zw_v4_time" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5:40 PM" android:textColor="@color/zw_ink" android:textSize="13sp" android:textStyle="bold" android:maxLines="1" />
+            </LinearLayout>
+        </LinearLayout>
         <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:minHeight="6dp" />
         <include layout="@layout/zw_part_actions" />
     </LinearLayout>

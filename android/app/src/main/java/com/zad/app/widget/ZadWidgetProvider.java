@@ -13,6 +13,12 @@ public abstract class ZadWidgetProvider extends AppWidgetProvider {
         WidgetUpdater.updateAll(context);
     }
 
+    /** Resized: before Android 12 the layout is picked from the reported size, so draw again. */
+    @Override
+    public void onAppWidgetOptionsChanged(Context context, AppWidgetManager manager, int id, android.os.Bundle options) {
+        WidgetUpdater.updateAll(context);
+    }
+
     @Override
     public void onEnabled(Context context) {
         WidgetUpdater.updateAll(context);

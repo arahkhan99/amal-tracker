@@ -50,24 +50,58 @@ public final class WidgetUpdater {
             any = true;
             // Every placed widget always gets this version's layout: a failure falls back to the message in the same
             // style, never leaving the views an older version (or the picker) drew in place.
-            RemoteViews views;
-            try {
-                views = WidgetRenderer.render(c, SIZES[k], model, json);
-            } catch (Exception e) {
-                Log.w(TAG, "widget render failed (" + SIZES[k] + ")", e);
-                views = WidgetRenderer.message(c, json);
-            }
-            try {
-                mgr.updateAppWidget(ids, views);
-            } catch (Exception e) {
-                Log.w(TAG, "widget update failed (" + SIZES[k] + ")", e);
-                try { mgr.updateAppWidget(ids, WidgetRenderer.message(c, json)); } catch (Exception ignored) { /* nothing more to try */ }
+            // Each widget follows its own size, whichever kind was placed (WidgetRenderer.sizeFor): Android 12+
+            // gets every layout at once and switches by itself while it is resized; before that, the size the
+            // launcher reports (onAppWidgetOptionsChanged redraws after a resize) picks one.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                RemoteViews views;
+                try {
+                    views = model == null ? WidgetRenderer.message(c, json) : WidgetRenderer.responsive(c, model, json);
+                } catch (Exception e) {
+                    Log.w(TAG, "widget render failed (" + SIZES[k] + ")", e);
+                    views = fixed(c, SIZES[k], model, json);
+                }
+                push(mgr, ids, views, c, json);
+            } else {
+                for (int id : ids) push(mgr, new int[] { id }, fixed(c, sizeOf(mgr, id, SIZES[k]), model, json), c, json);
             }
         }
         boolean ongoing = WidgetModel.flag(json, "ongoingNow");
         try { NowNotification.update(c, now); } catch (Exception e) { /* never let the notification break the widgets */ }
         try { ZadTileService.requestUpdate(c); } catch (Exception e) { Log.w(TAG, "tile update failed", e); }
         schedule(c, any || ongoing, model, now);
+    }
+
+    /** One layout; a failure falls back to the message, never leaving what an older version drew in place. */
+    private static RemoteViews fixed(Context c, WidgetRenderer.Size size, WidgetModel model, String json) {
+        try {
+            return WidgetRenderer.render(c, size, model, json);
+        } catch (Exception e) {
+            Log.w(TAG, "widget render failed (" + size + ")", e);
+            return WidgetRenderer.message(c, json);
+        }
+    }
+
+    private static void push(AppWidgetManager mgr, int[] ids, RemoteViews views, Context c, String json) {
+        try {
+            mgr.updateAppWidget(ids, views);
+        } catch (Exception e) {
+            Log.w(TAG, "widget update failed", e);
+            try { mgr.updateAppWidget(ids, WidgetRenderer.message(c, json)); } catch (Exception ignored) { /* nothing more to try */ }
+        }
+    }
+
+    /**
+     * Before Android 12: the layout for the size the launcher reports. In portrait a widget is its minimum width
+     * by its maximum height. No size reported yet: the kind that was placed.
+     */
+    private static WidgetRenderer.Size sizeOf(AppWidgetManager mgr, int id, WidgetRenderer.Size placed) {
+        try {
+            android.os.Bundle o = mgr.getAppWidgetOptions(id);
+            int w = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0), h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0);
+            if (w > 0 && h > 0) return WidgetRenderer.sizeFor(w, h);
+        } catch (Exception ignored) { /* fall back below */ }
+        return placed;
     }
 
     private static PendingIntent tickIntent(Context c) {
