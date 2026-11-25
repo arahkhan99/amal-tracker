@@ -61,7 +61,7 @@ describe("distance threshold", () => {
     expect(d.commit).not.toHaveBeenCalled();
     expect(d.toast).not.toHaveBeenCalled();
   });
-  it("4 km away: updates the location (rounded), commits and shows the toast", async () => {
+  it("4 km away: updates the location (rounded) and commits, quietly", async () => {
     geo.pos = north(4);
     const S = setup(), d = deps();
     expect(await checkTravel(S, d)).toBe(true);
@@ -72,6 +72,12 @@ describe("distance threshold", () => {
     expect(loc.lng).toBe(HOME.lng);
     expect(d.cityName).toHaveBeenCalledWith(loc.lat, loc.lng);
     expect(d.commit).toHaveBeenCalledTimes(1);
+    expect(d.toast).not.toHaveBeenCalled();
+  });
+  it("a real trip (over 25 km) to another place shows the toast", async () => {
+    geo.pos = north(30);
+    const S = setup(), d = deps();
+    expect(await checkTravel(S, d)).toBe(true);
     expect(d.toast).toHaveBeenCalledWith("Prayer times updated for Milwaukee, WI");
   });
   it("moved but the place name is the same: updates quietly, no toast", async () => {

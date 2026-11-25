@@ -5,7 +5,8 @@
  * location access is already allowed: this never asks for permission. If the phone is more than 3 km
  * from the saved point, save the new (rounded) location with its place name and commit, which recalculates
  * the times, redraws Home (its footer shows the place) and the widget snapshot and reschedules the reminders.
- * The "Prayer times updated for …" toast shows only when the place name changed.
+ * It updates quietly; the "Prayer times updated for …" toast shows only after a real trip (over 25 km) to a
+ * place with another name.
  * A searched city (source "city") never changes on its own. An older save that didn't record how it was chosen
  * (source "unknown", saved before 15 Nov 2026) follows the phone too, but only when location access is already
  * allowed (a searched city almost never comes with it); the first reading then marks it "gps". A "gps" location is per phone: the cloud merge (store.mergeStates) keeps each
@@ -17,6 +18,8 @@ import { TRAVEL } from "./strings.js";
 
 /** Moved further than this from the saved point: update the location and its place name. */
 export const TRAVEL_KM = 3;
+/** Only a move this far (a real trip) shows "Prayer times updated for …"; nearer moves update quietly. */
+export const TRAVEL_TOAST_KM = 25;
 export const TRAVEL_THROTTLE_MS = 10 * 60e3;
 
 /** Great-circle distance in km between two {lat, lng} points. */
@@ -77,7 +80,7 @@ export async function checkTravel(S, deps) {
     if (S.settings.location !== saved || !travelEnabled(S.settings)) return false;
     S.settings.location = { lat: pos.lat, lng: pos.lng, label, source: "gps" };
     deps.commit();
-    if (label !== saved.label) deps.toast(TRAVEL.updated(label));
+    if (label !== saved.label && distanceKm(saved, pos) > TRAVEL_TOAST_KM) deps.toast(TRAVEL.updated(label));
     return true;
   } catch (e) {
     return false; // quiet: no permission prompt, no log
