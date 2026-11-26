@@ -13,10 +13,12 @@
 :root:root[data-theme=dark]{ --group:#1E2C25; --behind:#050A08; }
 
 /* ---------- Today ---------- */
-:root:root .zt-head .zt-hi1{font-size:var(--t-sub);font-weight:400;color:var(--bmute)}
-:root:root .zt-head .zt-hin{font-size:var(--t-title2);font-weight:650;letter-spacing:-.01em}
+/* the greeting stays quiet so the arch leads (user chose A, 26 Nov 2026): a small grey salām, the name at a prayer name's size */
+:root:root .zt-head .zt-hi1{font-size:var(--t-foot);font-weight:400;color:var(--bmute)}
+:root:root .zt-head .zt-hin{font-size:var(--t-body);font-weight:600;letter-spacing:0}
 /* the two header buttons: one size, one look */
-:root:root .zt-tr > *{width:40px;height:40px;border-radius:20px}
+:root:root .zt-tr > *{width:36px;height:36px;border-radius:18px}
+:root:root .zt-head .zt-av{font-size:14px}
 :root:root .zt-lbl{font-size:var(--t-foot);font-weight:600;letter-spacing:.02em;text-transform:none}
 :root:root .zt-cd{font-size:var(--t-sub)}
 /* Qibla and More: the same quiet circle */
@@ -121,8 +123,8 @@
 /* Today: hairline dividers, inset to the text */
 :root:root .zt-slot + .zt-slot > .zt-row::before{border-top:var(--hair) solid color-mix(in srgb,var(--ink) 14%,transparent)}
 /* the header's two buttons: the same 40 px quiet circle */
-:root:root .zt-head .zt-ib{width:40px;height:40px;border-radius:20px;display:grid;place-items:center;background:var(--bchip)!important;color:var(--bink)!important}
-:root:root .zt-head .zt-ib svg{width:20px;height:20px}
+:root:root .zt-head .zt-ib{width:36px;height:36px;border-radius:18px;display:grid;place-items:center;background:var(--bchip)!important;color:var(--bink)!important}
+:root:root .zt-head .zt-ib svg{width:18px;height:18px}
 :root:root .zt-row.sun .zt-nm{font-weight:400}
 /* lighter hairlines everywhere */
 :root:root .z-st + .z-st::before,:root:root .settings .srow + .srow::before{background:color-mix(in srgb,var(--ink) 11%,transparent)}
@@ -191,3 +193,7 @@
 :root:root .z-drows > .z-drow{border-top:var(--hair) solid color-mix(in srgb,var(--ink) 11%,transparent)}
 :root:root .z-drows > .z-drow:first-child{border-top:0}
 :root:root .z-gd .z-addd{margin-top:14px}
+/* the provisions ring keeps step with the other header buttons (36): the ring is drawn to fit, "Lv 3" stays inside */
+:root:root .zt-head .pv-chip.ring{width:36px;height:36px;border-radius:18px;position:relative}
+:root:root .zt-head .pv-chip.ring svg{position:absolute;inset:0;width:100%;height:100%}
+:root:root .zt-head .pv-chip.ring .pv-lv{font-size:10.5px;letter-spacing:-.02em}
