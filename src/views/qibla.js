@@ -20,6 +20,7 @@
  * frame loop and timers stop on unmount and while the page is hidden, and start again when it is shown.
  * Magnetic vs true North: see the note at the top of ../qibla.js (not corrected; the page says so).
  */
+import { tick as hTick, done as hDone } from "../haptics.js";
 import { esc } from "../util.js";
 import {
   qiblaFor, compassPoint, formatDistance, usesMiles, headingFromAlpha, headingFromWebkit, smoothHeading,
@@ -162,7 +163,8 @@ function screenAngle() {
   const w = typeof window !== "undefined" ? window.orientation : 0; // older iOS: 0, 90, -90, 180
   return Number.isFinite(w) ? w : 0;
 }
-function vibrate(ms) { try { navigator.vibrate?.(ms); } catch { /* not allowed / not available */ } }
+// A counter step taps lightly, its last count gives a gentle "done" (haptics.js: works on iPhone too)
+function vibrate(ms) { if (ms >= 25) hDone(ms); else hTick(ms); }
 
 /** Set a data attribute only when it changes (no style work otherwise). */
 function setData(k, v) {

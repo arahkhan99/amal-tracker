@@ -3,16 +3,16 @@
    and options as thin rows with hairlines instead of boxed buttons; the chosen one carries a tick or a filled radio.
    Imported after every view's CSS (main.js), before tablet.css. Static: no shadows, no animation beyond the slide-up. */
 .sheet{padding-left:24px;padding-right:20px;border-radius:26px 26px 0 0}
-.sheet h3,.z-sh h3,.ob-sheet h3,.gs h3{font:400 28px/1.15 var(--serif);color:var(--ink)}
-.sheet h3 + p,.sheet .sub{font-size:13.5px;color:var(--mute);line-height:1.45}
-.z-sh h3.z-sht{font-size:28px}
+.sheet h3,.z-sh h3,.ob-sheet h3,.gs h3{font:400 var(--t-title)/1.15 var(--serif);color:var(--ink)}
+.sheet h3 + p,.sheet .sub{font-size:var(--t-foot);color:var(--mute);line-height:1.45}
+.z-sh h3.z-sht{font-size:var(--t-title)}
 /* options: rows, not boxes */
 .opts{gap:0;margin-top:10px}
 button.opt,.gs .gopt{border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;padding:12px 2px;min-height:56px;margin-top:0;width:100%;color:var(--ink)}
 .opts > button.opt:first-child,.gs [role=radiogroup] > .gopt:first-child{border-top:0}
 button.opt.sel,.gs .gopt.on{background:transparent;border-color:var(--line)}
-button.opt b,.gs .gopt b{font-weight:500;font-size:16px}
-button.opt small,.gs .gopt small{font-size:13px;color:var(--mute)}
+button.opt b,.gs .gopt b{font-weight:500;font-size:var(--t-body)}
+button.opt small,.gs .gopt small{font-size:var(--t-foot);color:var(--mute)}
 button.opt > div{flex:1;min-width:0}
 button.opt.sel:not(.mopt)::after{content:"";flex:none;width:12px;height:7px;margin:0 6px -1px 0;border-left:2.4px solid var(--acc2);border-bottom:2.4px solid var(--acc2);transform:rotate(-45deg) translateY(-3px)}
 .radio{border-width:1.8px;border-color:var(--mute)}

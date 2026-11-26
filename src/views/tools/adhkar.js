@@ -1,4 +1,5 @@
 /* Morning and evening adhkār reader (AR1: list with tap counters). */
+import { tick as hTick, done as hDone } from "../../haptics.js";
 import { A, S, $, NOW, todayKey, esc, I, T, open, redraw, part, persist, prune, prefs, tickAmal, untickAmal, amalIs, toast, openSheet, headWords, markSwaps, info, store, COMMON, APP, topIn } from "./core.js";
 import { ADHKAR, VIRTUES_APPROVED, partText } from "../../tools/data/adhkar.js";
 import { timesFor } from "../../times.js";
@@ -154,7 +155,8 @@ export function adhkarAfter() {
 }
 
 /* ---------- actions ---------- */
-function vibrate(ms) { try { navigator.vibrate?.(ms); } catch { /* not available */ } }
+// A counter step taps lightly, its last count gives a gentle "done" (haptics.js: works on iPhone too)
+function vibrate(ms) { if (ms >= 25) hDone(ms); else hTick(ms); }
 
 A.tlSet = set => { T.set = set; redraw(); };
 A.tlOpenCard = n => { expanded.add(n); redraw(); };

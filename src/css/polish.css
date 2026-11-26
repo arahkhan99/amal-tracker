@@ -1,0 +1,193 @@
+/* Polish pass (25 Nov 2026, approved from the mockups: design-review/mockups2/redesign/polish). Imported after
+   sheets.css, before tablet.css. Selectors start with :root:root so they outrank the older view rules they refine.
+   1. One type scale (8 steps) and three corner radii, as tokens  2. iOS-style sheets: the page behind eases back
+   (app.js openSheet adds .sheet-open to #phone), one grouped list of choices  3. Settings as inset grouped cards,
+   plain (no row icons: the user chose plainer)  4. iPhone-proportioned switches and segmented controls
+   5. Quieter chrome: hairlines, frosted tab bar, matching header buttons, press feedback. */
+:root:root{
+  /* the type scale and corner tokens live in theme.css */
+  --hair:0.5px;
+  --group:var(--card);
+  --behind:#0B1712;
+}
+:root:root[data-theme=dark]{ --group:#1E2C25; --behind:#050A08; }
+
+/* ---------- Today ---------- */
+:root:root .zt-head .zt-hi1{font-size:var(--t-sub);font-weight:400;color:var(--bmute)}
+:root:root .zt-head .zt-hin{font-size:var(--t-title2);font-weight:650;letter-spacing:-.01em}
+/* the two header buttons: one size, one look */
+:root:root .zt-tr > *{width:40px;height:40px;border-radius:20px}
+:root:root .zt-lbl{font-size:var(--t-foot);font-weight:600;letter-spacing:.02em;text-transform:none}
+:root:root .zt-cd{font-size:var(--t-sub)}
+/* Qibla and More: the same quiet circle */
+:root:root .zt-rb,:root:root .zt-rb.ghost{width:44px;height:44px;border-radius:22px;background:var(--bchip)!important;color:var(--bink)!important}
+:root:root .zt-rb.ghost svg{stroke-width:2.6}
+:root:root .zt-pray{height:50px;border-radius:25px;font-size:var(--t-head);font-weight:600}
+:root:root .zt-chip{font-size:var(--t-sub)}
+:root:root .zt-ldate{font-size:var(--t-foot)!important;font-weight:600;letter-spacing:.01em}
+/* the list: one size for names and times, tabular figures, hairlines */
+:root:root .zt-nm{font-size:var(--t-body);font-weight:500}
+:root:root .zt-row.cur .zt-nm{font-weight:600}
+:root:root .zt-tm{font-size:var(--t-body);color:var(--mute)}
+:root:root .zt-tm small{font-size:var(--t-foot);letter-spacing:.02em;margin-left:3px}
+:root:root .zt-row.sun .zt-nm,:root:root .zt-row.sun .zt-tm{font-size:var(--t-sub)}
+:root:root #v-home .zt-row + .zt-row,:root:root #v-home .zt-list > *{border-color:color-mix(in srgb,var(--line) 85%,transparent)}
+/* the two pills: same radius as every card, quieter chevron */
+:root:root .zt-pill{border-radius:var(--r-m);min-height:56px}
+:root:root .zt-pill .l{font-size:var(--t-sub);font-weight:600}
+:root:root .zt-pill em{font-size:var(--t-foot)}
+:root:root .zt-pill .zt-cv{width:14px!important;height:14px!important;opacity:.7}
+
+/* ---------- the tab bar: frosted, hairline, smaller labels ---------- */
+:root:root .nav{background:color-mix(in srgb,var(--bg) 78%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(20px);backdrop-filter:saturate(1.6) blur(20px);border-top:var(--hair) solid color-mix(in srgb,var(--ink) 18%,transparent)}
+:root:root .nav button{font-size:var(--t-cap);font-weight:600;letter-spacing:.01em}
+
+/* ---------- press feedback (shown in the motion demo; real on the phone) ---------- */
+/* press feedback on the things you tap; list rows (full-width) darken instead of shrinking */
+:root:root :is(.zt-pray,.zt-rb,.zt-pill,.zt-ib,.zt-av,.zt-chip,.z-pbtn,.btn,.zb-ib,.ob-btn,.pv-chip,.seg button,.z-cls){transition:transform .14s cubic-bezier(.3,.7,.4,1)}
+:root:root :is(.zt-pray,.zt-rb,.zt-pill,.zt-ib,.zt-av,.zt-chip,.z-pbtn,.btn,.zb-ib,.ob-btn,.pv-chip,.seg button,.z-cls):active{transform:scale(.97)}
+:root:root :is(.srow-main:not(.static),button.opt,.z-st,.arow):active{background:color-mix(in srgb,var(--ink) 6%,transparent)!important}
+@media (prefers-reduced-motion:reduce){:root:root :is(.zt-pray,.zt-rb,.zt-pill,.zt-ib,.zt-av,.zt-chip,.z-pbtn,.btn,.zb-ib,.ob-btn,.pv-chip,.seg button,.z-cls):active{transform:none}}
+
+/* ---------- the sheet: iOS card presentation ---------- */
+:root:root .phone.sheet-open{background:var(--behind)}
+:root:root .phone.sheet-open .screen{transform:translateY(14px) scale(.93);transform-origin:50% 0;border-radius:14px;overflow:hidden;transition:transform .45s cubic-bezier(.32,.72,0,1),border-radius .45s}
+:root:root .phone .screen{transition:transform .38s cubic-bezier(.32,.72,0,1),border-radius .38s}
+@media (prefers-reduced-motion:reduce){:root:root .phone .screen,:root:root .phone.sheet-open .screen{transition:none}}
+:root:root .phone.sheet-open .nav{opacity:0}
+:root:root .scrim{background:rgba(0,0,0,.18);-webkit-backdrop-filter:none;backdrop-filter:none}
+:root:root .sheet{border-radius:var(--r-l) var(--r-l) 0 0;padding-top:8px;background:var(--sheet)}
+:root:root .sheet .grab{width:36px;height:5px;border-radius:3px;margin:0 auto 14px;background:color-mix(in srgb,var(--ink) 22%,transparent)}
+:root:root .sheet h3{font-size:var(--t-title)}
+:root:root .z-sub{font-size:var(--t-sub)!important;color:var(--mute)}
+:root:root .z-cls{width:36px;height:36px;margin:-2px -4px 0 0}
+:root:root .z-cls::before{inset:3px;background:color-mix(in srgb,var(--ink) 9%,transparent)}
+:root:root .z-cls svg{width:15px;height:15px;stroke-width:2.6;color:var(--mute)}
+/* the four choices: one inset group of rows, not four boxes */
+:root:root .z-sgrid{display:flex!important;flex-direction:column;gap:0!important;margin-top:18px;background:var(--group);border-radius:var(--r-m);overflow:hidden}
+:root:root[data-theme=light] .z-sgrid,:root:root:not([data-theme=dark]) .z-sgrid{background:var(--bg)}
+:root:root .z-st{display:flex!important;align-items:center;gap:14px;min-height:60px;padding:10px 16px!important;border:0!important;border-radius:0!important;background:transparent!important;position:relative;text-align:left}
+:root:root .z-st + .z-st::before{content:"";position:absolute;top:0;left:58px;right:0;height:var(--hair);background:color-mix(in srgb,var(--ink) 16%,transparent)}
+:root:root .z-st .z-mk{width:30px;height:30px;flex:none}
+:root:root .z-st b{display:block;font-size:var(--t-head)!important;font-weight:600!important;line-height:1.25}
+:root:root .z-st small{display:block;font-size:var(--t-foot)!important;color:var(--mute)!important;line-height:1.35;margin-top:1px}
+:root:root .z-st[disabled]{opacity:.42}
+:root:root .z-st > span:last-child{flex:1;min-width:0}
+/* section label: sentence case, not spaced capitals */
+:root:root .z-lsec{font-size:var(--t-foot)!important;letter-spacing:0!important;text-transform:none!important;font-weight:500!important;color:var(--mute)!important;margin:22px 16px 6px!important}
+:root:root .z-srow{background:var(--group);border-radius:var(--r-m);padding:12px 16px!important;border:0!important}
+:root:root:not([data-theme=dark]) .z-srow{background:var(--bg)}
+:root:root .z-srow .z-t b{font-size:var(--t-head)!important;font-weight:600}
+:root:root .z-srow .z-t small{font-size:var(--t-foot)!important}
+/* no Done button: every choice saves at once; swipe down, tap outside or ✕ closes */
+:root:root .sheet{padding-bottom:30px}
+
+/* ---------- switches and segmented controls: iOS proportions ---------- */
+:root:root .switch,:root:root .z-nsw{width:51px!important;height:31px!important;border-radius:16px!important;background:var(--switch-off)!important;box-shadow:none!important;flex:none}
+:root:root .switch::after,:root:root .z-nsw::after{top:2px!important;left:2px!important;width:27px!important;height:27px!important;border-radius:14px;background:#fff!important;box-shadow:0 2px 5px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.06)!important}
+:root:root .switch.on,:root:root .z-nsw.z-on{background:var(--acc)!important}
+:root:root[data-theme=dark] .switch.on,:root:root[data-theme=dark] .z-nsw.z-on{background:#4F8A6C!important}
+:root:root .switch.on::after,:root:root .z-nsw.z-on::after{left:22px!important}
+:root:root .seg{border-radius:var(--r-s);padding:2px;background:color-mix(in srgb,var(--ink) 7%,transparent)}
+:root:root .seg button{padding:6px 4px;border-radius:8px;font-size:var(--t-foot);font-weight:600}
+:root:root .seg button.on{box-shadow:0 2px 6px rgba(0,0,0,.10),0 0 0 .5px rgba(0,0,0,.05)}
+
+/* ---------- Settings: inset grouped lists ---------- */
+:root:root .settings .zb-pg{border-radius:0;background:linear-gradient(to bottom,var(--bband-a,transparent),transparent)}
+:root:root .settings .zb-t{font-size:var(--t-large)}
+:root:root .zb-done{font-size:var(--t-head);font-weight:600;color:var(--acc2)}
+:root:root[data-theme=dark] .zb-done{color:var(--acc)}
+:root:root .settings{padding-bottom:24px}
+:root:root .profile{margin:10px 16px 0!important;width:calc(100% - 32px)!important;padding:12px 16px!important;background:var(--group)!important;border:0!important;border-radius:var(--r-m)!important}
+:root:root .profile .avatar{width:52px;height:52px;font-size:20px}
+:root:root .profile .t b{font-size:var(--t-title2);font-weight:600}
+:root:root .profile .t small{font-size:var(--t-foot)}
+:root:root .sgroup{padding-top:22px}
+:root:root .sgroup.tight{padding-top:22px}
+:root:root .sgroup h2{font-size:var(--t-foot)!important;letter-spacing:0!important;text-transform:none!important;font-weight:500!important;padding:0 32px!important;margin-bottom:6px}
+:root:root .settings .scard{margin:0 16px!important;background:var(--group)!important;border:0!important;border-radius:var(--r-m)!important;overflow:hidden;padding:0!important}
+:root:root .settings .srow{border-top:0!important}
+:root:root .settings .srow + .srow::before{content:"";position:absolute;top:0;left:16px;right:0;height:var(--hair);background:color-mix(in srgb,var(--ink) 16%,transparent);z-index:1}
+:root:root .settings .srow-main{padding:9px 16px!important;min-height:52px!important;gap:14px}
+:root:root .settings .srow-main .t b{font-size:var(--t-body);font-weight:400}
+:root:root .settings .srow-main .t small{font-size:var(--t-foot)}
+:root:root .settings .srow-main .val{font-size:var(--t-body);color:var(--mute)}
+:root:root .settings .chev svg{width:14px!important;height:14px!important;stroke-width:2.4!important}
+:root:root .settings .chev{color:color-mix(in srgb,var(--ink) 30%,transparent)}
+:root:root .leadseg{padding:0 16px 12px}
+:root:root .sfoot{font-size:var(--t-foot);margin:8px 32px 0!important;color:var(--mute)}
+
+/* ---------- second pass ---------- */
+/* Today: hairline dividers, inset to the text */
+:root:root .zt-slot + .zt-slot > .zt-row::before{border-top:var(--hair) solid color-mix(in srgb,var(--ink) 14%,transparent)}
+/* the header's two buttons: the same 40 px quiet circle */
+:root:root .zt-head .zt-ib{width:40px;height:40px;border-radius:20px;display:grid;place-items:center;background:var(--bchip)!important;color:var(--bink)!important}
+:root:root .zt-head .zt-ib svg{width:20px;height:20px}
+:root:root .zt-row.sun .zt-nm{font-weight:400}
+/* lighter hairlines everywhere */
+:root:root .z-st + .z-st::before,:root:root .settings .srow + .srow::before{background:color-mix(in srgb,var(--ink) 11%,transparent)}
+:root:root .zb-done{color:var(--acc2)!important}
+:root:root[data-theme=dark] .zb-done{color:var(--acc)!important}
+/* the sheet: no focus ring along its top edge */
+:root:root .sheet:focus,:root:root .sheet:focus-visible{outline:none}
+/* the sunnah row: chip and text on one line */
+:root:root .z-srow{display:flex;align-items:center;gap:12px}
+:root:root .z-srow .z-t{flex:1;min-width:0}
+:root:root .z-srow .z-sc{flex:none}
+
+/* ---------- sheets in motion: rise with a spring-like ease, slide down on close (app.js closeSheet adds .out for
+   a moment), follow a downward drag (sheet-drag.js) ---------- */
+@keyframes zsheet-in{from{transform:translateY(100%)}to{transform:none}}
+@keyframes zscrim-in{from{background:transparent}}
+:root:root .scrim.on{animation:zscrim-in .3s ease-out}
+:root:root .sheet{animation:zsheet-in .45s cubic-bezier(.32,.72,0,1)}
+:root:root .scrim.out{display:flex;pointer-events:none;background:transparent;transition:background .3s ease-out}
+:root:root .scrim.out .sheet{animation:none;transform:translateY(105%)!important;transition:transform .3s cubic-bezier(.32,.72,0,1)}
+:root:root .sheet.dragging{animation:none;transition:none}
+:root:root .sheet.settle{transition:transform .35s cubic-bezier(.32,.72,0,1)}
+@media (prefers-reduced-motion:reduce){:root:root .sheet,:root:root .scrim.on{animation:none}:root:root .scrim.out{display:none}}
+/* a sunnah / Witr row in a sheet: the name on top, its chip ("4 before") under it, the switch at the end */
+:root:root .z-srow{display:grid!important;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"t tg" "sc tg";column-gap:12px;row-gap:6px;align-items:center}
+:root:root .z-srow > .z-t{grid-area:t}
+:root:root .z-srow > .z-sc{grid-area:sc;justify-self:start}
+:root:root .z-srow > .z-tg{grid-area:tg}
+/* the sunnah rows of one prayer (and Witr) as one rounded group, hairlines between them */
+:root:root .z-sgrp{background:var(--group);border-radius:var(--r-m);overflow:hidden}
+:root:root:not([data-theme=dark]) .z-sgrp{background:var(--bg)}
+:root:root .z-sgrp > .z-srow{background:transparent!important;border-radius:0!important;position:relative}
+:root:root .z-sgrp > .z-srow + .z-srow::before{content:"";position:absolute;top:0;left:16px;right:0;height:var(--hair);background:color-mix(in srgb,var(--ink) 11%,transparent)}
+
+/* ---------- large titles: the slim bar that takes over when a page's big title scrolls away (large-title.js) ---------- */
+:root:root .ltbar{position:absolute;top:0;left:0;right:0;z-index:16;display:flex;align-items:flex-end;justify-content:center;
+  height:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 44px);padding:0 60px 11px;
+  background:color-mix(in srgb,var(--bg) 80%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(20px);backdrop-filter:saturate(1.6) blur(20px);
+  border-bottom:var(--hair) solid color-mix(in srgb,var(--ink) 16%,transparent);
+  opacity:0;pointer-events:none;transition:opacity .18s ease-out}
+:root:root .ltbar.on{opacity:1;pointer-events:auto}
+:root:root .ltbar b{font:600 var(--t-head)/1.2 var(--sans);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:root:root .phone.sheet-open .ltbar{opacity:0}
+@media (prefers-reduced-motion:reduce){:root:root .ltbar{transition:none}}
+/* Clear (under the choices) lines up with the section labels */
+:root:root .z-sh > .z-fine{margin-left:16px}
+
+/* ---------- section labels: sentence case everywhere, no spaced capitals (small badges like NEW keep theirs) ---------- */
+:root:root :is(.zr-h,.z-gdh-l,.gs .gbox h4,.z-lsec,.z-kick,.z-wd .z-wm dt,.z-range small,.z-wd .z-fh,.pr-sec h2,.pr-k,.pv-grp h4,.sgroup h2,.barprev h3,.ap-lab,.sh-h,.z-gd .z-lsec,.tl-sech h2.cap,.tl-qtrans h3,.rdprev .rp-lab){
+  text-transform:none!important;letter-spacing:0!important;font-size:var(--t-foot)!important;font-weight:600!important}
+/* grouped tables (Provisions and the like): filled, no outline, like the other groups */
+:root:root .pv-tbl{border:0;background:var(--group)}
+:root:root:not([data-theme=dark]) .pv-sh .pv-tbl,:root:root:not([data-theme=dark]) .sheet .pv-tbl{background:var(--bg)}
+
+/* ---------- other sheet lists in the same grouped style: option lists (Madhhab, method…) and This week ---------- */
+:root:root .sheet .opts,:root:root .rd-wl{background:var(--group);border-radius:var(--r-m);overflow:hidden;padding:0 16px;border:0}
+:root:root:not([data-theme=dark]) .sheet .opts,:root:root:not([data-theme=dark]) .rd-wl{background:var(--bg)}
+:root:root .sheet .opts > button.opt{border-top:var(--hair) solid color-mix(in srgb,var(--ink) 11%,transparent)}
+:root:root .sheet .opts > button.opt:first-child{border-top:0}
+:root:root .z-sh .rd-wi{border-bottom:0;border-top:var(--hair) solid color-mix(in srgb,var(--ink) 11%,transparent)}
+:root:root .z-sh .rd-wl > .rd-wi:first-child{border-top:0}
+:root:root .rd-wsh{margin-left:16px}
+/* Good deeds: each section's rows as one group */
+:root:root .z-drows{background:var(--group);border-radius:var(--r-m);overflow:hidden;padding:0 16px;margin-top:0}
+:root:root:not([data-theme=dark]) .z-drows{background:var(--bg)}
+:root:root .z-drows > .z-drow{border-top:var(--hair) solid color-mix(in srgb,var(--ink) 11%,transparent)}
+:root:root .z-drows > .z-drow:first-child{border-top:0}
+:root:root .z-gd .z-addd{margin-top:14px}

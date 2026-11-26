@@ -5,11 +5,11 @@
 .zt-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 14px) 16px 4px;min-height:60px}
 .zt-top.page{padding-bottom:0}
 .zt-dt{min-width:0}
-.zt-dt b{display:block;font-size:15px;font-weight:600;color:var(--ink)}
-.zt-dt small{display:block;font-size:13px;color:var(--mute);margin-top:1px}
-.zt-pg{font-size:17px;font-weight:600;color:var(--ink)}
+.zt-dt b{display:block;font-size:var(--t-sub);font-weight:600;color:var(--ink)}
+.zt-dt small{display:block;font-size:var(--t-foot);color:var(--mute);margin-top:1px}
+.zt-pg{font-size:var(--t-body);font-weight:600;color:var(--ink)}
 .zt-tr{display:flex;align-items:center;gap:6px;flex:none}
-.zt-av{width:40px;height:40px;border-radius:50%;background:var(--soft);color:var(--on-soft);display:grid;place-items:center;font:600 15px/1 var(--sans);flex:none}
+.zt-av{width:40px;height:40px;border-radius:50%;background:var(--soft);color:var(--on-soft);display:grid;place-items:center;font:600 var(--t-sub)/1 var(--sans);flex:none}
 .zt-ib{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--ink);flex:none}
 .zt-ib:disabled{color:var(--faint);opacity:.55;cursor:default}
 .zt-ib svg,.zc svg.i{width:22px;height:22px}
@@ -21,7 +21,7 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 #v-home{background:var(--bg);color:var(--ink);font-family:var(--sans);font-variant-numeric:tabular-nums}
 #v-home.on{display:flex;flex-direction:column;height:100%;min-height:0}
 .zt-cb{display:flex;gap:24px;padding:0 16px;border-bottom:1px solid var(--line);flex:none}
-.zt-cb button{position:relative;font-size:15px;color:var(--mute);padding:10px 0 12px;min-height:44px}
+.zt-cb button{position:relative;font-size:var(--t-sub);color:var(--mute);padding:10px 0 12px;min-height:44px}
 .zt-cb button.on{color:var(--ink);font-weight:600}
 .zt-cb button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:var(--underline)}
 .zt-cb button:focus-visible{outline-offset:-2px;border-radius:6px}
@@ -35,61 +35,61 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 /* ---------- chapter heads ---------- */
 .zt-chh{margin:0 0 16px}
 .zt-title{font:400 36px/1.1 var(--serif);margin:0;color:var(--ink);overflow-wrap:anywhere}
-.zt-sub{font-size:15px;color:var(--mute);margin:6px 0 0}
+.zt-sub{font-size:var(--t-sub);color:var(--mute);margin:6px 0 0}
 .zt-sub b{color:var(--ink);font-weight:600}
 .zt-dot{width:8px;height:8px;border-radius:50%;background:var(--gold-dot);display:inline-block;flex:none}
 .zt-fill{flex:1;min-height:12px}
-.zt-foot{font-size:13px;color:var(--faint);text-align:center;margin:12px 0 0;line-height:1.45}
-.zt-foot.sm{font-size:12px;text-align:left;margin:14px 4px 0}
+.zt-foot{font-size:var(--t-foot);color:var(--faint);text-align:center;margin:12px 0 0;line-height:1.45}
+.zt-foot.sm{font-size:var(--t-foot);text-align:left;margin:14px 4px 0}
 
 /* ---------- cards, rows, buttons ---------- */
 .zt-card{background:var(--card);border:1px solid var(--card-line);border-radius:20px;padding:8px 16px;width:100%}
 .zt-card.pad{padding:20px}
 .zt-card + .zt-card,.zt-card + .zt-line,.zt-line + .zt-line{margin-top:12px}
-.zt-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;border-radius:16px;font-size:17px;font-weight:600;text-align:center;padding:0 14px}
+.zt-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;border-radius:var(--r-m);font-size:var(--t-body);font-weight:600;text-align:center;padding:0 14px}
 .zt-btn svg{width:22px;height:22px}
 .zt-btn.pri{background:var(--acc);color:var(--on-acc)}
 .zt-btn.sec{background:var(--soft);color:var(--on-soft)}
 .zt-btn.soft{background:var(--neutral);color:var(--ink)}
-.zt-btn.sm{width:auto;min-height:40px;padding:0 16px;border-radius:12px;font-size:15px;flex:none}
+.zt-btn.sm{width:auto;min-height:40px;padding:0 16px;border-radius:var(--r-s);font-size:var(--t-sub);flex:none}
 .zt-btn.sm svg{width:17px;height:17px}
 .zt-link{color:var(--acc);font-weight:600;min-height:44px;display:inline-flex;align-items:center;gap:4px}
 .zt-link.in{min-height:0;display:inline;font-size:inherit}
-.zt-link.back{font-size:16px;font-weight:500;margin-left:-6px}
+.zt-link.back{font-size:var(--t-body);font-weight:500;margin-left:-6px}
 .zt-link.back svg{width:20px;height:20px}
 :root[data-theme=dark] .zt-link{color:var(--acc)}
-.zt-note{font-size:13px;color:var(--mute);margin:12px 0 0;line-height:1.45}
+.zt-note{font-size:var(--t-foot);color:var(--mute);margin:12px 0 0;line-height:1.45}
 .zt-note.c{text-align:center}
-.zt-guide{display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;color:var(--mute);margin:4px 0 0;padding:9px 12px;background:var(--neutral);border-radius:12px}
+.zt-guide{display:flex;align-items:center;justify-content:center;gap:8px;font-size:var(--t-sub);color:var(--mute);margin:4px 0 0;padding:9px 12px;background:var(--neutral);border-radius:var(--r-s)}
 .zt-guide svg{width:18px;height:18px;color:var(--acc2)}
 
-.zt-band{display:flex;align-items:center;gap:10px;background:var(--neutral);border-radius:12px;padding:9px 12px;font-size:14px;margin:0 0 16px;color:var(--ink)}
+.zt-band{display:flex;align-items:center;gap:10px;background:var(--neutral);border-radius:var(--r-s);padding:9px 12px;font-size:var(--t-sub);margin:0 0 16px;color:var(--ink)}
 .zt-band b{font-weight:600}
 .zt-band svg{width:18px;height:18px}
-.zt-ico{width:36px;height:36px;border-radius:12px;background:var(--neutral);color:var(--acc2);display:grid;place-items:center;flex:none}
+.zt-ico{width:36px;height:36px;border-radius:var(--r-s);background:var(--neutral);color:var(--acc2);display:grid;place-items:center;flex:none}
 .zt-ico svg{width:18px;height:18px}
 
 /* the quiet one-line rows */
-.zt-line{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:0 16px;border-radius:16px;background:var(--card);border:1px solid var(--card-line);text-align:left;color:var(--ink)}
+.zt-line{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:0 16px;border-radius:var(--r-m);background:var(--card);border:1px solid var(--card-line);text-align:left;color:var(--ink)}
 .zt-fill + .zt-line{margin-top:0}
 .zt-line .zt-lc{width:18px;height:18px;color:var(--acc2)}
-.zt-line .l{flex:1;min-width:0;font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.zt-line .v{font-size:15px;color:var(--mute);white-space:nowrap}
+.zt-line .l{flex:1;min-width:0;font-size:var(--t-sub);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zt-line .v{font-size:var(--t-sub);color:var(--mute);white-space:nowrap}
 .zt-line .v b{color:var(--ink);font-weight:600}
 .zt-cv{width:18px!important;height:18px!important;color:var(--faint)}
 
 .zt-attn{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:12px}
 .zt-attn .t{flex:1;min-width:0}
-.zt-attn .t b{display:block;font-size:15px}
-.zt-attn .t small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px;line-height:1.35}
+.zt-attn .t b{display:block;font-size:var(--t-sub)}
+.zt-attn .t small{display:block;font-size:var(--t-foot);color:var(--mute);margin-top:2px;line-height:1.35}
 .zt-nafl{margin-top:12px;padding:12px 16px}
-.zt-nafl b{font-size:14px;font-weight:600}
+.zt-nafl b{font-size:var(--t-sub);font-weight:600}
 .zt-pv{margin:12px -20px 0}
 .zt-more{display:flex;align-items:flex-start;gap:12px;margin-top:12px;padding:14px 16px;border:1.5px dashed var(--line);border-radius:18px;width:100%;text-align:left;color:var(--ink)}
-.zt-more .pl{width:34px;height:34px;border-radius:10px;background:var(--neutral);display:grid;place-items:center;flex:none;color:var(--mute)}
+.zt-more .pl{width:34px;height:34px;border-radius:var(--r-s);background:var(--neutral);display:grid;place-items:center;flex:none;color:var(--mute)}
 .zt-more .pl svg{width:18px;height:18px}
-.zt-more b{display:block;font-size:14.5px;font-weight:600}
-.zt-more small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px;line-height:1.4}
+.zt-more b{display:block;font-size:var(--t-sub);font-weight:600}
+.zt-more small{display:block;font-size:var(--t-foot);color:var(--mute);margin-top:2px;line-height:1.4}
 
 /* ---------- Today: one page, Direction B "Time of day" (19 Nov 2026; design-review/mockups2/redesign/declutter) ----------
    The header sits in a band tinted by the time of day (dawn, day, afternoon, dusk, night: views/home.js sets
@@ -109,13 +109,13 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 
 /* the top row inside the band: greeting, date · Hijri; calendar, provisions chip, the initial */
 .zt-head .zt-top{flex-wrap:wrap;padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 16px) 16px 0 24px;gap:0 6px;min-height:0}
-.zt-head b.zt-hi{flex:1;min-width:0;font-size:15.5px;font-weight:600;color:var(--bink);margin:0;line-height:1.3;white-space:normal;overflow:visible;overflow-wrap:anywhere}
+.zt-head b.zt-hi{flex:1;min-width:0;font-size:var(--t-sub);font-weight:600;color:var(--bink);margin:0;line-height:1.3;white-space:normal;overflow:visible;overflow-wrap:anywhere}
 /* with a name: "As-salāmu ʿalaykum," then the name on its own line, a little larger and heavier; the two lines
    together are about the height of the 44 px buttons beside them, so the hero hardly moves */
 .zt-head b.zt-hi.two{display:flex;flex-direction:column;align-self:center}
-.zt-head .zt-hi1{font-size:14.5px;font-weight:500;line-height:1.25}
-.zt-head .zt-hin{font-size:19px;font-weight:700;line-height:1.2;letter-spacing:-.005em}
-.zt-head .zt-date{flex-basis:100%;font-size:13px;color:var(--bmute);margin-top:3px;padding-right:8px}
+.zt-head .zt-hi1{font-size:var(--t-sub);font-weight:500;line-height:1.25}
+.zt-head .zt-hin{font-size:var(--t-title3);font-weight:700;line-height:1.2;letter-spacing:-.005em}
+.zt-head .zt-date{flex-basis:100%;font-size:var(--t-foot);color:var(--bmute);margin-top:3px;padding-right:8px}
 .zt-head .zt-ib{color:var(--bink)}
 .zt-head .zt-av{background:var(--bchip)!important;color:var(--bink)!important}
 
@@ -126,31 +126,31 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .zt-arch .o{stroke-opacity:.55;stroke-width:1.4}
 .zt-arch .n{stroke-opacity:.25;stroke-width:1}
 .zt-in{position:relative;padding:36px 22px 14px}
-.zt-lbl{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--bmute)}
+.zt-lbl{display:inline-flex;align-items:center;gap:7px;font-size:var(--t-foot);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--bmute)}
 .zt-lbl i{width:7px;height:7px;border-radius:4px;background:var(--bdot);display:block}
 .zt-lbl.next i{background:transparent;box-shadow:inset 0 0 0 1.5px var(--bmute)}
 .zt-pn{font:400 44px/1.05 var(--serif);margin:4px 0 0;color:var(--bink);overflow-wrap:anywhere}
-.zt-cd{font-size:16px;color:var(--bmute);margin:2px 0 0;font-variant-numeric:tabular-nums}
-.zt-cd2{font-size:13px;color:var(--bmute);margin:1px 0 0}
+.zt-cd{font-size:var(--t-body);color:var(--bmute);margin:2px 0 0;font-variant-numeric:tabular-nums}
+.zt-cd2{font-size:var(--t-foot);color:var(--bmute);margin:1px 0 0}
 .zt-acts{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:2px;padding:0 16px}
 .zt-rb{width:48px;height:48px;border-radius:24px;display:grid;place-items:center;flex:none;background:var(--bchip)!important;color:var(--bink)!important;touch-action:manipulation}
 .zt-rb.ghost{background:transparent!important;color:var(--bmute)!important}
 .zt-rb svg{width:22px;height:22px}
 .zt-rb.ghost svg{stroke-width:3.2}
-.zt-pray{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;flex:0 1 160px;min-width:120px;padding:0 20px;border-radius:24px;background:var(--bbtn)!important;color:var(--bbtnink)!important;font-size:16px!important;font-weight:650!important;text-align:center!important;touch-action:manipulation;white-space:nowrap}
+.zt-pray{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;flex:0 1 160px;min-width:120px;padding:0 20px;border-radius:24px;background:var(--bbtn)!important;color:var(--bbtnink)!important;font-size:var(--t-body)!important;font-weight:650!important;text-align:center!important;touch-action:manipulation;white-space:nowrap}
 .zt-pray svg{width:19px;height:19px;stroke-width:2.2}
 .zt-pray.done{background:var(--bchip)!important;color:var(--bink)!important;flex-basis:auto}
 .zt-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:0 16px;margin-top:4px;padding:0 16px}
-.zt-chip{display:inline-flex;align-items:center;gap:7px;min-height:36px;font-size:13px;color:var(--bmute)!important;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.zt-chip{display:inline-flex;align-items:center;gap:7px;min-height:36px;font-size:var(--t-foot);color:var(--bmute)!important;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .zt-chip .rg{width:15px;height:15px;border-radius:8px;box-shadow:inset 0 0 0 1.6px currentColor;display:grid;place-items:center;flex:none}
 .zt-chip b{font-weight:600;color:var(--bink)}
 .zt-chip.d .rg{background:var(--bbtn);color:var(--bbtnink);box-shadow:none}
 .zt-chip.d .rg svg{width:11px;height:11px;stroke:currentColor;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .zt-qc{text-align:center;margin-top:4px}
-.zt-qb{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:0 14px 0 10px;border-radius:17px;background:var(--bchip)!important;color:var(--bink)!important;font-size:14px;font-weight:600;white-space:nowrap;position:relative}
+.zt-qb{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:0 14px 0 10px;border-radius:var(--r-m);background:var(--bchip)!important;color:var(--bink)!important;font-size:var(--t-sub);font-weight:600;white-space:nowrap;position:relative}
 .zt-qb::before{content:"";position:absolute;inset:-6px 0}
 .zt-qb svg{width:19px;height:19px}
-.zt-hnote{font-size:13px;color:var(--bmute);text-align:center;margin:8px 24px 0;line-height:1.4}
+.zt-hnote{font-size:var(--t-foot);color:var(--bmute);text-align:center;margin:8px 24px 0;line-height:1.4}
 
 /* above the list: all five, the guide line, the excused band, yesterday */
 .zt-lead{display:flex;flex-direction:column;gap:8px;padding:0 16px}
@@ -165,11 +165,11 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .zt-row{position:relative;display:flex;align-items:center;min-height:52px;padding:6px 18px 6px 24px;color:var(--ink)}
 .zt-slot + .zt-slot > .zt-row::before{content:"";position:absolute;left:24px;right:18px;top:0;border-top:1px solid var(--line)}
 .zt-tap{position:absolute;inset:0;width:100%;border-radius:0;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.zt-tap:focus-visible{outline-offset:-2px;border-radius:12px}
-.zt-nm{flex:1;min-width:0;display:flex;align-items:center;gap:10px;font-size:17px;font-weight:500;pointer-events:none;overflow-wrap:anywhere}
-.zt-nm small{font-size:13px;font-weight:500;color:var(--mute)}
+.zt-tap:focus-visible{outline-offset:-2px;border-radius:var(--r-s)}
+.zt-nm{flex:1;min-width:0;display:flex;align-items:center;gap:10px;font-size:var(--t-body);font-weight:500;pointer-events:none;overflow-wrap:anywhere}
+.zt-nm small{font-size:var(--t-foot);font-weight:500;color:var(--mute)}
 .zt-row.cur .zt-nm{font-weight:650}
-.zt-tm{font-size:15px;color:var(--mute);text-align:right;min-width:74px;white-space:nowrap;font-variant-numeric:tabular-nums;pointer-events:none}
+.zt-tm{font-size:var(--t-sub);color:var(--mute);text-align:right;min-width:74px;white-space:nowrap;font-variant-numeric:tabular-nums;pointer-events:none}
 .zt-tm small{font-size:.72em;letter-spacing:.04em;margin-left:2px}
 .zt-row.cur .zt-tm{color:var(--ink)}
 .zt-mkw{width:44px;display:flex;justify-content:flex-end;margin-left:6px;flex:none;pointer-events:none}
@@ -183,13 +183,13 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .zt-row .z-mk.z-open{box-shadow:inset 0 0 0 1.6px var(--faint)}
 .zt-row .z-mk.z-later{box-shadow:none}
 /* Witr on ʿIshāʾ's row once ʿIshāʾ is logged (the hero has moved on to Fajr): a ring toggle above the row's tap area */
-.zt-row .zt-wr{position:relative;z-index:1;margin-right:12px;color:var(--mute)!important;font-weight:600;font-size:13.5px}
+.zt-row .zt-wr{position:relative;z-index:1;margin-right:12px;color:var(--mute)!important;font-weight:600;font-size:var(--t-foot)}
 .zt-row .zt-wr::before{content:"";position:absolute;inset:-4px -6px}
 .zt-row .zt-wr .rg{width:17px;height:17px;border-radius:9px;box-shadow:inset 0 0 0 1.6px currentColor;display:grid;place-items:center;flex:none}
 .zt-row .zt-wr.d{color:var(--acc2)!important}
 .zt-row .zt-wr.d .rg{background:var(--acc2);color:var(--card);box-shadow:none}
 .zt-row .zt-wr.d .rg svg{width:12px;height:12px;stroke:currentColor;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.zt-mkn{position:relative;z-index:1;display:inline-flex;align-items:center;gap:5px;min-height:30px;padding:0 11px;margin-right:8px;border-radius:15px;background:var(--soft)!important;color:var(--on-soft)!important;font-size:13px;font-weight:600;white-space:nowrap;touch-action:manipulation}
+.zt-mkn{position:relative;z-index:1;display:inline-flex;align-items:center;gap:5px;min-height:30px;padding:0 11px;margin-right:8px;border-radius:var(--r-m);background:var(--soft)!important;color:var(--on-soft)!important;font-size:var(--t-foot);font-weight:600;white-space:nowrap;touch-action:manipulation}
 .zt-mkn svg{width:15px;height:15px;stroke-width:2}
 .zt-mkn::before{content:"";position:absolute;inset:-8px -2px}
 /* ⋯ for keyboards and screen readers: out of sight until focused (touch uses long press) */
@@ -198,16 +198,16 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .zt-srm svg{width:20px;height:20px;stroke-width:3.2}
 /* sunrise: a quiet row between Fajr and Zuhr (not a prayer) */
 .zt-row.sun{min-height:40px;color:var(--mute)}
-.zt-row.sun .zt-nm{font-size:14px;font-weight:400;gap:8px}
+.zt-row.sun .zt-nm{font-size:var(--t-sub);font-weight:400;gap:8px}
 .zt-row.sun .zt-nm svg{width:17px;height:17px}
-.zt-row.sun .zt-tm{font-size:13px}
+.zt-row.sun .zt-tm{font-size:var(--t-foot)}
 
 /* the two pills below the list: Good deeds · Make-ups */
 .zt-pills{display:flex;gap:10px;margin:18px 2px 0}
-.zt-pill{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:10px;min-height:52px;padding:11px 12px 11px 14px;border-radius:16px;background:var(--neutral)!important;color:var(--ink)!important;text-align:left}
+.zt-pill{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:10px;min-height:52px;padding:11px 12px 11px 14px;border-radius:var(--r-m);background:var(--neutral)!important;color:var(--ink)!important;text-align:left}
 .zt-pill .zt-pi{width:19px;height:19px;color:var(--acc2)}
-.zt-pill .l{flex:1;min-width:0;font-size:14px;font-weight:600;line-height:1.2}
-.zt-pill em{display:block;font-style:normal;font-size:13px;font-weight:400;color:var(--mute);margin-top:1px;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zt-pill .l{flex:1;min-width:0;font-size:var(--t-sub);font-weight:600;line-height:1.2}
+.zt-pill em{display:block;font-style:normal;font-size:var(--t-foot);font-weight:400;color:var(--mute);margin-top:1px;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .zt-pill .zt-cv{width:16px!important;height:16px!important;color:var(--faint)}
 .zt-pills.one .zt-pill{flex:0 1 calc(50% - 5px)}
 .zt-rest > .zt-card,.zt-rest > .zt-more,.zt-rest > .zt-pv{margin-top:12px}
@@ -217,7 +217,7 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 
 /* ---------- sheets: Other, Good deeds, a day ---------- */
 .sheet{padding-left:16px;padding-right:16px}
-.z-sh h3{font-family:var(--sans);font-weight:600;font-size:22px;line-height:1.2}
+.z-sh h3{font-family:var(--sans);font-weight:600;font-size:var(--t-title2);line-height:1.2}
 .z-sh .z-lhd{margin-bottom:8px}
 .z-cls{width:44px;height:44px;margin:-6px -8px 0 0;background:none!important;position:relative}
 .z-cls::before{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--neutral)}
@@ -228,24 +228,24 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .z-optb{flex:1;display:flex;align-items:center;gap:14px;min-height:60px;text-align:left}
 .z-optb .z-mk{width:32px;height:32px}
 .z-optb .z-t{flex:1;min-width:0}
-.z-optb .z-t b{display:block;font-size:16px;font-weight:500;color:var(--ink)}
-.z-optb .z-t small{display:block;font-size:13px;color:var(--mute);margin-top:1px}
+.z-optb .z-t b{display:block;font-size:var(--t-body);font-weight:500;color:var(--ink)}
+.z-optb .z-t small{display:block;font-size:var(--t-foot);color:var(--mute);margin-top:1px}
 .z-art{color:var(--mute);font-weight:400}
 .z-opt .z-xi{width:28px;height:28px;margin:0}
 .z-opt .z-cv{width:18px;height:18px;color:var(--faint);stroke:currentColor;fill:none;stroke-width:1.8}
-.z-note2{font-size:13px;color:var(--mute);margin:12px 0 0;line-height:1.45}
-.z-tbtn{flex:1;min-height:44px;color:var(--acc);font-weight:600;font-size:15px;text-align:center!important}
-.z-pbtn{min-height:48px;border-radius:14px;font-weight:600!important;font-size:16px!important}
+.z-note2{font-size:var(--t-foot);color:var(--mute);margin:12px 0 0;line-height:1.45}
+.z-tbtn{flex:1;min-height:44px;color:var(--acc);font-weight:600;font-size:var(--t-sub);text-align:center!important}
+.z-pbtn{min-height:48px;border-radius:var(--r-m);font-weight:600!important;font-size:var(--t-body)!important}
 .z-sh p.z-sub b{font-weight:600}
-.z-gbtn{min-height:48px;border-radius:14px;font-weight:600!important;font-size:16px!important;background:var(--soft)!important;color:var(--on-soft)!important}
+.z-gbtn{min-height:48px;border-radius:var(--r-m);font-weight:600!important;font-size:var(--t-body)!important;background:var(--soft)!important;color:var(--on-soft)!important}
 .z-drows{margin-top:4px}
 .z-drow{display:flex;align-items:center;gap:10px;min-height:60px;border-top:1px solid var(--line);padding:6px 0}
 .z-drow:first-child{border-top:0}
 .z-drow .z-t{flex:1;min-width:0;text-align:left;min-height:44px;display:flex;flex-direction:column;justify-content:center}
-.z-drow .z-t b{display:block;font-size:16px;font-weight:500;color:var(--ink)}
-.z-drow .z-t small{display:block;font-size:13px;color:var(--mute);margin-top:1px}
-.z-drow .z-link{font-size:13px;font-weight:600;color:var(--acc2)}
-.z-drow .tl-amal-read{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:12px;background:var(--soft);color:var(--on-soft);font-weight:600;font-size:13px;white-space:nowrap}
+.z-drow .z-t b{display:block;font-size:var(--t-body);font-weight:500;color:var(--ink)}
+.z-drow .z-t small{display:block;font-size:var(--t-foot);color:var(--mute);margin-top:1px}
+.z-drow .z-link{font-size:var(--t-foot);font-weight:600;color:var(--acc2)}
+.z-drow .tl-amal-read{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:var(--r-s);background:var(--soft);color:var(--on-soft);font-weight:600;font-size:var(--t-foot);white-space:nowrap}
 .z-drow .tl-amal-read svg{width:12px;height:12px}
 .z-tick{min-width:44px;min-height:44px;display:grid;place-items:center;flex:none}
 .z-bx{width:28px;height:28px;border-radius:9px;box-shadow:inset 0 0 0 1.5px var(--faint);display:grid;place-items:center}
@@ -256,9 +256,9 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
    must), so they never run into each other at 360px or with large text. */
 .z-pd{display:grid;grid-template-columns:minmax(64px,1.25fr) repeat(4,minmax(0,1fr));column-gap:4px;align-items:center;min-height:56px;border-top:1px solid var(--line)}
 .z-pd.z-hd{min-height:0;border-top:0;padding:4px 0 8px;align-items:end}
-.z-pd .z-ch{font-size:11.5px;color:var(--mute);text-align:center;font-weight:600;line-height:1.2;min-width:0;hyphens:manual;padding:0 1px}
+.z-pd .z-ch{font-size:var(--t-cap);color:var(--mute);text-align:center;font-weight:600;line-height:1.2;min-width:0;hyphens:manual;padding:0 1px}
 .z-pdg{container:pdg / inline-size}
-.z-pdl{display:none;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--mute);font-weight:600;padding:2px 0 10px}
+.z-pdl{display:none;flex-wrap:wrap;gap:6px 14px;font-size:var(--t-foot);color:var(--mute);font-weight:600;padding:2px 0 10px}
 .z-pdl > span{display:inline-flex;align-items:center;gap:6px}
 .z-pdl .z-mk{width:22px;height:22px}
 .z-pdl .z-mk svg{width:12px;height:12px}
@@ -266,25 +266,25 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 @container pdg (max-width: 300px){ .z-pd.z-hd{display:none} .z-pdl{display:flex} }
 .z-sub .z-hj{color:var(--mute)}
 .z-pd .z-nm{text-align:left;min-height:48px;display:flex;flex-direction:column;justify-content:center}
-.z-pd .z-nm b{display:block;font-size:16px;font-weight:600;color:var(--ink)}
-.z-pd .z-nm small{font-size:13px;color:var(--mute)}
+.z-pd .z-nm b{display:block;font-size:var(--t-body);font-weight:600;color:var(--ink)}
+.z-pd .z-nm small{font-size:var(--t-foot);color:var(--mute)}
 .z-pd .z-pick{display:grid;place-items:center;min-height:48px}
 .z-pd .z-pick .z-mk{width:32px;height:32px}
 .z-pd .z-pick[disabled] .z-mk{opacity:.4}
-.z-pd .z-pdn{grid-column:2 / 6;font-size:13px;color:var(--mute);text-align:center}
+.z-pd .z-pdn{grid-column:2 / 6;font-size:var(--t-foot);color:var(--mute);text-align:center}
 .z-dlines{margin-top:6px}
 .z-dline{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;border-top:1px solid var(--line);padding:0 2px;color:var(--ink)}
 .z-dline .z-lc{width:18px;height:18px;color:var(--acc2)}
-.z-dline .z-l{flex:1;font-size:15px;font-weight:500;text-align:left}
-.z-dline .z-v{font-size:15px;color:var(--mute);text-align:right;min-width:0;flex:0 1 auto}
+.z-dline .z-l{flex:1;font-size:var(--t-sub);font-weight:500;text-align:left}
+.z-dline .z-v{font-size:var(--t-sub);color:var(--mute);text-align:right;min-width:0;flex:0 1 auto}
 .z-dline .z-l{flex-shrink:0;max-width:60%}
 .z-dline .z-v b{color:var(--ink);font-weight:600}
 .z-dline .z-cv{width:18px;height:18px;color:var(--faint)}
 .z-dline svg{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .z-dpv{margin-top:10px}
-.z-pdex{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:14px 8px;border-radius:16px;background:var(--neutral);margin-top:6px}
+.z-pdex{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:14px 8px;border-radius:var(--r-m);background:var(--neutral);margin-top:6px}
 .z-pdex svg{width:24px;height:24px;color:var(--mute)}
-.z-pdex p{font-size:13.5px;color:var(--mute);line-height:1.45}
+.z-pdex p{font-size:var(--t-foot);color:var(--mute);line-height:1.45}
 .z-pdex .z-acts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .z-pdex .z-gbtn{flex:none;padding:0 16px}
 .z-sh .z-scs + .z-lsec{margin-top:16px}
@@ -299,23 +299,23 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 /* ---------- Read, Progress and Make-ups: the initial at the top right ---------- */
 .tl-ph.hub{align-items:center;padding-top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 30px)}
 .tl-wird{margin-top:4px}
-.tl-sech .tl-choose{font-size:13px;font-weight:600;color:var(--link);min-height:36px}
+.tl-sech .tl-choose{font-size:var(--t-foot);font-weight:600;color:var(--link);min-height:36px}
 .pg-top{position:relative;padding-right:72px!important}
 .pg-top .zt-tr{position:absolute;right:16px;top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 24px)}
 .qa .zt-top{padding-left:16px;padding-right:16px}
 .qa .zt-top + .pagehead{padding-top:4px}
 
 /* Settings → Widgets: the Quick Settings button row (Android) */
-.settings .tileadd{flex:none;min-height:40px;padding:0 16px;border-radius:12px;background:var(--soft);color:var(--on-soft);font-weight:600;font-size:14px}
+.settings .tileadd{flex:none;min-height:40px;padding:0 16px;border-radius:var(--r-s);background:var(--soft);color:var(--on-soft);font-weight:600;font-size:var(--t-sub)}
 
 /* ---------- 19 Nov 2026 round: greeting, Qibla button, the Today lines, deeds sheet ---------- */
-.zt-hi{display:block;font-size:13px;color:var(--mute);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zt-hi{display:block;font-size:var(--t-foot);color:var(--mute);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .zt-line .l{flex:1 1 auto}
 .zt-line .v{min-width:0;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto}
-.z-addd{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;border-top:1px solid var(--line)!important;color:var(--acc2)!important;font-weight:600;font-size:15px;text-align:left}
+.z-addd{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;border-top:1px solid var(--line)!important;color:var(--acc2)!important;font-weight:600;font-size:var(--t-sub);text-align:left}
 .z-addd svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
 .z-lsec.z-nfh{margin-top:22px}
-.z-lsec .z-chs{margin-left:auto;font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--acc2);min-height:36px;padding:0 4px}
+.z-lsec .z-chs{margin-left:auto;font-size:var(--t-foot);font-weight:600;letter-spacing:0;text-transform:none;color:var(--acc2);min-height:36px;padding:0 4px}
 .z-nsw{width:46px;height:28px;border-radius:14px;background:var(--switch-off)!important;position:relative;flex:none;transition:background .2s}
 .z-nsw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--surface2,#fff);transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .z-nsw.z-on{background:var(--leaf,var(--acc))!important}
@@ -323,32 +323,32 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 @media (prefers-reduced-motion:reduce){.z-nsw,.z-nsw::after{transition:none}}
 
 /* ---------- the Good deeds sheet (19 Nov 2026): Reading · Deeds · Nafl prayers; tick on the left, Read on the right ---------- */
-.z-gd h3{font:400 30px/1.1 var(--serif)}
+.z-gd h3{font:400 var(--t-title)/1.1 var(--serif)}
 .z-gbar{display:block;height:4px;border-radius:2px;background:var(--track);margin:4px 0 2px;overflow:hidden}
 .z-gbar i{display:block;height:100%;background:var(--acc2)}
-.z-gd .z-lsec{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:20px 0 2px;display:flex;align-items:center;gap:6px}
+.z-gd .z-lsec{font-size:var(--t-foot);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:20px 0 2px;display:flex;align-items:center;gap:6px}
 .z-gd .z-drow{gap:12px;min-height:56px;padding:4px 0}
 .z-gd .z-drow > .z-t{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
-.z-gd .z-drow > .z-t b{font-size:16px;font-weight:500;color:var(--ink)}
-.z-gd .z-drow > .z-t small{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;font-size:13px;color:var(--mute);margin-top:1px}
+.z-gd .z-drow > .z-t b{font-size:var(--t-body);font-weight:500;color:var(--ink)}
+.z-gd .z-drow > .z-t small{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;font-size:var(--t-foot);color:var(--mute);margin-top:1px}
 .z-gd .z-drow.z-dn > .z-t b{color:var(--mute)}
 .z-gd .z-tick{margin-left:-8px}
 .z-gd .z-bx{width:26px;height:26px;border-radius:8px;box-shadow:inset 0 0 0 1.8px var(--mute)}
 .z-gd .z-bx.z-part{box-shadow:inset 0 0 0 1.8px var(--acc2);background:linear-gradient(to top,var(--soft) 55%,transparent 55%)}
-.z-rdb,.z-cnt{display:inline-flex;align-items:center;gap:6px;flex:none;min-height:34px;padding:0 12px;border-radius:17px;background:var(--soft)!important;color:var(--on-soft)!important;font-size:13px;font-weight:650;white-space:nowrap;position:relative}
+.z-rdb,.z-cnt{display:inline-flex;align-items:center;gap:6px;flex:none;min-height:34px;padding:0 12px;border-radius:var(--r-m);background:var(--soft)!important;color:var(--on-soft)!important;font-size:var(--t-foot);font-weight:650;white-space:nowrap;position:relative}
 .z-rdb::before{content:"";position:absolute;inset:-5px 0}
 .z-rdb svg,.z-cnt svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.z-cnt{min-height:28px;padding:0 10px;font-size:12.5px}
+.z-cnt{min-height:28px;padding:0 10px;font-size:var(--t-foot)}
 /* the one quiet row at the bottom: "Add or change daily deeds" (with nothing chosen: under the short note) */
 .z-gd .z-addd{margin-top:14px}
 .z-gd .z-addd.z-first{border-top:0!important;margin-top:6px}
-.z-gd .z-gde{margin:18px 0 0;font-size:14.5px;line-height:1.5;color:var(--mute)}
+.z-gd .z-gde{margin:18px 0 0;font-size:var(--t-sub);line-height:1.5;color:var(--mute)}
 .z-addd.z-own{margin-top:14px}
 .z-gd .z-bx.z-on{box-shadow:none}
 /* a toast with a second line (Today's first tap: "Tap the tick again for congregation") */
 .toast-t{flex:1;min-width:0;display:flex;flex-direction:column}
-.toast-t small{font-size:12.5px;opacity:.85;margin-top:2px}
-.zt-pray.rem{flex:0 1 auto;white-space:normal;height:auto;min-height:48px;padding:6px 18px;line-height:1.2;font-size:15px!important}
+.toast-t small{font-size:var(--t-foot);opacity:.85;margin-top:2px}
+.zt-pray.rem{flex:0 1 auto;white-space:normal;height:auto;min-height:48px;padding:6px 18px;line-height:1.2;font-size:var(--t-sub)!important}
 
 /* ---------- 20 Nov: header block aligned; the provisions level inside its ring ---------- */
 .zt-head .zt-top{flex-wrap:nowrap;align-items:center;gap:12px}
@@ -362,7 +362,7 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 .pv-chip.ring svg{position:absolute;inset:0}
 .pv-chip.ring .t{stroke:color-mix(in srgb,var(--bink,var(--ink)) 16%,transparent)}
 .pv-chip.ring .a{stroke:var(--gold-dot)}
-.pv-lv{position:relative;display:flex;flex-direction:column;align-items:center;line-height:1;font:700 14px/1 var(--sans);font-variant-numeric:tabular-nums}
+.pv-lv{position:relative;display:flex;flex-direction:column;align-items:center;line-height:1;font:700 var(--t-sub)/1 var(--sans);font-variant-numeric:tabular-nums}
 .pv-lv small{font-size:8.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:.8;margin-bottom:1px}
 /* the greeting and name on the left with the icons centred on them; the date runs full width underneath */
 .zt-head .zt-top{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:4px;align-items:center}
@@ -373,6 +373,6 @@ svg.i{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke
 /* the level ring: one centred line "Lv 3", well inside the ring so the gold arc never touches it */
 .pv-chip.ring{width:44px;height:44px}
 .pv-chip.ring svg{z-index:0}
-.pv-lv{z-index:1;flex-direction:row;font:700 11.5px/1 var(--sans);letter-spacing:-.01em;white-space:nowrap}
+.pv-lv{z-index:1;flex-direction:row;font:700 var(--t-cap)/1 var(--sans);letter-spacing:-.01em;white-space:nowrap}
 /* the date · Hijri line as the heading of the prayer list (between the hero and Fajr), not in the band */
-.zt-lead .zt-ldate{margin:14px 8px 2px;font-size:13px;font-weight:600;color:var(--mute);letter-spacing:.01em;font-variant-numeric:tabular-nums}
+.zt-lead .zt-ldate{margin:14px 8px 2px;font-size:var(--t-foot);font-weight:600;color:var(--mute);letter-spacing:.01em;font-variant-numeric:tabular-nums}

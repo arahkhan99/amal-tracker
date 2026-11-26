@@ -24,7 +24,7 @@
 .qb-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:18px 16px calc(var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + 20px)}
 
 /* location · Change */
-.qb-loc{display:flex;align-items:center;gap:6px;max-width:100%;font-size:14.5px;color:var(--mute)}
+.qb-loc{display:flex;align-items:center;gap:6px;max-width:100%;font-size:var(--t-sub);color:var(--mute)}
 .qb-pin{width:17px;height:17px;color:var(--acc2)}
 .qb-place{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:500}
 .qb-link{font-weight:600;color:var(--link)!important;padding:10px 6px!important;margin:-10px -6px -10px 2px!important;flex:none}
@@ -33,7 +33,7 @@
 .qb-num{text-align:center;margin-top:14px}
 .qb-num b{display:block;font:400 64px/1 var(--serif);color:var(--ink);letter-spacing:-.01em}
 .qb-deg{font-size:.6em;vertical-align:.55em;margin-left:2px;color:var(--mute)}
-.qb-num small{display:block;font-size:13.5px;color:var(--mute);margin-top:6px}
+.qb-num small{display:block;font-size:var(--t-foot);color:var(--mute);margin-top:6px}
 
 /* ---------- the dial ---------- */
 .qb-dial{position:relative;width:var(--qb-dial);aspect-ratio:1;margin:30px auto 0;flex:none}
@@ -44,7 +44,7 @@
 .qb-dsvg .tj{stroke:var(--faint);stroke-width:1.6}
 .qb-dsvg .tc{stroke:var(--ink);stroke-width:2.2}
 .qb-dsvg text{font-family:var(--sans);text-anchor:middle;dominant-baseline:central}
-.qb-dsvg .ql{font-size:17px;font-weight:600;fill:var(--mute)}
+.qb-dsvg .ql{font-size:var(--t-body);font-weight:600;fill:var(--mute)}
 .qb-dsvg .ql.qn{fill:var(--acc);font-weight:700}
 .qb-dsvg .qd{font-size:9.5px;fill:var(--faint)}
 .qb-dsvg .qq-line{stroke:var(--acc2);stroke-width:3;stroke-linecap:round}
@@ -73,35 +73,35 @@
 .qb-state > *{display:none}
 .qb[data-mode=live] .qb-turn,.qb[data-mode=init] .qb-wait,.qb[data-mode=waiting] .qb-wait,.qb[data-mode=permission] .qb-perm,
 .qb[data-mode=none] .qb-m-none,.qb[data-mode=denied] .qb-m-denied{display:flex}
-.qb-turn{align-items:center;justify-content:center;min-height:40px;padding:0 18px;border-radius:999px;background:var(--soft);color:var(--on-soft);font-size:15.5px;font-weight:600}
+.qb-turn{align-items:center;justify-content:center;min-height:40px;padding:0 18px;border-radius:999px;background:var(--soft);color:var(--on-soft);font-size:var(--t-sub);font-weight:600}
 .qb-turn span{display:none}
 .qb[data-turn=left] .qb-s-left,.qb[data-turn=right] .qb-s-right,.qb[data-turn=facing] .qb-s-facing{display:inline}
 .qb[data-turn=facing] .qb-turn{background:var(--acc);color:var(--on-acc)}
-.qb-wait{font-size:15px;color:var(--mute)}
+.qb-wait{font-size:var(--t-sub);color:var(--mute)}
 .qb-perm{flex-direction:column;align-items:center;gap:8px}
-.qb-perm small{font-size:13px;color:var(--mute)}
+.qb-perm small{font-size:var(--t-foot);color:var(--mute)}
 .qb-btn{display:inline-flex!important;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px!important;border-radius:999px;
-  background:var(--btn-bg)!important;color:var(--btn-fg)!important;font-weight:600!important;font-size:15.5px}
-.qb-msg{align-items:flex-start;gap:10px;width:100%;max-width:400px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--card-line);
-  font-size:14px;line-height:1.45;color:var(--ink);text-align:left}
+  background:var(--btn-bg)!important;color:var(--btn-fg)!important;font-weight:600!important;font-size:var(--t-sub)}
+.qb-msg{align-items:flex-start;gap:10px;width:100%;max-width:400px;padding:12px 14px;border-radius:var(--r-m);background:var(--card);border:1px solid var(--card-line);
+  font-size:var(--t-sub);line-height:1.45;color:var(--ink);text-align:left}
 .qb-msg .qb-i{color:var(--acc2);margin-top:1px}
 
 /* hints (a reserved slot too) */
 .qb-hints{min-height:36px;margin-top:6px;display:flex;align-items:center;justify-content:center}
-.qb-hint{display:none;align-items:center;gap:8px;font-size:13.5px;color:var(--mute)}
+.qb-hint{display:none;align-items:center;gap:8px;font-size:var(--t-foot);color:var(--mute)}
 .qb-hint .qb-i{width:18px;height:18px;color:var(--acc2)}
 .qb[data-hint=calibrate] .qb-h-calibrate,.qb[data-hint=flat] .qb-h-flat{display:flex}
 
 /* distance and the note */
 .qb-facts{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;max-width:400px;margin-top:10px;padding:14px 16px;
-  border-radius:16px;background:var(--card);border:1px solid var(--card-line);font-size:14.5px;color:var(--mute)}
-.qb-facts b{font-size:16px;font-weight:600;color:var(--ink)}
-.qb-foot{max-width:400px;margin-top:12px!important;font-size:12px;line-height:1.5;color:var(--faint);text-align:center}
+  border-radius:var(--r-m);background:var(--card);border:1px solid var(--card-line);font-size:var(--t-sub);color:var(--mute)}
+.qb-facts b{font-size:var(--t-body);font-weight:600;color:var(--ink)}
+.qb-foot{max-width:400px;margin-top:12px!important;font-size:var(--t-foot);line-height:1.5;color:var(--faint);text-align:center}
 
 /* no location */
 .qb[data-mode=noloc] .qb-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px 24px 18vh;text-align:center}
 .qb-emptydial{width:min(220px,60vw);aspect-ratio:1;opacity:.75}
-.qb-empty p{font-size:15.5px;color:var(--ink);max-width:300px;line-height:1.45}
+.qb-empty p{font-size:var(--t-sub);color:var(--ink);max-width:300px;line-height:1.45}
 
 /* short screens: a smaller dial */
 @media (max-height:700px){

@@ -27,6 +27,11 @@
   --toast-bg:#17231E; --toast-ink:#F8F4EA; --toast-acc:#E5C55C; --scrim:rgba(23,35,30,.36);
   --focus:#1B5A43;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; --serif:'Amiri',Georgia,serif;
+  /* the type scale: 8 sizes (polish pass, 25 Nov 2026). Larger display figures (Qibla degrees, counters) and the
+     Arabic sizes are set where they are used. */
+  --t-cap:11px; --t-foot:13px; --t-sub:15px; --t-body:17px; --t-head:17px; --t-title3:20px; --t-title2:22px; --t-title:28px; --t-large:34px;
+  /* corners: small controls, cards, sheets (pills and circles are fully round) */
+  --r-s:10px; --r-m:16px; --r-l:28px;
 
   /* older names, same palette */
   --forest:#0F3D2E; --moss:#1B5A43; --leaf:#1B5A43; --mint:#E3EBE0; --mint2:#C9D9CB;
@@ -100,11 +105,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 /* ---------- bottom bar: Today · Read · Progress; text labels, the active tab in the accent colour ---------- */
 .nav{display:flex;justify-content:space-around;padding:6px 4px 26px;background:var(--bg);border-top:1px solid var(--line);position:relative;z-index:5}
-.nav button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11.5px;font-weight:500;color:var(--mute);flex:1;max-width:140px;min-height:52px}
+.nav button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:var(--t-cap);font-weight:500;color:var(--mute);flex:1;max-width:140px;min-height:52px}
 .nav button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .nav button.on{color:var(--acc);font-weight:600}
 :root[data-theme=dark] .nav button.on{color:var(--acc)}
-.nav button:focus-visible{outline-offset:-2px;border-radius:12px}
+.nav button:focus-visible{outline-offset:-2px;border-radius:var(--r-s)}
 
 /* ---------- Settings → Appearance: text size and Arabic text size (src/appearance.js sets both on <html>) ----------
    --ui-scale zooms each view, the tab bar and sheets (like tablet.css; #screen stays at zoom 1 so scrolling and

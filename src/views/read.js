@@ -189,7 +189,7 @@ export function weekSheet(now) {
   const row = id => { const seen = !!opened[weekItemKey(id, now, c.weekKey)]; return `<button type="button" class="rd-wi" data-f="wi-${id}" onclick="A.weekItem('${id}')"><span class="t"><small>${esc(kick[id])}</small><b>${esc(name(id))}</b></span>${seen ? "" : `<i class="rd-ndot" role="img" aria-label="${esc(READ.weekNew)}"></i>`}${chev}</button>`; };
   const sec = (h, ids) => `<h4 class="rd-wsh">${esc(h)}</h4><div class="rd-wl">${ids.map(row).join("")}</div>`;
   return `<div class="z-sh rd-wsheet"><div class="z-lhd"><div><h3>${esc(READ.thisWeek)}</h3><p class="z-sub">${esc(READ.weekSheetLead(c.rangeLabel))}</p></div><button class="z-cls" onclick="A.closeSheet()" aria-label="${esc(COMMON.close)}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    ${sec(READ.thisWeek, WEEK_ITEMS.week)}${sec(READ.thisMonth, WEEK_ITEMS.month)}<div class="z-shfoot"><button class="z-pbtn" onclick="A.closeSheet()">${esc(COMMON.done)}</button></div></div>`;
+    ${sec(READ.thisWeek, WEEK_ITEMS.week)}${sec(READ.thisMonth, WEEK_ITEMS.month)}</div>`; // closed with ✕, a tap outside or a drag down (no Done)
 }
 A.readWeek = () => {
   if (!contentReady()) { loadContent().then(() => A.readWeek()).catch(() => {}); return; }

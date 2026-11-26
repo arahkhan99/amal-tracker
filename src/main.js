@@ -18,6 +18,8 @@ import "./css/gender.css";
 import "./css/qibla.css";
 
 import { S, UI, A, $, go, render, tick, closeSheet, commit, todayKey, toast, syncStatusBar } from "./app.js";
+import { initSheetDrag } from "./sheet-drag.js";
+import { initLargeTitles } from "./large-title.js";
 import { resolveView } from "./routes.js";
 import { syncExcusedMode } from "./store.js";
 import { reschedule } from "./notify.js";
@@ -53,10 +55,13 @@ import { onRender } from "./app.js";
 import { APP_VERSION } from "./views/settings.js";
 // Tablet and iPad layout (768px+); imported last so it comes after every view's CSS, tools.css included
 import "./css/sheets.css";
+import "./css/polish.css"; // the polish pass (25 Nov 2026): type scale, radii, iOS-style sheets, grouped Settings
 import "./css/tablet.css";
 
 // The bottom bar is built by app.js (renderNav, from features.navTabs); its buttons call A.go themselves.
 $("#scrim").onclick = e => { if (e.target.id === "scrim") closeSheet(); };
+initSheetDrag(); // drag a sheet down to close it (sheet-drag.js)
+initLargeTitles(); // the slim title bar when a page's big title scrolls away (large-title.js)
 
 // Keyboard: Escape closes an open sheet; Enter/Space activate non-button elements with role=button
 document.addEventListener("keydown", e => {

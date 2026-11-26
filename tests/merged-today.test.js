@@ -478,7 +478,10 @@ describe("Direction B: the hero and the rows", () => {
   it("the name line is larger and heavier than the greeting line (css/today.css)", () => {
     const css = readFileSync("src/css/today.css", "utf8");
     const rule = sel => css.slice(css.indexOf(`.zt-head .${sel}{`)).split("}")[0];
-    const px = sel => +rule(sel).match(/font-size:([\d.]+)px/)[1];
+    // sizes are type-scale tokens (theme.css --t-*) since the polish pass: resolve them
+    const theme = readFileSync("src/css/theme.css", "utf8");
+    const tok = name => +theme.match(new RegExp(`${name}:([\\d.]+)px`))[1];
+    const px = sel => { const m = rule(sel).match(/font-size:(?:([\d.]+)px|var\((--[\w-]+)\))/); return m[1] ? +m[1] : tok(m[2]); };
     const wt = sel => +rule(sel).match(/font-weight:(\d+)/)[1];
     expect(px("zt-hin")).toBeGreaterThan(px("zt-hi1"));
     expect(wt("zt-hin")).toBeGreaterThan(wt("zt-hi1"));

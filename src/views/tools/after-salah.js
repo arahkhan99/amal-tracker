@@ -1,5 +1,6 @@
 /* Adhkār after Salāh: the poster's list with tap counters, a 33·33·33·1 tasbīh counter, Āyat al-Kursī and the Quls
    (3× after Fajr and Maghrib, 1× otherwise). Qurʾānic parts come from the Quran data (IndoPak + Pickthall). */
+import { tick as hTick, done as hDone } from "../../haptics.js";
 import { A, S, $, NOW, esc, I, T, open, redraw, part, persist, prune, prefs, toast, headWords, COMMON, APP, dkey, addDays, topIn, store } from "./core.js";
 import { AFTER_SALAH, AFTER_SALAH_META, PRAYERS5, unitsFor, qulsCount } from "../../tools/data/after-salah.js";
 import { timesFor } from "../../times.js";
@@ -153,7 +154,8 @@ export function afterSalahAfter() {
 }
 
 /* ---------- actions ---------- */
-function vibrate(ms) { try { navigator.vibrate?.(ms); } catch { /* not available */ } }
+// A counter step taps lightly, its last count gives a gentle "done" (haptics.js: works on iPhone too)
+function vibrate(ms) { if (ms >= 25) hDone(ms); else hTick(ms); }
 
 A.asPick = p => {
   const lp = lastPrayer(NOW());

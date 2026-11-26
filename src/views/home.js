@@ -7,6 +7,7 @@
    All visible text comes from strings.js / glossary.js. */
 import { S, UI, A, $, NOW, todayKey, onRender, commit, render, toast, openSheet, closeSheet, go, avatarBtn } from "../app.js";
 import * as store from "../store.js";
+import { logged as feel } from "../haptics.js"; // a light tap, a firmer one for congregation, "success" for the fifth
 import { PRAYERS, DOW, MON, fmt12, dkey, parseKey, addDays, daysBetween, esc } from "../util.js";
 import { timesFor, currentWindow, windowEnd, ishaBestBefore, madeUpDeadline, canStillMakeUp, excusedSoFar, METHOD_SHORT, FALLBACK_LOCATION } from "../times.js";
 import { canLog, logAllowed, madeUpAllowed } from "../logging.js";
@@ -236,6 +237,7 @@ export function applyStatus(p, key, status, { close = true } = {}) {
   const was = r.was;
   if (close) closeSheet();
   commit();
+  feel(S, key, status);
   const n = pName(p, key);
   let msg;
   if (status === "missed") msg = isOn(S, "makeups") ? LOG.missedToast(n) : TODAY.logged(n);
@@ -335,12 +337,12 @@ A.prayerSheet = (p, key = todayKey()) => showSheet(() => {
   let body = "";
   if (sunnahOn() && (cur === "missed")) body += `<div class="note">${SUNNAH_UI.notAfterMissed}</div>`;
   else {
-    if (chips.length) body += `<div class="lsec">${SUNNAH_UI.withPrayer(pName(p, key))}${xi("sunnah")}</div>` + chips.map(c => {
+    if (chips.length) body += `<div class="lsec">${SUNNAH_UI.withPrayer(pName(p, key))}${xi("sunnah")}</div><div class="sgrp">` + chips.map(c => {
       const done = store.sunnahDone(S, key, c.id);
       const tl = tierLabel(c.tier);
       return `<div class="srow" role="button" tabindex="0" data-chip="${c.id}" data-key="${key}"><span class="sc ${tierCls(c.tier)} ${done ? "d" : ""}">${done ? ic("check", "") : '<i class="o"></i>'}${esc(c.label)}</span><div class="t"><b>${esc(tl.name)}</b><small>${esc(tl.gloss || "")}</small></div><span class="tg ${done ? "on" : ""}"></span></div>`;
-    }).join("");
-    if (w) body += `<div class="lsec">${esc(w.tag ? w.tag.charAt(0).toUpperCase() + w.tag.slice(1) : T.WITR_UI.name)}${xi("witr")}</div><div class="srow" role="button" tabindex="0" data-witr="1" data-key="${key}"><span class="sc wj ${w.done ? "d" : ""}">${w.done ? ic("check", "") : '<i class="o"></i>'}${esc(w.chip)}${w.tag ? `<em>${esc(w.tag)}</em>` : ""}</span><div class="t"><b>${T.WITR_UI.title(w.rakahs)}</b><small>${esc(w.line)}</small></div><span class="tg ${w.done ? "on" : ""}"></span></div>`;
+    }).join("") + "</div>";
+    if (w) body += `<div class="lsec">${esc(w.tag ? w.tag.charAt(0).toUpperCase() + w.tag.slice(1) : T.WITR_UI.name)}${xi("witr")}</div><div class="sgrp"><div class="srow" role="button" tabindex="0" data-witr="1" data-key="${key}"><span class="sc wj ${w.done ? "d" : ""}">${w.done ? ic("check", "") : '<i class="o"></i>'}${esc(w.chip)}${w.tag ? `<em>${esc(w.tag)}</em>` : ""}</span><div class="t"><b>${T.WITR_UI.title(w.rakahs)}</b><small>${esc(w.line)}</small></div><span class="tg ${w.done ? "on" : ""}"></span></div></div>`;
     if (sunnahOn() && p === "Isha" && !S.settings.sunnahNafl) body += `<div class="nfl">${ic("plus")}<span>${SUNNAH_UI.naflHidden} <b role="button" tabindex="0" onclick="A.closeSheet();A.go('settings')">${SUNNAH_UI.turnOnInSettings}</b></span></div>`;
   }
   const dayEx = store.isExcusedDay(S, key);
@@ -348,7 +350,8 @@ A.prayerSheet = (p, key = todayKey()) => showSheet(() => {
     <div class="sgrid">${opts.map(tile).join("")}${excOn ? tile("excused") : ""}</div>
     ${cur ? `<p class="fine"><button class="link" onclick="A.setPrayer('${p}',null,'${key}')" style="font-weight:700;color:var(--z-ink2)">${COMMON.clear}</button></p>` : ""}
     ${body}${cur === "excused" ? rememberTick(p, key, day) : ""}
-    <div class="shfoot">${excOn ? `<button class="exbtn" onclick="A.excusedToday('${key}')">${ic("moon")}${dayEx ? X.notExcused : EXCUSED.todayBtn}</button>` : ""}<button class="pbtn" onclick="A.closeSheet()">${COMMON.done}</button></div></div>`;
+    ${excOn ? `<div class="shfoot"><button class="exbtn" onclick="A.excusedToday('${key}')">${ic("moon")}${dayEx ? X.notExcused : EXCUSED.todayBtn}</button></div>` : ""}</div>`;
+  // No Done: every choice above saves as it is tapped; ✕, a tap outside or a drag down closes (polish, 25 Nov 2026)
 });
 
 /* ---------- good deeds ---------- */
@@ -541,7 +544,7 @@ function chosenSheet(g, key, label, pct, group) {
   return `<div class="sh gd"><div class="lhd"><div><h3>${esc(TODAY.goodDeeds)}</h3><p class="sub">${esc(g.of ? TODAY.deedsDaily(label, g.done, g.of) : label)}</p></div><button class="cls" onclick="A.closeSheet()" aria-label="${COMMON.close}">${ic("close")}</button></div>
     ${g.of ? `<span class="gbar" aria-hidden="true"><i style="width:${pct}%"></i></span>` : ""}
     ${body}
-    <div class="shfoot"><button class="pbtn" onclick="A.closeSheet()">${COMMON.done}</button></div></div>`;
+    </div>`; // no Done: ticks save as they are tapped; ✕, a tap outside or a drag down closes
 }
 
 /** "Choose daily deeds": a switch per item; "Good deeds · n of m" counts the ones on (today.dailyIds). */
@@ -735,6 +738,7 @@ A.rowTap = (p, key = todayKey()) => {
   const hint = st.tap === "ontime" && tapHintDue(S);
   if (hint) markTapHint(S); // saved with the commit below: shown once, ever (Settings → Help → Replay shows it again)
   commit();
+  feel(S, key, st.tap);
   toast(LOG.setToast(pName(p, key), st.tap ? STATUS[st.tap] : COMMON.clear.toLowerCase()), { ...undoable(r.snap), ...(hint ? { sub: TODAY.tapHintToast } : {}) });
 };
 /** The big Prayed button: the same as one tap on the current prayer's row. */

@@ -2,26 +2,26 @@
    sheet. Home sheets use the --z-* tokens, Settings the plain ones. */
 
 /* ---- status sheet: remembrance at prayer time (excused prayers only) ---- */
-.z-gdh{display:flex;gap:12px;align-items:flex-start;margin-top:10px;padding:12px 13px;border-radius:14px;border:1.5px solid var(--z-line);background:var(--z-card);text-align:left;width:100%;color:var(--z-ink);font:inherit}
+.z-gdh{display:flex;gap:12px;align-items:flex-start;margin-top:10px;padding:12px 13px;border-radius:var(--r-m);border:1.5px solid var(--z-line);background:var(--z-card);text-align:left;width:100%;color:var(--z-ink);font:inherit}
 .z-gdh.z-on{border-color:var(--z-leaf)}
 .z-gdh .z-bx{width:22px;height:22px;border-radius:7px;border:2px solid var(--z-ink3);flex:none;display:grid;place-items:center;margin-top:1px}
 .z-gdh.z-on .z-bx{background:var(--z-leaf);border-color:var(--z-leaf);color:#fff}
 .z-gdh .z-bx svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-.z-gdh b{display:block;font-size:14px;font-weight:800;color:var(--z-ink)}
-.z-gdh small{display:block;font-size:12px;line-height:1.4;color:var(--z-ink2);margin-top:2px}
-.z-gdh-l{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--z-ink3);margin-top:16px}
-.z-gdh-n{font-size:11.5px;line-height:1.4;color:var(--z-ink3);margin-top:8px}
+.z-gdh b{display:block;font-size:var(--t-sub);font-weight:800;color:var(--z-ink)}
+.z-gdh small{display:block;font-size:var(--t-foot);line-height:1.4;color:var(--z-ink2);margin-top:2px}
+.z-gdh-l{font-size:var(--t-cap);font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--z-ink3);margin-top:16px}
+.z-gdh-n{font-size:var(--t-cap);line-height:1.4;color:var(--z-ink3);margin-top:8px}
 
 /* ---- Settings: "Set Zad up for" sheet ---- */
-.gs .gopt{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;padding:14px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface2);text-align:left;color:var(--ink);font:inherit}
+.gs .gopt{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;padding:14px;border-radius:var(--r-m);border:1.5px solid var(--line);background:var(--surface2);text-align:left;color:var(--ink);font:inherit}
 .gs .gopt.on{border-color:var(--leaf);background:var(--ok-bg)}
 .gs .gopt .rd{width:22px;height:22px;border-radius:50%;border:2px solid var(--ink3);flex:none}
 .gs .gopt.on .rd{border-color:var(--leaf);background:var(--leaf);box-shadow:inset 0 0 0 4px var(--surface2)}
-.gs .gopt b{display:block;font-size:15.5px;font-weight:700}
-.gs .gopt small{display:block;font-size:12.5px;color:var(--ink2);margin-top:2px;line-height:1.35}
-.gs .gbox{margin-top:16px;padding:12px 14px;border-radius:16px;background:var(--inset);border:1px solid var(--line)}
-.gs .gbox h4{margin:0 0 4px;font-size:11.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
-.gs .gbox div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;color:var(--ink)}
+.gs .gopt b{display:block;font-size:var(--t-sub);font-weight:700}
+.gs .gopt small{display:block;font-size:var(--t-foot);color:var(--ink2);margin-top:2px;line-height:1.35}
+.gs .gbox{margin-top:16px;padding:12px 14px;border-radius:var(--r-m);background:var(--inset);border:1px solid var(--line)}
+.gs .gbox h4{margin:0 0 4px;font-size:var(--t-cap);font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.gs .gbox div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:var(--t-sub);color:var(--ink)}
 .gs .gbox div:first-of-type{border-top:0}
 .gs .gbox div span:last-child{color:var(--ink2);text-align:right}
 .gs .note{text-align:left}

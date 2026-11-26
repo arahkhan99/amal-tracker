@@ -33,28 +33,28 @@
 .zb-pg{padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 14px) 14px 20px 24px}
 .zb-pg.has-back{padding-top:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 8px)}
 .zb button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:inherit;padding:0}
-.zb-back{display:inline-flex;align-items:center;gap:2px;min-height:44px;margin:0 0 0 -8px;padding:0 8px 0 0!important;font-size:15px!important;font-weight:500;color:var(--bink)!important}
+.zb-back{display:inline-flex;align-items:center;gap:2px;min-height:44px;margin:0 0 0 -8px;padding:0 8px 0 0!important;font-size:var(--t-sub)!important;font-weight:500;color:var(--bink)!important}
 .zb-back svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .zb-r1{display:flex;align-items:center;gap:8px;min-height:48px}
-.zb-t{flex:1;min-width:0;margin:0;font:400 34px/1.12 var(--serif);color:var(--bink);overflow-wrap:anywhere}
-.zb-pg.has-back .zb-t{font-size:32px;line-height:1.15}
-.zb-lead{margin:2px 10px 0 0;font-size:14.5px;line-height:1.45;color:var(--bmute)}
+.zb-t{flex:1;min-width:0;margin:0;font:400 var(--t-large)/1.12 var(--serif);color:var(--bink);overflow-wrap:anywhere}
+.zb-pg.has-back .zb-t{font-size:var(--t-large);line-height:1.15}
+.zb-lead{margin:2px 10px 0 0;font-size:var(--t-sub);line-height:1.45;color:var(--bmute)}
 .zb-lead b{color:var(--bink);font-weight:600}
-.zb-done{min-height:44px;padding:0 10px!important;font-size:16px!important;font-weight:650!important;color:var(--bink)!important;flex:none}
+.zb-done{min-height:44px;padding:0 10px!important;font-size:var(--t-body)!important;font-weight:650!important;color:var(--bink)!important;flex:none}
 .zb-ib{width:44px;height:44px;border-radius:22px;display:grid!important;place-items:center;color:var(--bink)!important;flex:none}
 .zb-ib svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.zb-ib.aa{font:700 17px/1 var(--serif)!important}
+.zb-ib.aa{font:700 var(--t-body)/1 var(--serif)!important}
 .zb .zt-av{background:var(--bchip)!important;color:var(--bink)!important}
 .zb .zt-ib{color:var(--bink)}
 .zb .zt-tr{flex:none}
 /* a thin progress bar in the band (readers' "7 of 20 done", set-up steps) */
 .zb-bar{height:4px;border-radius:2px;background:color-mix(in srgb,var(--bink) 16%,transparent);margin:12px 10px 0 0;overflow:hidden}
 .zb-bar i{display:block;height:100%;background:var(--bbtn)}
-.zb-bline{display:flex;justify-content:space-between;gap:12px;margin:6px 10px 0 0;font-size:13px;color:var(--bmute);font-variant-numeric:tabular-nums}
+.zb-bline{display:flex;justify-content:space-between;gap:12px;margin:6px 10px 0 0;font-size:var(--t-foot);color:var(--bmute);font-variant-numeric:tabular-nums}
 .zb-bline b{color:var(--bink);font-weight:600}
 /* chips in a band (reader sets: Morning · Evening; the five prayers after ṣalāh) */
 .zb-chips{display:flex;gap:6px;margin:12px 10px 0 0;flex-wrap:wrap}
-.zb-chips button{min-height:36px;padding:0 14px!important;border-radius:18px;font-size:14px!important;font-weight:550;color:var(--bmute)!important;display:inline-flex;align-items:center;gap:6px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--bink) 18%,transparent)}
+.zb-chips button{min-height:36px;padding:0 14px!important;border-radius:18px;font-size:var(--t-sub)!important;font-weight:550;color:var(--bmute)!important;display:inline-flex;align-items:center;gap:6px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--bink) 18%,transparent)}
 .zb-chips button.on{background:var(--bchip)!important;color:var(--bink)!important;font-weight:650;box-shadow:none}
 .zb-chips button svg{width:16px;height:16px}
 
@@ -63,7 +63,7 @@
 .zb-ch .zt-top{padding:calc(var(--safe-area-inset-top,env(safe-area-inset-top,0px)) + 14px) 14px 0 24px;min-height:0;gap:8px}
 .zb-ch .zt-top .zb-t{min-height:48px;display:flex;align-items:center}
 .zb .zt-cb,.zb .zt-cb.ch-scroll{border-bottom:0;box-shadow:none;gap:14px;padding:0 14px 0 24px;margin:2px 0 0}
-.zb .zt-cb button{font-size:15px;font-weight:500;color:var(--bmute);padding:9px 0 13px;min-height:44px}
+.zb .zt-cb button{font-size:var(--t-sub);font-weight:500;color:var(--bmute);padding:9px 0 13px;min-height:44px}
 .zb .zt-cb button.on{color:var(--bink);font-weight:650}
 .zb .zt-cb button.on::after{bottom:6px;height:2.5px;border-radius:2px;background:var(--bink)}
 .zb .zt-cb.ch-scroll button.on::after{bottom:6px}
@@ -73,12 +73,12 @@
 
 /* ---------- below the band: no cards. Thin rows with hairlines, small-caps section heads ---------- */
 .zr-sum{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;margin:2px 8px 4px}
-.zr-sum b{font-size:17px;font-weight:650;color:var(--ink)}
-.zr-sum span{font-size:14px;color:var(--mute);font-variant-numeric:tabular-nums}
-.zr-h{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:22px 8px 4px;min-height:20px}
+.zr-sum b{font-size:var(--t-body);font-weight:650;color:var(--ink)}
+.zr-sum span{font-size:var(--t-sub);color:var(--mute);font-variant-numeric:tabular-nums}
+.zr-h{display:flex;align-items:center;gap:8px;font-size:var(--t-foot);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:22px 8px 4px;min-height:20px}
 .zr-h:first-child{margin-top:4px}
 .zr-h > span{flex:1}
-.zr-h button,.zr-h .zr-hl{letter-spacing:0;text-transform:none;font-size:13px;font-weight:600;color:var(--acc)}
+.zr-h button,.zr-h .zr-hl{letter-spacing:0;text-transform:none;font-size:var(--t-foot);font-weight:600;color:var(--acc)}
 :root[data-theme=dark] .zr-h button{color:var(--acc)}
 .zr-list{display:flex;flex-direction:column}
-.zr-note{font-size:13px;color:var(--faint);line-height:1.5;margin:14px 8px 0}
+.zr-note{font-size:var(--t-foot);color:var(--faint);line-height:1.5;margin:14px 8px 0}

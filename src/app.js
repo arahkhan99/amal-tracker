@@ -206,14 +206,29 @@ export function openSheet(html) {
   if (!wasOpen) returnFocus = document.activeElement;
   sheet.innerHTML = '<div class="grab"></div>' + html;
   sheet.setAttribute("aria-label", sheet.querySelector("h3")?.textContent.trim() || "Dialog");
+  if (!wasOpen) { clearTimeout(sheetOutTimer); sheet.style.transform = ""; $("#scrim").classList.remove("out"); }
   $("#scrim").classList.add("on");
+  $("#phone")?.classList.add("sheet-open"); // the page behind eases back (css/polish.css)
   $("#screen").inert = $("#nav").inert = true;
   const again = prev >= 0 && sheet.querySelectorAll(FOCUSABLE)[prev];
   (again || sheet).focus({ preventScroll: true });
 }
+let sheetOutTimer = null;
+/**
+ * Close at once (the page is usable straight away); the sheet still slides down for a moment (.scrim.out, css/polish.css),
+ * from wherever a drag left it (sheet-drag.js).
+ */
 export function closeSheet() {
   if (!$("#scrim").classList.contains("on")) return;
-  $("#scrim").classList.remove("on");
+  const scrim = $("#scrim"), sheet = $("#sheet");
+  scrim.classList.remove("on");
+  $("#phone")?.classList.remove("sheet-open");
+  if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+    scrim.classList.add("out");
+    sheet.style.transform = "";
+    clearTimeout(sheetOutTimer);
+    sheetOutTimer = setTimeout(() => scrim.classList.remove("out"), 320);
+  }
   $("#screen").inert = $("#nav").inert = false;
   if (returnFocus && document.contains(returnFocus) && !$("#lock").contains(returnFocus)) returnFocus.focus({ preventScroll: true });
   returnFocus = null;
